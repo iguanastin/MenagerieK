@@ -113,6 +113,13 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 change.addedSubList.forEach { tag -> updateQueue.put(DatabaseCreateTag(tag)) }
             }
         })
+
+        menagerie.knownNonDupes.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { pair -> updateQueue.put(DatabaseDeleteNonDupe(pair)) }
+                change.addedSubList.forEach { pair -> updateQueue.put(DatabaseCreateNonDupe(pair)) }
+            }
+        })
     }
 
     fun needsMigration(): Boolean {
