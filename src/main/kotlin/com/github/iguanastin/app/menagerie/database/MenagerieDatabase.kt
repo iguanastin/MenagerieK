@@ -1,9 +1,7 @@
 package com.github.iguanastin.app.menagerie.database
 
 import com.github.iguanastin.app.menagerie.*
-import com.github.iguanastin.app.menagerie.database.updates.DatabaseCreateImage
-import com.github.iguanastin.app.menagerie.database.updates.DatabaseDeleteItem
-import com.github.iguanastin.app.menagerie.database.updates.DatabaseUpdate
+import com.github.iguanastin.app.menagerie.database.updates.*
 import javafx.collections.ListChangeListener
 import java.io.File
 import java.sql.*
@@ -51,6 +49,8 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 if (!updateThreadRunning) break
                 if (update == null) continue
 
+                println("Applying update: $update")
+
                 try {
                     update.sync(this)
                 } catch (e: Exception) {
@@ -71,26 +71,34 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
 
         val menagerie = Menagerie()
 
-        thread(start = true, isDaemon = true) {
-            while (true) {
-                println("Tags: " + menagerie.tags.size)
-                println("Items: " + menagerie.items.size)
-                println("NonDupes: " + menagerie.knownNonDupes.size)
-                Thread.sleep(1000)
-            }
-        }
-
         loadTags(menagerie)
         loadMediaItems(menagerie)
         loadTagged(menagerie)
         loadNonDupes(menagerie)
 
+        attachListeners(menagerie)
+
+        return menagerie
+    }
+
+    private fun attachListeners(menagerie: Menagerie) {
+        val itemTaggedListener = { item: Item, tag: Tag ->
+            updateQueue.put(DatabaseTagItem(item, tag))
+        }
+        val itemUntaggedListener = { item: Item, tag: Tag ->
+            updateQueue.put(DatabaseUntagItem(item, tag))
+        }
+
         menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { item ->
+                    item.untagListeners.add(itemUntaggedListener)
+                    item.tagListeners.add(itemTaggedListener)
                     updateQueue.put(DatabaseDeleteItem(item))
                 }
                 change.addedSubList.forEach { item ->
+                    item.untagListeners.remove(itemUntaggedListener)
+                    item.tagListeners.remove(itemTaggedListener)
                     when (item) {
                         is ImageItem -> updateQueue.put(DatabaseCreateImage(item))
                         else -> TODO("Unimplemented")
@@ -99,7 +107,12 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
             }
         })
 
-        return menagerie
+        menagerie.tags.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { tag -> updateQueue.put(DatabaseDeleteTag(tag)) }
+                change.addedSubList.forEach { tag -> updateQueue.put(DatabaseCreateTag(tag)) }
+            }
+        })
     }
 
     fun needsMigration(): Boolean {

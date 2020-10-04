@@ -2,6 +2,8 @@ package com.github.iguanastin.app.menagerie
 
 class Tag(val id: Int, val name: String, var color: String? = null, var frequency: Int = 0) {
 
+    // TODO tag notes
+
 
     override fun hashCode(): Int {
         return id.hashCode()

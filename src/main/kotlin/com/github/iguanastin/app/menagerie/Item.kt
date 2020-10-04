@@ -18,14 +18,22 @@ open class Item(val id: Int, val added: Long) {
 
     private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
     val tags: ObservableList<Tag> = _tags.asUnmodifiable()
+    val tagListeners: MutableList<(Item, Tag) -> Unit> = mutableListOf()
+    val untagListeners: MutableList<(Item, Tag) -> Unit> = mutableListOf()
 
     private var thumbnailCache: WeakReference<Image> = WeakReference(null)
 
     init {
         tags.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { tag -> tag.frequency-- }
-                change.addedSubList.forEach { tag -> tag.frequency++ }
+                change.removed.forEach { tag ->
+                    untagListeners.forEach { it(this, tag) }
+                    tag.frequency--
+                }
+                change.addedSubList.forEach { tag ->
+                    tagListeners.forEach { it(this, tag) }
+                    tag.frequency++
+                }
             }
         })
     }

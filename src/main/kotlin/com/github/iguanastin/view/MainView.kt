@@ -1,14 +1,12 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.*
+import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Menagerie
-import com.github.iguanastin.app.menagerie.Tag
 import javafx.application.Platform
 import javafx.collections.ObservableList
+import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.image.Image
@@ -17,6 +15,7 @@ import javafx.scene.layout.BorderPane
 import javafx.scene.paint.Color
 import javafx.stage.Screen
 import tornadofx.*
+import java.io.File
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
