@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.FileItem
 import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.Tag
 import javafx.application.Platform
 import javafx.collections.ObservableList
@@ -32,6 +33,9 @@ class MainView : View("Menagerie") {
 
     private val tags: ObservableList<Tag> = observableListOf()
 
+    private lateinit var manager: MenagerieDatabase
+    private lateinit var menagerie: Menagerie
+
 
     override val root = stackpane {
         borderpane {
@@ -45,14 +49,14 @@ class MainView : View("Menagerie") {
                             left {
                                 label(it.name) {
                                     style {
-                                        textFill = Color.web(it.color ?: "white")
+//                                        textFill = Color.web(it.color ?: "white")
                                     }
                                 }
                             }
                             right {
-                                label("(${it.id})") {
+                                label("(${it.frequency})") {
                                     style {
-                                        textFill = Color.web(it.color ?: "white")
+//                                        textFill = Color.web(it.color ?: "white")
                                     }
                                 }
                             }
@@ -64,7 +68,7 @@ class MainView : View("Menagerie") {
             }
             right {
                 borderpane {
-                    padding = insets(10) // TODO this don't work
+                    padding = insets(4)
                     top {
                         textfield()
                     }
@@ -109,11 +113,11 @@ class MainView : View("Menagerie") {
     }
 
     private fun attemptLoadMenagerie() {
-        val manager = MenagerieDatabase(dbURL, dbUser, dbPass)
+        manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 
         val load: () -> Unit = {
             try {
-                val menagerie = manager.loadMenagerie()
+                menagerie = manager.loadMenagerie()
                 itemGrid.items.apply {
                     runOnUIThread {
                         clear()
@@ -242,6 +246,11 @@ class MainView : View("Menagerie") {
         initStageProperties()
 
         Platform.runLater { attemptLoadMenagerie() }
+    }
+
+    override fun onUndock() {
+        println("Defragging...")
+        manager.closeAndCompress()
     }
 
 }

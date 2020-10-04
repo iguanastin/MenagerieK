@@ -1,11 +1,16 @@
 package com.github.iguanastin.app.menagerie.database
 
 import com.github.iguanastin.app.menagerie.*
+import com.github.iguanastin.app.menagerie.database.updates.DatabaseCreateImage
+import com.github.iguanastin.app.menagerie.database.updates.DatabaseDeleteItem
+import com.github.iguanastin.app.menagerie.database.updates.DatabaseUpdate
+import javafx.collections.ListChangeListener
 import java.io.File
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.ResultSet
-import java.sql.SQLException
+import java.sql.*
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class MenagerieDatabaseException : Exception {
     constructor() : super()
@@ -15,7 +20,7 @@ class MenagerieDatabaseException : Exception {
     constructor(message: String, cause: Throwable, enableSuppression: Boolean, writableStackTrace: Boolean) : super(message, cause, enableSuppression, writableStackTrace)
 }
 
-class MenagerieDatabase(url: String, user: String, password: String) {
+class MenagerieDatabase(url: String, user: String, password: String) : AutoCloseable {
 
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
@@ -25,23 +30,74 @@ class MenagerieDatabase(url: String, user: String, password: String) {
     }
 
     private val db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
+    var genericStatement: Statement = db.createStatement()
+        get() {
+            if (field.isClosed) field = db.createStatement()
+            return field
+        }
+        private set
     var version: Int = retrieveVersion()
+    private val preparedCache: Map<String, PreparedStatement> = mutableMapOf()
 
-    private val psTags by lazy { db.prepareStatement("SELECT * FROM tags;") }
-    private val psMedia by lazy { db.prepareStatement("SELECT * FROM media JOIN items ON items.id=media.id;") }
-    private val psTagged by lazy { db.prepareStatement("SELECT * FROM tagged;") }
-    private val psNonDupes by lazy { db.prepareStatement("SELECT item_1, item_2 FROM non_dupes;") }
+    private val updateQueue: BlockingQueue<DatabaseUpdate> = LinkedBlockingQueue()
+    @Volatile
+    private var updateThreadRunning: Boolean = false
 
+    init {
+        thread(start = true) {
+            updateThreadRunning = true
+            while (updateThreadRunning) {
+                val update = updateQueue.poll(1, TimeUnit.SECONDS)
+                if (!updateThreadRunning) break
+                if (update == null) continue
+
+                try {
+                    update.sync(this)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    TODO("Unimplemented error handling")
+                }
+            }
+        }
+    }
+
+
+    fun getCachedStatement(owner: DatabaseUpdate, key: String): PreparedStatement {
+        return preparedCache["${owner.javaClass.name}.$key"] ?: owner.prepareStatement(db, key)
+    }
 
     fun loadMenagerie(): Menagerie {
         if (needsMigration()) migrateDatabase()
 
-        val menagerie = Menagerie(tags = null)
+        val menagerie = Menagerie()
+
+        thread(start = true, isDaemon = true) {
+            while (true) {
+                println("Tags: " + menagerie.tags.size)
+                println("Items: " + menagerie.items.size)
+                println("NonDupes: " + menagerie.knownNonDupes.size)
+                Thread.sleep(1000)
+            }
+        }
 
         loadTags(menagerie)
         loadMediaItems(menagerie)
         loadTagged(menagerie)
         loadNonDupes(menagerie)
+
+        menagerie.items.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { item ->
+                    updateQueue.put(DatabaseDeleteItem(item))
+                }
+                change.addedSubList.forEach { item ->
+                    when (item) {
+                        is ImageItem -> updateQueue.put(DatabaseCreateImage(item))
+                        else -> TODO("Unimplemented")
+                    }
+                }
+            }
+        })
 
         return menagerie
     }
@@ -94,15 +150,15 @@ class MenagerieDatabase(url: String, user: String, password: String) {
     }
 
     private fun loadTags(menagerie: Menagerie) {
-        psTags.executeQuery().use { rs: ResultSet ->
+        genericStatement.executeQuery("SELECT * FROM tags;").use { rs: ResultSet ->
             while (rs.next()) {
-                menagerie.tags.add(Tag(rs.getInt("id"), rs.getNString("name"), color = rs.getNString("color")))
+                menagerie.addTag(Tag(rs.getInt("id"), rs.getNString("name"), color = rs.getNString("color")))
             }
         }
     }
 
     private fun loadMediaItems(menagerie: Menagerie) {
-        psMedia.executeQuery().use { rs: ResultSet ->
+        genericStatement.executeQuery("SELECT * FROM media JOIN items ON items.id=media.id;").use { rs: ResultSet ->
             while (rs.next()) {
                 var hist: Histogram? = null
                 val alpha = rs.getBinaryStream("media.hist_a")
@@ -123,57 +179,70 @@ class MenagerieDatabase(url: String, user: String, password: String) {
                     FileItem(id, added, md5, file)
                 }
 
-                menagerie.items.add(item)
+                menagerie.addItem(item)
             }
         }
     }
 
     private fun loadTagged(menagerie: Menagerie) {
-        psTagged.executeQuery().use { rs: ResultSet ->
+        genericStatement.executeQuery("SELECT * FROM tagged;").use { rs: ResultSet ->
             while (rs.next()) {
                 val tag = menagerie.getTag(rs.getInt("tag_id"))
                 val item = menagerie.getItem(rs.getInt("item_id"))
                 if (tag == null || item == null) continue
-                item.tags.add(tag)
+                item.addTag(tag)
             }
         }
     }
 
     private fun loadNonDupes(menagerie: Menagerie) {
-        psNonDupes.executeQuery().use { rs: ResultSet ->
+        genericStatement.executeQuery("SELECT item_1, item_2 FROM non_dupes;").use { rs: ResultSet ->
             while (rs.next()) {
                 val i1 = menagerie.getItem(rs.getInt("item_1"))
                 val i2 = menagerie.getItem(rs.getInt("item_2"))
                 if (i1 == null || i2 == null) continue
-                menagerie.knownNonDupes.add(i1 to i2)
+                menagerie.addNonDupe(i1 to i2)
             }
         }
     }
 
     private fun retrieveVersion(): Int {
-        db.createStatement().use { s ->
-            try {
-                s.executeQuery("SELECT TOP 1 version.version FROM version ORDER BY version.version DESC;").use { rs ->
-                    return if (rs.next()) {
-                        rs.getInt("version")
-                    } else {
-                        // No version information in existing version table, probably corrupted
-                        -1
-                    }
-                }
-            } catch (e: SQLException) {
-                //Database is either version 0 schema or not initialized
-                try {
-                    s.executeQuery("SELECT TOP 1 * FROM imgs;").use {
-                        // Tables exist for version 0
-                        return 0
-                    }
-                } catch (e2: SQLException) {
-                    // Tables don't exist or are not clean
-                    return -1
+        try {
+            genericStatement.executeQuery("SELECT TOP 1 version.version FROM version ORDER BY version.version DESC;").use { rs ->
+                return if (rs.next()) {
+                    rs.getInt("version")
+                } else {
+                    // No version information in existing version table, probably corrupted
+                    -1
                 }
             }
+        } catch (e: SQLException) {
+            //Database is either version 0 schema or not initialized
+            try {
+                genericStatement.executeQuery("SELECT TOP 1 * FROM imgs;").use {
+                    // Tables exist for version 0
+                    return 0
+                }
+            } catch (e2: SQLException) {
+                // Tables don't exist or are not clean
+                return -1
+            }
         }
+    }
+
+    /**
+     * NOTE: Long blocking call
+     */
+    fun closeAndCompress() {
+        genericStatement.execute("SHUTDOWN DEFRAG;")
+        close()
+    }
+
+    override fun close() {
+        preparedCache.values.forEach { ps -> ps.close() }
+        genericStatement.close()
+        db.close()
+        updateThreadRunning = false
     }
 
 }

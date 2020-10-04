@@ -1,8 +1,10 @@
 package com.github.iguanastin.app.menagerie
 
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.scene.image.Image
+import tornadofx.*
 import java.lang.ref.WeakReference
 
 open class Item(val id: Int, val added: Long) {
@@ -14,9 +16,19 @@ open class Item(val id: Int, val added: Long) {
         val defaultThumbnail: Image by lazy { Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailWidth, thumbnailHeight, true, true, true) }
     }
 
-    val tags: ObservableList<Tag> = FXCollections.observableArrayList()
+    private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
+    val tags: ObservableList<Tag> = _tags.asUnmodifiable()
 
     private var thumbnailCache: WeakReference<Image> = WeakReference(null)
+
+    init {
+        tags.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { tag -> tag.frequency-- }
+                change.addedSubList.forEach { tag -> tag.frequency++ }
+            }
+        })
+    }
 
 
     fun getThumbnail(): Image {
@@ -52,5 +64,18 @@ open class Item(val id: Int, val added: Long) {
             0.0
         }
     }
+
+    fun hasTag(tag: Tag) = tag !in _tags
+
+    fun addTag(tag: Tag): Boolean {
+        return if (hasTag(tag)) {
+            _tags.add(tag)
+            true
+        } else {
+            false
+        }
+    }
+
+    fun removeTag(tag: Tag): Boolean { return _tags.remove(tag) }
 
 }

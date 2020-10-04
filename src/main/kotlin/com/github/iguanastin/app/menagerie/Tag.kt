@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie
 
-class Tag(val id: Int, val name: String, var color: String? = null) {
+class Tag(val id: Int, val name: String, var color: String? = null, var frequency: Int = 0) {
 
 
     override fun hashCode(): Int {
