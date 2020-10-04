@@ -1,6 +1,9 @@
 package com.github.iguanastin.app.menagerie.database
 
 import com.github.iguanastin.app.menagerie.*
+import com.github.iguanastin.app.menagerie.database.migration.DatabaseMigration
+import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabaseV8
+import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
 import com.github.iguanastin.app.menagerie.database.updates.*
 import javafx.collections.ListChangeListener
 import java.io.File
@@ -9,14 +12,6 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
-
-class MenagerieDatabaseException : Exception {
-    constructor() : super()
-    constructor(message: String) : super(message)
-    constructor(message: String, cause: Throwable) : super(message, cause)
-    constructor(cause: Throwable) : super(cause)
-    constructor(message: String, cause: Throwable, enableSuppression: Boolean, writableStackTrace: Boolean) : super(message, cause, enableSuppression, writableStackTrace)
-}
 
 class MenagerieDatabase(url: String, user: String, password: String) : AutoCloseable {
 
