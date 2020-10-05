@@ -28,11 +28,11 @@ open class Item(val id: Int, val added: Long) {
             while (change.next()) {
                 change.removed.forEach { tag ->
                     untagListeners.forEach { it(this, tag) }
-                    tag.frequency--
+                    tag.frequency.value--
                 }
                 change.addedSubList.forEach { tag ->
                     tagListeners.forEach { it(this, tag) }
-                    tag.frequency++
+                    tag.frequency.value++
                 }
             }
         })

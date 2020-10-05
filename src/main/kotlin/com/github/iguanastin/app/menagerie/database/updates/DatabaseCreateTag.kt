@@ -1,6 +1,5 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
@@ -9,7 +8,7 @@ import java.sql.PreparedStatement
 
 class DatabaseCreateTag(private val id: Int, private val name: String, private val color: String?): DatabaseUpdate() {
 
-    constructor(tag: Tag): this(tag.id, tag.name, tag.color)
+    constructor(tag: Tag): this(tag.id, tag.name, tag.color.value)
 
 
     override fun sync(db: MenagerieDatabase): Int {

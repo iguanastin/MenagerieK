@@ -9,13 +9,17 @@ import javafx.collections.ObservableList
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
+import javafx.scene.control.ListCell
+import javafx.scene.control.ListView
 import javafx.scene.image.Image
 import javafx.scene.input.MouseButton
 import javafx.scene.layout.BorderPane
 import javafx.scene.paint.Color
 import javafx.stage.Screen
+import org.controlsfx.control.GridView
 import tornadofx.*
 import java.io.File
+import java.sql.SQLException
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -28,7 +32,7 @@ class MainView : View("Menagerie") {
     private val dbPass = ""
 
     private lateinit var preview: PanZoomImageView
-    private lateinit var itemGrid: DataGrid<Item>
+    private lateinit var itemGrid: GridView<Item>
 
     private val tags: ObservableList<Tag> = observableListOf()
 
@@ -43,24 +47,7 @@ class MainView : View("Menagerie") {
             }
             left {
                 listview(tags) {
-                    cellCache {
-                        borderpane {
-                            left {
-                                label(it.name) {
-                                    style {
-//                                        textFill = Color.web(it.color ?: "white")
-                                    }
-                                }
-                            }
-                            right {
-                                label("(${it.frequency})") {
-                                    style {
-//                                        textFill = Color.web(it.color ?: "white")
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    cellFactory = TagCellFactory.factory
                     maxWidth = 200.0
                     minWidth = 200.0
                 }
@@ -72,24 +59,13 @@ class MainView : View("Menagerie") {
                         textfield()
                     }
                     center {
-                        itemGrid = datagrid {
-                            multiSelect = true
+                        itemGrid = gridView {
+                            addClass(Styles.gridView)
+                            cellWidth = Item.thumbnailWidth + ItemCellFactory.PADDING * 2
+                            cellHeight = Item.thumbnailHeight + ItemCellFactory.PADDING * 2
                             horizontalCellSpacing = 4.0
                             verticalCellSpacing = 4.0
-                            cellCache {
-                                borderpane {
-                                    padding = insets(4)
-                                    center {
-                                        imageview {
-                                            image = it.getThumbnail()
-                                            maxWidth = 150.0
-                                            maxHeight = 150.0
-                                            minWidth = 150.0
-                                            minHeight = 150.0
-                                        }
-                                    }
-                                }
-                            }
+                            cellFactory = ItemCellFactory.factory
                         }
                     }
                     bottom {
@@ -112,74 +88,78 @@ class MainView : View("Menagerie") {
     }
 
     private fun attemptLoadMenagerie() {
-        manager = MenagerieDatabase(dbURL, dbUser, dbPass)
+        try {
+            manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 
-        val load: () -> Unit = {
-            try {
-                menagerie = manager.loadMenagerie()
-                itemGrid.items.apply {
-                    runOnUIThread {
-                        clear()
-                        addAll(menagerie.items)
-                        if (isNotEmpty()) itemGrid.selectionModel.select(0)
-                    }
-                }
-            } catch (e: MenagerieDatabaseException) {
-                e.printStackTrace()
-                runOnUIThread { error(title = "Error", header = "Failed to read database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
-            }
-        }
-        val migrate: () -> Unit = {
-            thread(start = true) {
+            val load: () -> Unit = {
                 try {
-                    manager.migrateDatabase()
-
-                    load()
+                    menagerie = manager.loadMenagerie()
+                    itemGrid.items.apply {
+                        runOnUIThread {
+                            clear()
+                            addAll(menagerie.items)
+//                            if (isNotEmpty()) itemGrid.selectionModel.select(0)
+                        }
+                    }
                 } catch (e: MenagerieDatabaseException) {
                     e.printStackTrace()
-                    runOnUIThread { error(title = "Error", header = "Failed to migrate database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
+                    runOnUIThread { error(title = "Error", header = "Failed to read database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
                 }
             }
-        }
+            val migrate: () -> Unit = {
+                thread(start = true) {
+                    try {
+                        manager.migrateDatabase()
 
-        if (manager.needsMigration()) {
-            if (manager.canMigrate()) {
-                if (manager.version == -1) {
-                    confirm(title = "Database initialization", header = "Database needs to be initialized", owner = currentWindow, actionFn = {
-                        migrate()
-                    })
+                        load()
+                    } catch (e: MenagerieDatabaseException) {
+                        e.printStackTrace()
+                        runOnUIThread { error(title = "Error", header = "Failed to migrate database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
+                    }
+                }
+            }
+
+            if (manager.needsMigration()) {
+                if (manager.canMigrate()) {
+                    if (manager.version == -1) {
+                        confirm(title = "Database initialization", header = "Database needs to be initialized", owner = currentWindow, actionFn = {
+                            migrate()
+                        })
+                    } else {
+                        confirm(title = "Database migration", header = "Database needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = currentWindow, actionFn = {
+                            migrate()
+                        })
+                    }
                 } else {
-                    confirm(title = "Database migration", header = "Database needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = currentWindow, actionFn = {
-                        migrate()
-                    })
+                    error(title = "Incompatible database", header = "Database v${manager.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = currentWindow)
                 }
             } else {
-                error(title = "Incompatible database", header = "Database v${manager.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = currentWindow)
+                thread(start = true) { load() }
             }
-        } else {
-            thread(start = true) { load() }
+        } catch (e: Exception) {
+            error(title = "Error", header = "Failed to connect to database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow)
         }
     }
 
     private fun initViewControls() {
-        itemGrid.selectionModel.selectedItemProperty().addListener { _, _, item ->
-            if (item != null) {
-                tags.apply {
-                    clear()
-                    addAll(item.tags)
-                    sortBy { tag: Tag -> tag.name }
-                }
-
-                if (item is FileItem) {
-                    preview.apply {
-                        image = Image(item.file.toURI().toString())
-                        fitImageToView()
-                    }
-                } else {
-                    preview.image = null
-                }
-            }
-        }
+//        itemGrid.selectionModel.selectedItemProperty().addListener { _, _, item ->
+//            if (item != null) {
+//                tags.apply {
+//                    clear()
+//                    addAll(item.tags)
+//                    sortBy { tag: Tag -> tag.name }
+//                }
+//
+//                if (item is FileItem) {
+//                    preview.apply {
+//                        image = Image(item.file.toURI().toString())
+//                        fitImageToView()
+//                    }
+//                } else {
+//                    preview.image = null
+//                }
+//            }
+//        }
 
         preview.onMouseClicked = EventHandler {
             if (it.button != MouseButton.SECONDARY) return@EventHandler

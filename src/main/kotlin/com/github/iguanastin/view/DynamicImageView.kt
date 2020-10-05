@@ -79,3 +79,4 @@ open class DynamicImageView : ImageView {
 }
 
 fun EventTarget.dynamicImageView(url: String, op: DynamicImageView.() -> Unit = {}) = DynamicImageView(url).attachTo(this, op)
+fun EventTarget.dynamicImageView(op: DynamicImageView.() -> Unit = {}) = DynamicImageView().attachTo(this, op)

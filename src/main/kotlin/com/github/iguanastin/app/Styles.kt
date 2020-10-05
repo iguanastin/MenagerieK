@@ -12,6 +12,8 @@ class Styles : Stylesheet() {
         val heading by cssclass()
         val fourChoice by cssclass()
         val dialogPane by cssclass()
+        val gridView by cssclass()
+        val gridCell by cssclass()
     }
 
     init {
@@ -33,6 +35,12 @@ class Styles : Stylesheet() {
         }
         dialogPane {
             backgroundColor += Color.color(0.0, 0.0, 0.0, 0.5)
+        }
+        gridView {
+            minWidth = 525.px
+        }
+        gridCell {
+            backgroundColor += Color.GREY
         }
     }
 }

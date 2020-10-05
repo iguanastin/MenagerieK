@@ -1,6 +1,14 @@
 package com.github.iguanastin.app.menagerie
 
-class Tag(val id: Int, val name: String, var color: String? = null, var frequency: Int = 0) {
+import javafx.beans.property.IntegerProperty
+import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleStringProperty
+import javafx.beans.property.StringProperty
+
+class Tag(val id: Int, val name: String, color: String? = null, frequency: Int = 0) {
+
+    val color: StringProperty = SimpleStringProperty(color)
+    val frequency: IntegerProperty = SimpleIntegerProperty(frequency.coerceAtLeast(0))
 
     // TODO tag notes
 
