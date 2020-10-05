@@ -1,5 +1,6 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.menagerie.ImageItem
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
@@ -37,11 +38,13 @@ class MyApp : App(MainView::class, Styles::class) {
     override fun stop() {
         super.stop()
 
+        importer.close()
+
         println("Defragging...")
         manager.closeAndCompress()
     }
 
-    private fun attemptLoadMenagerie(stage: Stage) {
+    private fun attemptLoadMenagerie(stage: Stage, after: ((menagerie: Menagerie) -> Unit)? = null) {
         try {
             manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 
@@ -50,8 +53,10 @@ class MyApp : App(MainView::class, Styles::class) {
                     menagerie = manager.loadMenagerie()
                     importer = MenagerieImporter(menagerie)
                     runOnUIThread {
-                        root.setItems(menagerie.items)
+                        root.setItems(menagerie.items.reversed())
                     }
+
+                    after?.invoke(menagerie)
                 } catch (e: MenagerieDatabaseException) {
                     e.printStackTrace()
                     runOnUIThread { error(title = "Error", header = "Failed to read database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }

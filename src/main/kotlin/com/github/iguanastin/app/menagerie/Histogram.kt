@@ -50,11 +50,10 @@ class Histogram private constructor(
             val b = ByteArray(BIN_SIZE * 8)
             if (stream.read(b) != BIN_SIZE * 8) throw HistogramReadException("Mismatched stream length")
             val bb = ByteBuffer.wrap(b)
-            val result = DoubleArray(BIN_SIZE)
             for (i in 0 until BIN_SIZE) {
-                result[i] = bb.double
+                output[i] = bb.double
             }
-            return result
+            return output
         }
 
         fun from(a: InputStream, r: InputStream, g: InputStream, b: InputStream): Histogram? {

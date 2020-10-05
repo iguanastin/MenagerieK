@@ -34,4 +34,8 @@ class MenagerieImporter(val menagerie: Menagerie) {
         }
     }
 
+    fun close() {
+        importThreadRunning = false
+    }
+
 }
