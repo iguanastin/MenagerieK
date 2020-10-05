@@ -84,6 +84,8 @@ open class Item(val id: Int, val added: Long) {
         }
     }
 
-    fun removeTag(tag: Tag): Boolean { return _tags.remove(tag) }
+    fun removeTag(tag: Tag): Boolean {
+        return _tags.remove(tag)
+    }
 
 }

@@ -10,6 +10,7 @@ import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.control.ListView
+import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.MouseButton
 import javafx.scene.layout.BorderPane
@@ -122,21 +123,21 @@ class MainView : View("Menagerie") {
     }
 
     fun preview(item: Item) {
-        // TODO
+        when (item) {
+            is ImageItem -> {
+                preview.image = image(item.file, true)
+                preview.fitImageToView()
+            }
+            else -> TODO("Not yet implemented")
+        }
+        tagView.items.bind(item.tags) { it }
     }
 
     fun setItems(items: List<Item>) {
         itemGrid.items.apply {
             clear()
             addAll(items)
-        }
-    }
-
-    fun setTags(tags: List<Tag>) {
-        tagView.items.apply {
-            clear()
-            addAll(tags)
-            sortBy { it.name }
+            if (items.isNotEmpty()) preview(items[0])
         }
     }
 

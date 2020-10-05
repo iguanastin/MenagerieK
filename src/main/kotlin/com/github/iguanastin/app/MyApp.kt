@@ -3,32 +3,33 @@ package com.github.iguanastin.app
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
+import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.scene.control.ButtonType
 import javafx.stage.Stage
 import tornadofx.*
-import java.io.File
+import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
 class MyApp : App(MainView::class, Styles::class) {
 
-    private val dbURL = "~/test-sfw"
-    private val dbUser = "sa"
-    private val dbPass = ""
+    private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MyApp")
+
+    private val dbURL = prefs.get("db_url", "~/test-sfw")
+    private val dbUser = prefs.get("db_user", "sa")
+    private val dbPass = prefs.get("db_pass", "")
 
     private lateinit var manager: MenagerieDatabase
     private lateinit var menagerie: Menagerie
+    private lateinit var importer: MenagerieImporter
 
-    private lateinit var mainView: MainView
+    private lateinit var root: MainView
 
 
     override fun start(stage: Stage) {
         super.start(stage)
-        mainView = find(primaryView) as MainView
-
-        println(RemoteImportJob.intoDirectory("https://pbs.twimg.com/media/EibOkEzWoAMlE_Y.jpg?format=jpg&name=orig", File("D:\\(cjdrfr)\\cj\\New folder\\General")).file)
+        root = find(primaryView) as MainView
 
         attemptLoadMenagerie(stage)
     }
@@ -47,8 +48,9 @@ class MyApp : App(MainView::class, Styles::class) {
             val load: () -> Unit = {
                 try {
                     menagerie = manager.loadMenagerie()
+                    importer = MenagerieImporter(menagerie)
                     runOnUIThread {
-                        mainView.setItems(menagerie.items)
+                        root.setItems(menagerie.items)
                     }
                 } catch (e: MenagerieDatabaseException) {
                     e.printStackTrace()

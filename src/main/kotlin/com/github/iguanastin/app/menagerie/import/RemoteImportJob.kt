@@ -1,5 +1,7 @@
 package com.github.iguanastin.app.menagerie.import
 
+import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.Menagerie
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -30,10 +32,10 @@ class RemoteImportJob private constructor(val url: String, file: File): ImportJo
     }
 
 
-    override fun import() {
+    override fun import(menagerie: Menagerie): Item {
         download(url, file)
 
-        super.import()
+        return super.import(menagerie)
     }
 
     private fun download(url: String, into: File) {

@@ -40,7 +40,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
         thread(start = true, name = "Menagerie Database Updater") {
             updateThreadRunning = true
             while (updateThreadRunning) {
-                val update = updateQueue.poll(1, TimeUnit.SECONDS)
+                val update = updateQueue.poll(3, TimeUnit.SECONDS)
                 if (!updateThreadRunning) break
                 if (update == null) continue
 
