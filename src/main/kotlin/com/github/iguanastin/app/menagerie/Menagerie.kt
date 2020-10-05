@@ -10,13 +10,16 @@ class Menagerie() {
     private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
     val tags: ObservableList<Tag> = _tags.asUnmodifiable()
     private val tagIdMap: MutableMap<Int, Tag> = mutableMapOf()
+    private var nextTagID = 0
 
     private val _items: ObservableList<Item> = FXCollections.observableArrayList()
     val items: ObservableList<Item> = _items.asUnmodifiable()
     private val itemIdMap: MutableMap<Int, Item> = mutableMapOf()
+    private var nextItemID = 0
 
     private val _knownNonDupes: ObservableList<Pair<Item, Item>> = FXCollections.observableArrayList()
     val knownNonDupes: ObservableList<Pair<Item, Item>> = _knownNonDupes.asUnmodifiable()
+
 
 
     init {
@@ -35,6 +38,15 @@ class Menagerie() {
     }
 
 
+    @Synchronized
+    fun takeNextItemID(): Int {
+        return ++nextItemID
+    }
+
+    @Synchronized
+    fun takeNextTagID(): Int {
+        return ++nextTagID
+    }
 
     fun getItem(id: Int): Item? {
         return itemIdMap[id]
@@ -43,6 +55,9 @@ class Menagerie() {
     fun addItem(item: Item): Boolean {
         return if (item.id !in itemIdMap.keys) {
             _items.add(item)
+            synchronized(this) {
+                nextItemID = nextItemID.coerceAtLeast(item.id + 1)
+            }
             true
         } else {
             false
@@ -68,6 +83,9 @@ class Menagerie() {
         }
 
         _tags.add(tag)
+        synchronized(this) {
+            nextTagID = nextTagID.coerceAtLeast(tag.id + 1)
+        }
         return true
     }
 

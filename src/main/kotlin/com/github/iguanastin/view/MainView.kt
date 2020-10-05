@@ -4,22 +4,19 @@ import com.github.iguanastin.app.*
 import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
+import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import javafx.application.Platform
 import javafx.collections.ObservableList
-import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
-import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
-import javafx.scene.image.Image
+import javafx.scene.input.KeyCode
 import javafx.scene.input.MouseButton
 import javafx.scene.layout.BorderPane
-import javafx.scene.paint.Color
 import javafx.stage.Screen
 import org.controlsfx.control.GridView
 import tornadofx.*
 import java.io.File
-import java.sql.SQLException
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -27,17 +24,9 @@ class MainView : View("Menagerie") {
 
     private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MainView")
 
-    private val dbURL = "~/test-sfw"
-    private val dbUser = "sa"
-    private val dbPass = ""
-
     private lateinit var preview: PanZoomImageView
     private lateinit var itemGrid: GridView<Item>
-
-    private val tags: ObservableList<Tag> = observableListOf()
-
-    private lateinit var manager: MenagerieDatabase
-    private lateinit var menagerie: Menagerie
+    private lateinit var tagView: ListView<Tag>
 
 
     override val root = stackpane {
@@ -46,7 +35,7 @@ class MainView : View("Menagerie") {
                 preview = panZoomImageView()
             }
             left {
-                listview(tags) {
+                tagView = listview {
                     cellFactory = TagCellFactory.factory
                     maxWidth = 200.0
                     minWidth = 200.0
@@ -87,60 +76,6 @@ class MainView : View("Menagerie") {
         initViewControls()
     }
 
-    private fun attemptLoadMenagerie() {
-        try {
-            manager = MenagerieDatabase(dbURL, dbUser, dbPass)
-
-            val load: () -> Unit = {
-                try {
-                    menagerie = manager.loadMenagerie()
-                    itemGrid.items.apply {
-                        runOnUIThread {
-                            clear()
-                            addAll(menagerie.items)
-//                            if (isNotEmpty()) itemGrid.selectionModel.select(0)
-                        }
-                    }
-                } catch (e: MenagerieDatabaseException) {
-                    e.printStackTrace()
-                    runOnUIThread { error(title = "Error", header = "Failed to read database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
-                }
-            }
-            val migrate: () -> Unit = {
-                thread(start = true) {
-                    try {
-                        manager.migrateDatabase()
-
-                        load()
-                    } catch (e: MenagerieDatabaseException) {
-                        e.printStackTrace()
-                        runOnUIThread { error(title = "Error", header = "Failed to migrate database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow) }
-                    }
-                }
-            }
-
-            if (manager.needsMigration()) {
-                if (manager.canMigrate()) {
-                    if (manager.version == -1) {
-                        confirm(title = "Database initialization", header = "Database needs to be initialized", owner = currentWindow, actionFn = {
-                            migrate()
-                        })
-                    } else {
-                        confirm(title = "Database migration", header = "Database needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = currentWindow, actionFn = {
-                            migrate()
-                        })
-                    }
-                } else {
-                    error(title = "Incompatible database", header = "Database v${manager.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = currentWindow)
-                }
-            } else {
-                thread(start = true) { load() }
-            }
-        } catch (e: Exception) {
-            error(title = "Error", header = "Failed to connect to database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = currentWindow)
-        }
-    }
-
     private fun initViewControls() {
 //        itemGrid.selectionModel.selectedItemProperty().addListener { _, _, item ->
 //            if (item != null) {
@@ -161,9 +96,11 @@ class MainView : View("Menagerie") {
 //            }
 //        }
 
+        // TODO remove this
         preview.onMouseClicked = EventHandler {
             if (it.button != MouseButton.SECONDARY) return@EventHandler
 
+            // TODO extract this into a utility function?
             var bp: BorderPane? = null
             bp = root.borderpane {
                 addClass(Styles.dialogPane)
@@ -181,6 +118,25 @@ class MainView : View("Menagerie") {
                     }
                 }
             }
+        }
+    }
+
+    fun preview(item: Item) {
+        // TODO
+    }
+
+    fun setItems(items: List<Item>) {
+        itemGrid.items.apply {
+            clear()
+            addAll(items)
+        }
+    }
+
+    fun setTags(tags: List<Tag>) {
+        tagView.items.apply {
+            clear()
+            addAll(tags)
+            sortBy { it.name }
         }
     }
 
@@ -224,12 +180,9 @@ class MainView : View("Menagerie") {
     override fun onDock() {
         initStageProperties()
 
-        Platform.runLater { attemptLoadMenagerie() }
-    }
-
-    override fun onUndock() {
-        println("Defragging...")
-        manager.closeAndCompress()
+        root.onKeyPressed = EventHandler {
+            if (it.isControlDown && it.code == KeyCode.Q) Platform.exit()
+        }
     }
 
 }
