@@ -16,7 +16,7 @@ open class ImportJob(val file: File) {
         val md5 = FileItem.fileHash(file)
 
         item = if (ImageItem.isImage(file)) {
-            val histogram = Histogram(image(file))
+            val histogram = Histogram.from(image(file))
             ImageItem(id, added, md5, file, noSimilar = false, histogram = histogram)
         } else {
             FileItem(id, added, md5, file)

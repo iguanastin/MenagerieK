@@ -178,7 +178,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 var hist: Histogram? = null
                 val alpha = rs.getBinaryStream("media.hist_a")
                 if (alpha != null) {
-                    hist = Histogram(alpha, rs.getBinaryStream("media.hist_r"), rs.getBinaryStream("media.hist_g"), rs.getBinaryStream("media.hist_b"))
+                    hist = Histogram.from(alpha, rs.getBinaryStream("media.hist_r"), rs.getBinaryStream("media.hist_g"), rs.getBinaryStream("media.hist_b"))
                 }
 
                 val id = rs.getInt("items.id")
