@@ -95,7 +95,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                     item.untagListeners.remove(itemUntaggedListener)
                     item.tagListeners.remove(itemTaggedListener)
                     when (item) {
-                        is ImageItem -> updateQueue.put(DatabaseCreateImage(item))
+                        is ImageItem -> updateQueue.put(DatabaseCreateMedia(item))
                         else -> TODO("Unimplemented")
                     }
                 }
@@ -141,7 +141,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                     ?: throw MenagerieDatabaseException("No database migration path from v$version to v$REQUIRED_DATABASE_VERSION")
 
             try {
-                migration.migrate(db)
+                migration.migrate(db) // TODO if any error occurs, revert to backup database and throw error
             } catch (e: Exception) {
                 throw MenagerieDatabaseException("Exception during migration from v$version to v${migration.toVersion}", e)
             }

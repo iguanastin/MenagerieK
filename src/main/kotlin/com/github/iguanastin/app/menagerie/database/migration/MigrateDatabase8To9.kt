@@ -13,24 +13,31 @@ class MigrateDatabase8To9 : DatabaseMigration() {
 
     override fun migrate(db: Connection) {
         db.createStatement().use { s ->
-            s.executeUpdate("CREATE TABLE grouped(group_id INT NOT NULL, item_id INT NOT NULL, index INT NOT NULL, FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE, PRIMARY KEY (group_id, item_id));")
-            db.prepareStatement("INSERT INTO grouped(group_id, item_id, index) VALUES (?, ?, ?);").use { ps ->
-                s.executeQuery("SELECT media.id, media.gid, media.page FROM media WHERE media.gid IS NOT NULL;").use { rs: ResultSet ->
+            // New grouping data
+            s.executeUpdate("ALTER TABLE groups ADD COLUMN items NCLOB DEFAULT NULL;")
+            db.prepareStatement("UPDATE groups SET items=? WHERE id=?;").use { ps ->
+                s.executeQuery("SELECT id FROM groups;").use { rs ->
                     while (rs.next()) {
-                        val gid = rs.getInt("media.gid")
-                        val iid = rs.getInt("media.id")
-                        val index = rs.getInt("media.page")
-                        ps.setInt(1, gid)
-                        ps.setInt(2, iid)
-                        ps.setInt(3, index)
+                        val gid = rs.getInt("id")
+                        val items: MutableMap<Int, Int> = mutableMapOf()
+
+                        s.executeQuery("SELECT id, page FROM media WHERE gid=$gid;").use { rs2 ->
+                            while (rs2.next()) {
+                                items[rs2.getInt("id")] = rs2.getInt("page")
+                            }
+                        }
+
+                        ps.setNClob(1, items.keys.sortedBy { items[it] }.joinToString(separator = ",").reader())
+                        ps.setInt(2, gid)
                         ps.addBatch()
                     }
                 }
+
                 ps.executeBatch()
             }
-            s.executeUpdate("ALTER TABLE media DROP COLUMN gid;")
-            s.executeUpdate("ALTER TABLE media DROP COLUMN page;")
 
+
+            // New files table
             s.executeUpdate("CREATE TABLE files(id INT NOT NULL, md5 NVARCHAR(32), file NVARCHAR(1024) UNIQUE, FOREIGN KEY (id) REFERENCES items(id) ON DELETE CASCADE);")
             db.prepareStatement("INSERT INTO files(id, md5, file) VALUES (?, ?, ?);").use { ps ->
                 s.executeQuery("SELECT media.id, media.path, media.md5 FROM media;").use { rs: ResultSet ->
