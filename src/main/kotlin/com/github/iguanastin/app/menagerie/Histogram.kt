@@ -12,10 +12,10 @@ import kotlin.math.min
 
 
 class Histogram private constructor(
-        private val alpha: DoubleArray = DoubleArray(BIN_SIZE),
-        private val red: DoubleArray = DoubleArray(BIN_SIZE),
-        private val green: DoubleArray = DoubleArray(BIN_SIZE),
-        private val blue: DoubleArray = DoubleArray(BIN_SIZE)) {
+        val alpha: DoubleArray = DoubleArray(BIN_SIZE),
+        val red: DoubleArray = DoubleArray(BIN_SIZE),
+        val green: DoubleArray = DoubleArray(BIN_SIZE),
+        val blue: DoubleArray = DoubleArray(BIN_SIZE)) {
 
     var isColorful: Boolean? = null
         get() {

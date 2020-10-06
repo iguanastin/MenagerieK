@@ -1,15 +1,18 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.menagerie.FileItem
 import com.github.iguanastin.app.menagerie.ImageItem
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
+import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.scene.control.ButtonType
 import javafx.stage.Stage
 import tornadofx.*
+import java.io.File
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -32,7 +35,22 @@ class MyApp : App(MainView::class, Styles::class) {
         super.start(stage)
         root = find(primaryView) as MainView
 
-        attemptLoadMenagerie(stage)
+        loadMenagerie(stage) {
+            importer.onImport.add { item ->
+                println(item.id)
+                println(item.added)
+                println(item.tags)
+                if (item is FileItem) {
+                    println(item.md5)
+                    println(item.file)
+                }
+                if (item is ImageItem) {
+                    println(item.noSimilar)
+                    println(item.histogram)
+                }
+            }
+            importer.enqueue(RemoteImportJob.intoDirectory("https://pbs.twimg.com/media/EXU-ueDUMAAsGru.jpg?format=jpg&name=orig", File("D:\\Downloads")))
+        }
     }
 
     override fun stop() {
@@ -44,7 +62,7 @@ class MyApp : App(MainView::class, Styles::class) {
         manager.closeAndCompress()
     }
 
-    private fun attemptLoadMenagerie(stage: Stage, after: ((menagerie: Menagerie) -> Unit)? = null) {
+    private fun loadMenagerie(stage: Stage, after: ((menagerie: Menagerie) -> Unit)? = null) {
         try {
             manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 

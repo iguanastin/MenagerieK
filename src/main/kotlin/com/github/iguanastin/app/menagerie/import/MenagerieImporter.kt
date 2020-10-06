@@ -34,6 +34,10 @@ class MenagerieImporter(val menagerie: Menagerie) {
         }
     }
 
+    fun enqueue(job: ImportJob) {
+        importQueue.put(job)
+    }
+
     fun close() {
         importThreadRunning = false
     }

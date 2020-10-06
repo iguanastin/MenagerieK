@@ -14,28 +14,31 @@ class DatabaseCreateImage(private val id: Int, private val added: Long, private 
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getCachedStatement(this, "default")
+        val ps1 = db.getCachedStatement(this, "items")
+        ps1.setInt(1, id)
+        ps1.setLong(2, added)
 
-        ps.setInt(1, id)
-        ps.setLong(2, added)
-        ps.setInt(3, id)
-        ps.setNString(4, md5)
-        ps.setNString(5, file.absolutePath)
-        ps.setInt(6, id)
-        ps.setBoolean(7, noSimilar)
-        ps.setBinaryStream(8, histogram?.alphaToInputStream())
-        ps.setBinaryStream(9, histogram?.redToInputStream())
-        ps.setBinaryStream(10, histogram?.greenToInputStream())
-        ps.setBinaryStream(11, histogram?.blueToInputStream())
+        val ps2 = db.getCachedStatement(this, "files")
+        ps2.setInt(1, id)
+        ps2.setNString(2, md5)
+        ps2.setNString(3, file.absolutePath)
 
-        return ps.executeUpdate()
+        val ps3 = db.getCachedStatement(this, "media")
+        ps3.setInt(1, id)
+        ps3.setBoolean(2, noSimilar)
+        ps3.setBinaryStream(3, histogram?.alphaToInputStream())
+        ps3.setBinaryStream(4, histogram?.redToInputStream())
+        ps3.setBinaryStream(5, histogram?.greenToInputStream())
+        ps3.setBinaryStream(6, histogram?.blueToInputStream())
+
+        return ps1.executeUpdate()
     }
 
     override fun prepareStatement(conn: Connection, key: String): PreparedStatement {
-        when (key) {
-            "default" -> return conn.prepareStatement("INSERT INTO items(id, added) VALUES (?, ?);" +
-                    "INSERT INTO files(id, md5, file) VALUES (?, ?, ?);" +
-                    "INSERT INTO images(id, no_similar, hist_a, hist_r, hist_g, hist_b) VALUES (?, ?, ?, ?, ?, ?);")
+        return when (key) {
+            "items" -> conn.prepareStatement("INSERT INTO items(id, added) VALUES (?, ?);")
+            "files" -> conn.prepareStatement("INSERT INTO files(id, md5, file) VALUES (?, ?, ?);")
+            "media" -> conn.prepareStatement("INSERT INTO images(id, no_similar, hist_a, hist_r, hist_g, hist_b) VALUES (?, ?, ?, ?, ?, ?);")
             else -> throw MenagerieDatabaseException("Invalid statement key: $key")
         }
     }
