@@ -35,22 +35,7 @@ class MyApp : App(MainView::class, Styles::class) {
         super.start(stage)
         root = find(primaryView) as MainView
 
-        loadMenagerie(stage) {
-            importer.onImport.add { item ->
-                println(item.id)
-                println(item.added)
-                println(item.tags)
-                if (item is FileItem) {
-                    println(item.md5)
-                    println(item.file)
-                }
-                if (item is ImageItem) {
-                    println(item.noSimilar)
-                    println(item.histogram)
-                }
-            }
-            importer.enqueue(RemoteImportJob.intoDirectory("https://pbs.twimg.com/media/EXU-ueDUMAAsGru.jpg?format=jpg&name=orig", File("D:\\Downloads")))
-        }
+        loadMenagerie(stage)
     }
 
     override fun stop() {
