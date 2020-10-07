@@ -1,18 +1,14 @@
 package com.github.iguanastin.app
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.ImageItem
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.scene.control.ButtonType
 import javafx.stage.Stage
 import tornadofx.*
-import java.io.File
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -20,7 +16,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MyApp")
 
-    private val dbURL = prefs.get("db_url", "~/test-sfw")
+    private val dbURL = prefs.get("db_url", "~/test-sfw-v9")
     private val dbUser = prefs.get("db_user", "sa")
     private val dbPass = prefs.get("db_pass", "")
 
@@ -35,19 +31,30 @@ class MyApp : App(MainView::class, Styles::class) {
         super.start(stage)
         root = find(primaryView) as MainView
 
-        loadMenagerie(stage)
+        loadMenagerie(stage) { manager, menagerie, importer ->
+            manager.updateErrorHandlers.add { e ->
+                // TODO show error to user
+                e.printStackTrace()
+            }
+        }
     }
 
     override fun stop() {
         super.stop()
 
-        importer.close()
+        try {
+            importer.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
-        println("Defragging...")
+        println("Defragging and closing database...")
+        val t = System.currentTimeMillis()
         manager.closeAndCompress()
+        println("Finished defragging (${System.currentTimeMillis() - t}ms)")
     }
 
-    private fun loadMenagerie(stage: Stage, after: ((menagerie: Menagerie) -> Unit)? = null) {
+    private fun loadMenagerie(stage: Stage, after: ((manager: MenagerieDatabase, menagerie: Menagerie, importer: MenagerieImporter) -> Unit)? = null) {
         try {
             manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 
@@ -59,10 +66,10 @@ class MyApp : App(MainView::class, Styles::class) {
                         root.setItems(menagerie.items.reversed())
                     }
 
-                    after?.invoke(menagerie)
+                    after?.invoke(manager, menagerie, importer)
                 } catch (e: MenagerieDatabaseException) {
                     e.printStackTrace()
-                    runOnUIThread { error(title = "Error", header = "Failed to read database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                    runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
                 }
             }
             val migrate: () -> Unit = {
@@ -73,7 +80,7 @@ class MyApp : App(MainView::class, Styles::class) {
                         load()
                     } catch (e: MenagerieDatabaseException) {
                         e.printStackTrace()
-                        runOnUIThread { error(title = "Error", header = "Failed to migrate database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                        runOnUIThread { error(title = "Error", header = "Failed to migrate database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
                     }
                 }
             }
@@ -81,11 +88,11 @@ class MyApp : App(MainView::class, Styles::class) {
             if (manager.needsMigration()) {
                 if (manager.canMigrate()) {
                     if (manager.version == -1) {
-                        confirm(title = "Database initialization", header = "Database needs to be initialized", owner = stage, actionFn = {
+                        confirm(title = "Database initialization", header = "Database needs to be initialized: $dbURL", owner = stage, actionFn = {
                             migrate()
                         })
                     } else {
-                        confirm(title = "Database migration", header = "Database needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = stage, actionFn = {
+                        confirm(title = "Database migration", header = "Database ($dbURL) needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = stage, actionFn = {
                             migrate()
                         })
                     }
@@ -96,7 +103,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 thread(start = true) { load() }
             }
         } catch (e: Exception) {
-            error(title = "Error", header = "Failed to connect to database", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage)
+            error(title = "Error", header = "Failed to connect to database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage)
         }
     }
 

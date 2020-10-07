@@ -128,7 +128,10 @@ class MainView : View("Menagerie") {
                 preview.image = image(item.file, true)
                 preview.fitImageToView()
             }
-            else -> TODO("Not yet implemented")
+            else -> {
+                println("${item.id}: $item")
+                // TODO previews for other item types
+            }
         }
         tagView.items.bind(item.tags) { it }
     }

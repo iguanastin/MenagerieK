@@ -1,27 +1,23 @@
 package com.github.iguanastin.app.menagerie
 
+import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import tornadofx.*
 
-class GroupItem : Item {
+class GroupItem(id: Int, added: Long, title: String = "") : Item(id, added) {
 
-    var title: String = ""
-        set(value) {
-            if (value != field) TODO("Unimplemented")
-            field = value
-        }
+    val titleProperty = SimpleStringProperty(title)
+    var title: String
+        get() = titleProperty.get()
+        set(value) = titleProperty.set(value)
 
-    private val _items: ObservableList<Item> = FXCollections.observableArrayList()
-    val items: ObservableList<Item> = _items.asUnmodifiable()
-
-    constructor(id: Int, added: Long, title: String = "") : super(id, added) {
-        this.title = title
-    }
+    private val _items: ObservableList<FileItem> = FXCollections.observableArrayList()
+    val items: ObservableList<FileItem> = _items.asUnmodifiable()
 
 
-    fun addItem(item: Item, index: Int? = null): Boolean {
-        if (!_items.contains(item) && item !is GroupItem) {
+    fun addItem(item: FileItem, index: Int? = null): Boolean {
+        if (!_items.contains(item)) {
             if (index == null) _items.add(item)
             else _items.add(index, item)
             return true

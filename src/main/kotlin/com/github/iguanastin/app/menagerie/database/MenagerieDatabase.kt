@@ -17,7 +17,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
 
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
-        const val REQUIRED_DATABASE_VERSION = 8
+        const val REQUIRED_DATABASE_VERSION = 9
 
         val migrations: List<DatabaseMigration> = listOf(InitializeDatabaseV8(), MigrateDatabase8To9())
     }
@@ -33,8 +33,12 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
     private val preparedCache: Map<String, PreparedStatement> = mutableMapOf()
 
     private val updateQueue: BlockingQueue<DatabaseUpdate> = LinkedBlockingQueue()
+
     @Volatile
     private var updateThreadRunning: Boolean = false
+
+    val updateErrorHandlers: MutableList<(e: Exception) -> Unit> = mutableListOf()
+
 
     init {
         thread(start = true, name = "Menagerie Database Updater") {
@@ -49,10 +53,11 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 try {
                     update.sync(this)
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    TODO("Unimplemented error handling")
+                    updateErrorHandlers.forEach { it(e) }
                 }
             }
+
+            println("Database Updater thread finished")
         }
     }
 
@@ -67,16 +72,16 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
         val menagerie = Menagerie()
 
         loadTags(menagerie)
-        loadMediaItems(menagerie)
+        loadItems(menagerie)
         loadTagged(menagerie)
         loadNonDupes(menagerie)
 
-        attachListeners(menagerie)
+        attachTo(menagerie)
 
         return menagerie
     }
 
-    private fun attachListeners(menagerie: Menagerie) {
+    private fun attachTo(menagerie: Menagerie) {
         val itemTaggedListener = { item: Item, tag: Tag ->
             updateQueue.put(DatabaseTagItem(item, tag))
         }
@@ -172,31 +177,80 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
         }
     }
 
-    private fun loadMediaItems(menagerie: Menagerie) {
-        genericStatement.executeQuery("SELECT * FROM media JOIN items ON items.id=media.id;").use { rs: ResultSet ->
+    private fun loadItems(menagerie: Menagerie) {
+        val images: MutableMap<Int, TempImageV9> = mutableMapOf()
+        genericStatement.executeQuery("SELECT * FROM images;").use { rs ->
             while (rs.next()) {
-                var hist: Histogram? = null
-                val alpha = rs.getBinaryStream("media.hist_a")
+                var histogram: Histogram? = null
+
+                val alpha = rs.getBinaryStream("hist_a")
                 if (alpha != null) {
-                    hist = Histogram.from(alpha, rs.getBinaryStream("media.hist_r"), rs.getBinaryStream("media.hist_g"), rs.getBinaryStream("media.hist_b"))
+                    histogram = Histogram.from(alpha, rs.getBinaryStream("hist_r"), rs.getBinaryStream("hist_g"), rs.getBinaryStream("hist_b"))
                 }
 
-                val id = rs.getInt("items.id")
-                val added = rs.getLong("items.added")
-                val md5 = rs.getNString("media.md5")
-                val noSimilar = rs.getBoolean("media.no_similar")
-                val file = File(rs.getNString("media.path"))
-
-                // TODO other types (better solution?)
-                val item = if (ImageItem.isImage(file)) {
-                    ImageItem(id, added, md5, file, noSimilar = noSimilar, histogram = hist)
-                } else {
-                    FileItem(id, added, md5, file)
-                }
-
-                menagerie.addItem(item)
+                images[rs.getInt("id")] = TempImageV9(rs.getBoolean("no_similar"), histogram)
             }
         }
+
+        val files: MutableMap<Int, TempFileV9> = mutableMapOf()
+        genericStatement.executeQuery("SELECT * FROM files;").use { rs ->
+            while (rs.next()) {
+                files[rs.getInt("id")] = TempFileV9(rs.getNString("md5"), File(rs.getNString("file")))
+            }
+        }
+
+        val items: MutableMap<Int, TempItemV9> = mutableMapOf()
+        genericStatement.executeQuery("SELECT * FROM items;").use { rs ->
+            while (rs.next()) {
+                val id = rs.getInt("id")
+                items[id] = TempItemV9(id, rs.getLong("added"))
+            }
+        }
+
+        val groups: MutableMap<Int, TempGroupV9> = mutableMapOf()
+        genericStatement.executeQuery("SELECT * FROM groups;").use { rs ->
+            while (rs.next()) {
+                val ids: MutableList<Int> = mutableListOf()
+                rs.getNClob("items").characterStream.use {
+                    for (i in it.readText().split(",")) {
+                        if (i.isEmpty()) continue
+                        ids.add(i.toInt())
+                    }
+                }
+                groups[rs.getInt("id")] = TempGroupV9(rs.getNString("title"), ids)
+            }
+        }
+
+
+        val generatedItems: MutableList<Item> = mutableListOf()
+        val groupChildMap: MutableMap<Int, FileItem> = mutableMapOf()
+        for (i in images.keys) {
+            val item = ImageItem(i, items[i]!!.added, files[i]!!.md5, files[i]!!.file, images[i]!!.noSimilar, images[i]!!.histogram)
+            generatedItems.add(item)
+            groupChildMap[i] = item
+            files.remove(i)
+            items.remove(i)
+        }
+        for (i in files.keys) {
+            val item = FileItem(i, items[i]!!.added, files[i]!!.md5, files[i]!!.file)
+            generatedItems.add(item)
+            groupChildMap[i] = item
+            items.remove(i)
+        }
+        for (i in groups.keys) {
+            val group = GroupItem(i, items[i]!!.added, groups[i]!!.title)
+            groups[i]!!.items.forEach { id ->
+                group.addItem(groupChildMap[id]!!)
+            }
+            generatedItems.add(group)
+            items.remove(i)
+        }
+        for (i in items.keys) {
+            println("Orphaned item: (id:$i, added:${items[i]!!.added})")
+        }
+
+        generatedItems.sortBy { it.id }
+        generatedItems.forEach { menagerie.addItem(it) }
     }
 
     private fun loadTagged(menagerie: Menagerie) {

@@ -16,21 +16,26 @@ class MigrateDatabase8To9 : DatabaseMigration() {
             // New grouping data
             s.executeUpdate("ALTER TABLE groups ADD COLUMN items NCLOB DEFAULT NULL;")
             db.prepareStatement("UPDATE groups SET items=? WHERE id=?;").use { ps ->
+                val gids: MutableList<Int> = mutableListOf()
+
                 s.executeQuery("SELECT id FROM groups;").use { rs ->
                     while (rs.next()) {
-                        val gid = rs.getInt("id")
-                        val items: MutableMap<Int, Int> = mutableMapOf()
-
-                        s.executeQuery("SELECT id, page FROM media WHERE gid=$gid;").use { rs2 ->
-                            while (rs2.next()) {
-                                items[rs2.getInt("id")] = rs2.getInt("page")
-                            }
-                        }
-
-                        ps.setNClob(1, items.keys.sortedBy { items[it] }.joinToString(separator = ",").reader())
-                        ps.setInt(2, gid)
-                        ps.addBatch()
+                        gids.add(rs.getInt("id"))
                     }
+                }
+
+                for (gid in gids) {
+                    val items: MutableMap<Int, Int> = mutableMapOf()
+
+                    s.executeQuery("SELECT id, page FROM media WHERE gid=$gid;").use { rs ->
+                        while (rs.next()) {
+                            items[rs.getInt("id")] = rs.getInt("page")
+                        }
+                    }
+
+                    ps.setNClob(1, items.keys.sortedBy { items[it] }.joinToString(separator = ",").reader())
+                    ps.setInt(2, gid)
+                    ps.addBatch()
                 }
 
                 ps.executeBatch()
@@ -54,11 +59,13 @@ class MigrateDatabase8To9 : DatabaseMigration() {
                 ps.executeBatch()
             }
             s.executeBatch()
-            val dropMediaConditions = ImageItem.fileExtensions.joinToString(prefix = "LOWER(media.path) NOT LIKE '%.", separator = " AND LOWER(media.path) NOT LIKE '%.", postfix = "'")
+            val dropMediaConditions = ImageItem.fileExtensions.joinToString(prefix = "LOWER(media.path) NOT LIKE '%.", separator = "' AND LOWER(media.path) NOT LIKE '%.", postfix = "'")
             s.executeUpdate("DELETE FROM media WHERE $dropMediaConditions;")
             s.executeUpdate("ALTER TABLE media DROP COLUMN md5;")
             s.executeUpdate("ALTER TABLE media DROP COLUMN path;")
             s.executeUpdate("ALTER TABLE media RENAME TO images;")
+
+            s.executeUpdate("INSERT INTO version(version) VALUES (9);")
         }
     }
 

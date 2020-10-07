@@ -4,13 +4,15 @@ import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.view.image
 import java.io.File
 
-open class ImportJob(val file: File) {
+open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null, var onFinish: ((Item) -> Unit)? = null) {
 
     var item: Item? = null
         private set
 
 
     open fun import(menagerie: Menagerie): Item {
+        onStart?.invoke(this)
+
         val id = menagerie.takeNextItemID()
         val added = System.currentTimeMillis()
         val md5 = FileItem.fileHash(file)
@@ -23,6 +25,8 @@ open class ImportJob(val file: File) {
         }
 
         menagerie.addItem(item!!)
+
+        onFinish?.invoke(item!!)
 
         return item!!
     }

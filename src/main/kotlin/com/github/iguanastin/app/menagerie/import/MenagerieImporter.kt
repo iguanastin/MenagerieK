@@ -12,11 +12,13 @@ class MenagerieImporter(val menagerie: Menagerie) {
     @Volatile
     private var importThreadRunning = false
     private val importQueue: BlockingQueue<ImportJob> = LinkedBlockingQueue()
+
     val onImport: MutableSet<(Item) -> Unit> = mutableSetOf()
+    val onError: MutableSet<(Exception) -> Unit> = mutableSetOf()
 
 
     init {
-        thread(start = true, isDaemon = true, name = "Menagerie Importer") {
+        thread(start = true, name = "Menagerie Importer") {
             importThreadRunning = true
             while (importThreadRunning) {
                 val job = importQueue.poll(3, TimeUnit.SECONDS)
@@ -27,10 +29,11 @@ class MenagerieImporter(val menagerie: Menagerie) {
                     val item = job.import(menagerie)
                     onImport.forEach { it(item) }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    TODO("Handle this better")
+                    onError.forEach { it(e) }
                 }
             }
+
+            println("Importer thread finished")
         }
     }
 
