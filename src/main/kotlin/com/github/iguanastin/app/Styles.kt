@@ -1,10 +1,8 @@
 package com.github.iguanastin.app
 
 import javafx.scene.Cursor
-import javafx.scene.layout.BorderPane
 import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
-import org.controlsfx.control.GridView
 import tornadofx.*
 
 class Styles : Stylesheet() {
@@ -13,7 +11,8 @@ class Styles : Stylesheet() {
         val fourChoice by cssclass()
         val dialogPane by cssclass()
         val gridView by cssclass()
-        val gridCell by cssclass()
+        val itemGridCell by cssclass()
+        val selected by csspseudoclass()
     }
 
     init {
@@ -43,8 +42,11 @@ class Styles : Stylesheet() {
         gridView {
             minWidth = 525.px
         }
-        gridCell {
+        itemGridCell {
             backgroundColor += Color.web("#606467")
+        }
+        itemGridCell and selected {
+            backgroundColor += Color.web("#4e98a8")
         }
         dialogPane {
             backgroundColor += Color.web("#3b3f42")

@@ -88,4 +88,8 @@ open class Item(val id: Int, val added: Long) {
         return _tags.remove(tag)
     }
 
+    override fun toString(): String {
+        return id.toString()
+    }
+
 }

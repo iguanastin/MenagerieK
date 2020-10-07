@@ -2,8 +2,10 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.Item
+import javafx.collections.ListChangeListener
 import javafx.geometry.Pos
 import javafx.scene.image.ImageView
+import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import org.controlsfx.control.GridCell
 import org.controlsfx.control.GridView
@@ -13,13 +15,13 @@ object ItemCellFactory {
 
     const val PADDING: Int = 5
 
-    val factory = Callback<GridView<Item>, GridCell<Item>> {
+    val factory = Callback<GridView<Item>, GridCell<Item>> { grid ->
         object : GridCell<Item>() {
 
             private lateinit var image: ImageView
 
             init {
-                addClass(Styles.gridCell)
+                addClass(Styles.itemGridCell)
                 graphic = borderpane {
                     center {
                         image = imageview {
@@ -30,6 +32,10 @@ object ItemCellFactory {
                             minHeight = Item.thumbnailHeight
                         }
                     }
+                }
+
+                if (grid is MultiSelectGridView) {
+                    grid.initSelectableCell(this)
                 }
             }
 

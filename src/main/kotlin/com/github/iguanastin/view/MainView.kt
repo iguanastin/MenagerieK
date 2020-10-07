@@ -80,7 +80,7 @@ class MainView : View("Menagerie") {
                         textfield()
                     }
                     center {
-                        itemGrid = gridView {
+                        itemGrid = multiselectgridview {
                             addClass(Styles.gridView)
                             cellWidth = Item.thumbnailWidth + ItemCellFactory.PADDING * 2
                             cellHeight = Item.thumbnailHeight + ItemCellFactory.PADDING * 2
