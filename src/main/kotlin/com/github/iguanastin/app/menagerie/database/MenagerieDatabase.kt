@@ -6,6 +6,7 @@ import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabase
 import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
 import com.github.iguanastin.app.menagerie.database.updates.*
 import javafx.collections.ListChangeListener
+import mu.KotlinLogging
 import java.io.File
 import java.sql.*
 import java.util.concurrent.BlockingQueue
@@ -13,7 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-class MenagerieDatabase(url: String, user: String, password: String) : AutoCloseable {
+private val log = KotlinLogging.logger {}
+class MenagerieDatabase(private val url: String, private val user: String, private val password: String) : AutoCloseable {
 
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
@@ -41,6 +43,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
 
 
     init {
+        log.info("Starting database updater thread ($url)")
         thread(start = true, name = "Menagerie Database Updater") {
             updateThreadRunning = true
             while (updateThreadRunning) {
@@ -48,7 +51,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 if (!updateThreadRunning) break
                 if (update == null) continue
 
-                println("Applying update: $update")
+                log.debug { "Database update: $update" }
 
                 try {
                     update.sync(this)
@@ -57,7 +60,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 }
             }
 
-            println("Database Updater thread finished")
+            log.info("Database updater thread stopped ($url)")
         }
     }
 
@@ -67,6 +70,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
     }
 
     fun loadMenagerie(): Menagerie {
+        log.info("Loading Menagerie from database ($url)")
         if (needsMigration()) migrateDatabase()
 
         val menagerie = Menagerie()
@@ -78,10 +82,14 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
 
         attachTo(menagerie)
 
+        log.info("Finished loading Menagerie from database ($url)")
+
         return menagerie
     }
 
     private fun attachTo(menagerie: Menagerie) {
+        log.info("Attaching database manager to Menagerie ($url)")
+
         val itemTaggedListener = { item: Item, tag: Tag ->
             updateQueue.put(DatabaseTagItem(item, tag))
         }
@@ -139,6 +147,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
     }
 
     fun migrateDatabase() {
+        log.info("Attempting to migrate database from v$version to v$REQUIRED_DATABASE_VERSION")
         if (version in 0 until MINIMUM_DATABASE_VERSION) throw MenagerieDatabaseException("Minimum database version (v$MINIMUM_DATABASE_VERSION) not met (found v$version)")
 
         while (needsMigration()) {
@@ -152,6 +161,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
             }
 
             version = migration.toVersion
+            log.info("Successfully migrated database to v$version")
         }
     }
 
@@ -170,14 +180,22 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
     }
 
     private fun loadTags(menagerie: Menagerie) {
+        log.info("Loading tags from database")
+        val t = System.currentTimeMillis()
+        var i = 0
         genericStatement.executeQuery("SELECT * FROM tags;").use { rs: ResultSet ->
             while (rs.next()) {
                 menagerie.addTag(Tag(rs.getInt("id"), rs.getNString("name"), color = rs.getNString("color")))
+                i++
             }
         }
+        log.info("Successfully loaded $i tags from database in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
     private fun loadItems(menagerie: Menagerie) {
+        log.info("Loading items from database")
+        var millis = System.currentTimeMillis()
+        var count = 0
         val images: MutableMap<Int, TempImageV9> = mutableMapOf()
         genericStatement.executeQuery("SELECT * FROM images;").use { rs ->
             while (rs.next()) {
@@ -189,24 +207,36 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                 }
 
                 images[rs.getInt("id")] = TempImageV9(rs.getBoolean("no_similar"), histogram)
+                count++
             }
         }
+        log.info("Finished loading $count image items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
 
+        millis = System.currentTimeMillis()
+        count = 0
         val files: MutableMap<Int, TempFileV9> = mutableMapOf()
         genericStatement.executeQuery("SELECT * FROM files;").use { rs ->
             while (rs.next()) {
                 files[rs.getInt("id")] = TempFileV9(rs.getNString("md5"), File(rs.getNString("file")))
+                count++
             }
         }
+        log.info("Finished loading $count file items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
 
+        millis = System.currentTimeMillis()
+        count = 0
         val items: MutableMap<Int, TempItemV9> = mutableMapOf()
         genericStatement.executeQuery("SELECT * FROM items;").use { rs ->
             while (rs.next()) {
                 val id = rs.getInt("id")
                 items[id] = TempItemV9(id, rs.getLong("added"))
+                count++
             }
         }
+        log.info("Finished loading $count items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
 
+        millis = System.currentTimeMillis()
+        count = 0
         val groups: MutableMap<Int, TempGroupV9> = mutableMapOf()
         genericStatement.executeQuery("SELECT * FROM groups;").use { rs ->
             while (rs.next()) {
@@ -218,10 +248,13 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
                     }
                 }
                 groups[rs.getInt("id")] = TempGroupV9(rs.getNString("title"), ids)
+                count++
             }
         }
+        log.info("Finished loading $count group items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
 
 
+        millis = System.currentTimeMillis()
         val generatedItems: MutableList<Item> = mutableListOf()
         val groupChildMap: MutableMap<Int, FileItem> = mutableMapOf()
         for (i in images.keys) {
@@ -246,33 +279,45 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
             items.remove(i)
         }
         for (i in items.keys) {
-            println("Orphaned item: (id:$i, added:${items[i]!!.added})")
+            log.error { "Orphaned item: (id:$i, added:${items[i]!!.added})" }
         }
 
         generatedItems.sortBy { it.id }
         generatedItems.forEach { menagerie.addItem(it) }
+
+        log.info("Finished generating ${generatedItems.size} loaded items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
     }
 
     private fun loadTagged(menagerie: Menagerie) {
+        log.info("Loading tag relationships from database")
+        val t = System.currentTimeMillis()
+        var i = 0
         genericStatement.executeQuery("SELECT * FROM tagged;").use { rs: ResultSet ->
             while (rs.next()) {
                 val tag = menagerie.getTag(rs.getInt("tag_id"))
                 val item = menagerie.getItem(rs.getInt("item_id"))
                 if (tag == null || item == null) continue
                 item.addTag(tag)
+                i++
             }
         }
+        log.info("Finished loading $i tag relationships in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
     private fun loadNonDupes(menagerie: Menagerie) {
+        log.info("Loading non-dupes from database")
+        val t = System.currentTimeMillis()
+        var i = 0
         genericStatement.executeQuery("SELECT item_1, item_2 FROM non_dupes;").use { rs: ResultSet ->
             while (rs.next()) {
                 val i1 = menagerie.getItem(rs.getInt("item_1"))
                 val i2 = menagerie.getItem(rs.getInt("item_2"))
                 if (i1 == null || i2 == null) continue
                 menagerie.addNonDupe(i1 to i2)
+                i++
             }
         }
+        log.info("Finished loading $i non-dupes in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
     private fun retrieveVersion(): Int {
@@ -303,7 +348,10 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
      * NOTE: Long blocking call
      */
     fun closeAndCompress() {
+        log.info("Shutting down database with defrag...")
+        val t = System.currentTimeMillis()
         genericStatement.execute("SHUTDOWN DEFRAG;")
+        log.info("Finished defragging database in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
         close()
     }
 
@@ -312,6 +360,7 @@ class MenagerieDatabase(url: String, user: String, password: String) : AutoClose
         genericStatement.close()
         db.close()
         updateThreadRunning = false
+        log.info("Closed database manager ($url)")
     }
 
 }

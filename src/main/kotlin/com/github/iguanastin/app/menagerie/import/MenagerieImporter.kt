@@ -2,11 +2,13 @@ package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
+import mu.KotlinLogging
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
+private val log = KotlinLogging.logger {}
 class MenagerieImporter(val menagerie: Menagerie) {
 
     @Volatile
@@ -18,6 +20,7 @@ class MenagerieImporter(val menagerie: Menagerie) {
 
 
     init {
+        log.info("Starting Menagerie importer thread")
         thread(start = true, name = "Menagerie Importer") {
             importThreadRunning = true
             while (importThreadRunning) {
@@ -33,7 +36,7 @@ class MenagerieImporter(val menagerie: Menagerie) {
                 }
             }
 
-            println("Importer thread finished")
+            log.info("Importer thread finished")
         }
     }
 

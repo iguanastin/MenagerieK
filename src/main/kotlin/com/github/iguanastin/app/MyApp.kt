@@ -8,15 +8,18 @@ import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.scene.control.ButtonType
 import javafx.stage.Stage
+import mu.KotlinLogging
 import tornadofx.*
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
+
+private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
 
     private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MyApp")
 
-    private val dbURL = prefs.get("db_url", "~/test-sfw-v9")
+    private val dbURL = prefs.get("db_url", "~/menagerie-test")
     private val dbUser = prefs.get("db_user", "sa")
     private val dbPass = prefs.get("db_pass", "")
 
@@ -31,10 +34,16 @@ class MyApp : App(MainView::class, Styles::class) {
         super.start(stage)
         root = find(primaryView) as MainView
 
+        log.info("Starting app")
+
         loadMenagerie(stage) { manager, menagerie, importer ->
             manager.updateErrorHandlers.add { e ->
                 // TODO show error to user
-                e.printStackTrace()
+                log.error("Error occurred while updating database", e)
+            }
+            importer.onError.add { e ->
+                // TODO show error to user
+                log.error("Error occurred while importing", e)
             }
         }
     }
@@ -42,16 +51,15 @@ class MyApp : App(MainView::class, Styles::class) {
     override fun stop() {
         super.stop()
 
+        log.info("Stopping app")
+
         try {
             importer.close()
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        println("Defragging and closing database...")
-        val t = System.currentTimeMillis()
         manager.closeAndCompress()
-        println("Finished defragging (${System.currentTimeMillis() - t}ms)")
     }
 
     private fun loadMenagerie(stage: Stage, after: ((manager: MenagerieDatabase, menagerie: Menagerie, importer: MenagerieImporter) -> Unit)? = null) {

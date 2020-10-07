@@ -2,12 +2,14 @@ package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
+import mu.KotlinLogging
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.channels.Channels
 
+private val log = KotlinLogging.logger {}
 class RemoteImportJob private constructor(val url: String, file: File): ImportJob(file) {
 
     companion object {
@@ -33,6 +35,8 @@ class RemoteImportJob private constructor(val url: String, file: File): ImportJo
 
 
     override fun import(menagerie: Menagerie): Item {
+        log.debug { "Importing remote \"$url\" into file: \"$file\"" }
+
         download(url, file)
 
         return super.import(menagerie)
