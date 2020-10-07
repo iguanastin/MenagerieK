@@ -1,9 +1,14 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
+import com.sun.javafx.scene.control.skin.VirtualFlow
+import impl.org.controlsfx.skin.GridViewSkin
+import javafx.beans.InvalidationListener
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventTarget
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseButton
 import javafx.scene.input.MouseEvent
 import javafx.util.Callback
@@ -45,6 +50,56 @@ class MultiSelectGridView<T> : GridView<T> {
                 selected.clear()
             }
         }
+        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (event.isShortcutDown) {
+                if (event.code == KeyCode.A) {
+                    if (selected.containsAll(items)) {
+                        selected.clear()
+                    } else {
+                        selected.clear()
+                        selected.addAll(items)
+                    }
+                    event.consume()
+                }
+            }
+
+            var current: Int = items.indexOf(selected.lastOrNull())
+            if (current == -1) current = items.indexOf(items.firstOrNull())
+            val row = current / getItemsInRow()
+
+            if (items.isEmpty()) return@addEventHandler
+            when (event.code) {
+                KeyCode.LEFT -> {
+                    if (current <= 0) selectUtility(items[0], event)
+                    else selectUtility(items[current - 1], event)
+                    event.consume()
+                }
+                KeyCode.RIGHT -> {
+                    if (current >= items.lastIndex) selectUtility(items.last(), event)
+                    else selectUtility(items[current + 1], event)
+                    event.consume()
+                }
+                KeyCode.UP -> {
+                    if (row <= 0) selectUtility(items[0], event)
+                    else selectUtility(items[current - getItemsInRow()], event)
+                    event.consume()
+                }
+                KeyCode.DOWN -> {
+                    if (row >= items.size / getItemsInRow()) selectUtility(items.last(), event)
+                    else selectUtility(items[current + getItemsInRow()], event)
+                    event.consume()
+                }
+                KeyCode.HOME -> {
+                    selectUtility(items.first(), event)
+                }
+                KeyCode.END -> {
+                    selectUtility(items.last(), event)
+                }
+                else -> {
+                    // Do nothing
+                }
+            }
+        }
     }
 
     constructor() : super()
@@ -52,6 +107,14 @@ class MultiSelectGridView<T> : GridView<T> {
 
 
     fun initSelectableCell(cell: GridCell<T>) {
+        cell.itemProperty().addListener(InvalidationListener {
+            if (cell.item in selected) {
+                runOnUIThread { if (!cell.hasClass(Styles.selected)) cell.addClass(Styles.selected) }
+            } else if (cell.item in selected) {
+                runOnUIThread { cell.removeClass(Styles.selected) }
+            }
+        })
+
         selected.addListener(ListChangeListener { change ->
             while (change.next()) {
                 if (cell.item in change.addedSubList) {
@@ -70,17 +133,24 @@ class MultiSelectGridView<T> : GridView<T> {
         }
     }
 
+    fun select(item: T) {
+        selected.clear()
+        selected.add(item)
+    }
+
+    private fun selectUtility(item: T, event: KeyEvent) {
+        selectUtility(item, when {
+            event.isShiftDown -> SelectionType.FROM_TO
+            event.isShortcutDown -> SelectionType.ADD
+            else -> SelectionType.ONLY
+        })
+    }
+
     private fun selectUtility(item: T, event: MouseEvent) {
         val type: SelectionType = when {
-            event.isShiftDown -> {
-                SelectionType.FROM_TO
-            }
-            event.isShortcutDown -> {
-                SelectionType.ADD
-            }
-            else -> {
-                SelectionType.ONLY
-            }
+            event.isShiftDown -> SelectionType.FROM_TO
+            event.isShortcutDown -> SelectionType.ADD
+            else -> SelectionType.ONLY
         }
 
         selectUtility(item, type)
@@ -131,7 +201,21 @@ class MultiSelectGridView<T> : GridView<T> {
                 }
             }
         }
+
+        ensureVisible(item)
     }
+
+    private fun ensureVisible(item: T) {
+        // Gross workaround. Couldn't find any other solution
+        for (n in children) {
+            if (n is VirtualFlow<*>) {
+                n.show(items.indexOf(item) / getItemsInRow())
+                break
+            }
+        }
+    }
+
+    fun getItemsInRow(): Int = (skin as GridViewSkin<*>).computeMaxCellsInRow()
 
 }
 

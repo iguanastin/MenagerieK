@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty
+import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.scene.control.ListView
@@ -19,17 +20,12 @@ import java.util.prefs.Preferences
 
 class MainView : View("Menagerie") {
 
-    private lateinit var itemDisplay: ItemDisplay
-    private lateinit var itemGrid: GridView<Item>
-    private lateinit var tagView: ListView<Tag>
+    lateinit var itemDisplay: ItemDisplay
+    lateinit var itemGrid: MultiSelectGridView<Item>
+    lateinit var tagView: ListView<Tag>
 
-    val itemsProperty: ObjectProperty<ObservableList<Item>>
-        get() = itemGrid.itemsProperty()
-    var items: ObservableList<Item>
+    val items: ObservableList<Item>
         get() = itemGrid.items
-        set(value) {
-            itemGrid.items = value
-        }
 
     val displayingProperty: ObjectProperty<Item?>
         get() = itemDisplay.itemProperty
@@ -105,6 +101,10 @@ class MainView : View("Menagerie") {
     }
 
     init {
+        itemGrid.selected.addListener(InvalidationListener {
+            displaying = itemGrid.selected.lastOrNull()
+        })
+
         val displayTagsListener = InvalidationListener {
             tags.apply {
                 clear()
@@ -120,6 +120,8 @@ class MainView : View("Menagerie") {
                 if (new != null) addAll(new.tags.sortedBy { it.name })
             }
         })
+
+        Platform.runLater { itemGrid.requestFocus() }
     }
 
 }

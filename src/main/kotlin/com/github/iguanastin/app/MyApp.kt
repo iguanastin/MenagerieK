@@ -89,9 +89,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 try {
                     menagerie = manager.loadMenagerie()
                     importer = MenagerieImporter(menagerie)
-                    runOnUIThread {
+                    Platform.runLater {
                         root.items.addAll(menagerie.items.reversed())
-                        if (root.items.isNotEmpty()) root.displaying = root.items[0]
+                        if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
                     }
 
                     after?.invoke(manager, menagerie, importer)
