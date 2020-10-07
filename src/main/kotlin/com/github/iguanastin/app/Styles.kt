@@ -18,7 +18,8 @@ class Styles : Stylesheet() {
 
     init {
         root {
-            baseColor = Color.color(0.1, 0.1, 0.1)!!
+            baseColor = Color.web("#3b3f42")!!
+            backgroundColor += Color.web("#3b3f42")
         }
         label and heading {
             padding = box(10.px)
@@ -33,14 +34,20 @@ class Styles : Stylesheet() {
             backgroundRadius += box(10.px)
             backgroundColor += Color.color(0.25, 0.25, 0.25, 0.75)!!
         }
-        dialogPane {
-            backgroundColor += Color.color(0.0, 0.0, 0.0, 0.5)
+        listCell {
+            and(odd) {
+                backgroundColor += Color.web("#3e3e3e")
+            }
+            backgroundColor += Color.web("#303030")
         }
         gridView {
             minWidth = 525.px
         }
         gridCell {
-            backgroundColor += Color.GREY
+            backgroundColor += Color.web("#606467")
+        }
+        dialogPane {
+            backgroundColor += Color.web("#3b3f42")
         }
     }
 }

@@ -1,16 +1,39 @@
 package com.github.iguanastin.view
 
+import com.github.iguanastin.app.Styles
 import javafx.application.Platform
 import javafx.event.EventTarget
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.image.Image
+import javafx.scene.layout.BorderPane
 import javafx.stage.Window
 import org.controlsfx.control.GridView
 import tornadofx.*
 import java.io.File
 import java.util.concurrent.CountDownLatch
 
+
+fun fourchooser(root: View) {
+    var bp: BorderPane? = null
+    bp = root.borderpane {
+        addClass(Styles.dialogPane)
+        center {
+            fourChooser {
+                // TODO finish this
+                onLeft = "Left" to { println("left") }
+                onRight = "Right" to { println("right") }
+                onTop = "Top" to { println("top") }
+                onBottom = "Bottom" to { println("bottom") }
+                onCancel = { println("cancel") }
+                onClose = {
+                    bp?.removeFromParent()
+                    println("close")
+                }
+            }
+        }
+    }
+}
 
 inline fun <T> EventTarget.gridView(op: GridView<T>.() -> Unit = {}) = GridView<T>().attachTo(this, op)
 

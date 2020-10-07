@@ -1,7 +1,5 @@
 package com.github.iguanastin.app
 
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
@@ -9,9 +7,10 @@ import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
-import javafx.beans.InvalidationListener
-import javafx.collections.ListChangeListener
+import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
+import javafx.scene.input.KeyCode
+import javafx.stage.Screen
 import javafx.stage.Stage
 import mu.KotlinLogging
 import tornadofx.*
@@ -22,11 +21,12 @@ private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
 
-    private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MyApp")
+    private val uiPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/ui")
+    private val contextPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/context")
 
-    private val dbURL = prefs.get("db_url", "~/test-sfw-v9")
-    private val dbUser = prefs.get("db_user", "sa")
-    private val dbPass = prefs.get("db_pass", "")
+    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
+    private val dbUser = contextPrefs.get("db_user", "sa")
+    private val dbPass = contextPrefs.get("db_pass", "")
 
     private lateinit var manager: MenagerieDatabase
     private lateinit var menagerie: Menagerie
@@ -41,6 +41,8 @@ class MyApp : App(MainView::class, Styles::class) {
 
         log.info("Starting app")
 
+        initViewsAndControls(stage)
+
         loadMenagerie(stage) { manager, menagerie, importer ->
             manager.updateErrorHandlers.add { e ->
                 // TODO show error to user
@@ -49,6 +51,18 @@ class MyApp : App(MainView::class, Styles::class) {
             importer.onError.add { e ->
                 // TODO show error to user
                 log.error("Error occurred while importing", e)
+            }
+        }
+    }
+
+    private fun initViewsAndControls(stage: Stage) {
+        initMainStageProperties(stage)
+
+        root.root.onKeyPressed = EventHandler { event ->
+            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                if (event.code == KeyCode.Q) {
+                    Platform.exit()
+                }
             }
         }
     }
@@ -76,7 +90,8 @@ class MyApp : App(MainView::class, Styles::class) {
                     menagerie = manager.loadMenagerie()
                     importer = MenagerieImporter(menagerie)
                     runOnUIThread {
-                        root.setItems(menagerie.items.reversed())
+                        root.items.addAll(menagerie.items.reversed())
+                        if (root.items.isNotEmpty()) root.displaying = root.items[0]
                     }
 
                     after?.invoke(manager, menagerie, importer)
@@ -117,6 +132,39 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         } catch (e: Exception) {
             error(title = "Error", header = "Failed to connect to database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage)
+        }
+    }
+
+    private fun initMainStageProperties(stage: Stage) {
+        // Maximized
+        stage.isMaximized = uiPrefs.getBoolean("maximized", false)
+        stage.maximizedProperty()?.addListener { _, _, newValue ->
+            uiPrefs.putBoolean("maximized", newValue)
+        }
+
+        // Width
+        stage.width = uiPrefs.getDouble("width", 600.0)
+        stage.widthProperty()?.addListener { _, _, newValue ->
+            uiPrefs.putDouble("width", newValue.toDouble())
+        }
+
+        // Height
+        stage.height = uiPrefs.getDouble("height", 400.0)
+        stage.heightProperty()?.addListener { _, _, newValue ->
+            uiPrefs.putDouble("height", newValue.toDouble())
+        }
+
+        // Screen position
+        val screen = Screen.getPrimary().visualBounds
+        // X
+        stage.x = uiPrefs.getDouble("x", (screen.maxX + screen.minX) / 2)
+        stage.xProperty()?.addListener { _, _, newValue ->
+            uiPrefs.putDouble("x", newValue.toDouble())
+        }
+        // Y
+        stage.y = uiPrefs.getDouble("y", (screen.maxY + screen.minY) / 2)
+        stage.yProperty()?.addListener { _, _, newValue ->
+            uiPrefs.putDouble("y", newValue.toDouble())
         }
     }
 
