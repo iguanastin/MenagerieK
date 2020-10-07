@@ -202,5 +202,5 @@ class PanZoomImageView : DynamicImageView {
     }
 }
 
-fun EventTarget.panZoomImageView(op: PanZoomImageView.() -> Unit = {}) = PanZoomImageView().attachTo(this, op)
-fun EventTarget.panZoomImageView(url: String, op: PanZoomImageView.() -> Unit = {}) = PanZoomImageView(url).attachTo(this, op)
+fun EventTarget.panzoomimageview(op: PanZoomImageView.() -> Unit = {}) = PanZoomImageView().attachTo(this, op)
+fun EventTarget.panzoomimageview(url: String, op: PanZoomImageView.() -> Unit = {}) = PanZoomImageView(url).attachTo(this, op)

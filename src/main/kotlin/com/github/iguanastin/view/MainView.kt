@@ -2,30 +2,30 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.*
 import com.github.iguanastin.app.menagerie.*
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import javafx.application.Platform
-import javafx.collections.ObservableList
 import javafx.event.EventHandler
-import javafx.scene.control.ButtonType
 import javafx.scene.control.ListView
-import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.MouseButton
 import javafx.scene.layout.BorderPane
 import javafx.stage.Screen
 import org.controlsfx.control.GridView
 import tornadofx.*
-import java.io.File
 import java.util.prefs.Preferences
-import kotlin.concurrent.thread
 
 class MainView : View("Menagerie") {
 
+    @Volatile
+    private var _queuedDisplay: Item? = null
+
+    @Volatile
+    private var _queuedItems: List<Item>? = null
+
+
     private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MainView")
 
-    private lateinit var preview: PanZoomImageView
+    private lateinit var imageDisplay: PanZoomImageView
+    private lateinit var groupDisplay: GroupPreview
     private lateinit var itemGrid: GridView<Item>
     private lateinit var tagView: ListView<Tag>
 
@@ -33,7 +33,10 @@ class MainView : View("Menagerie") {
     override val root = stackpane {
         borderpane {
             center {
-                preview = panZoomImageView()
+                stackpane {
+                    imageDisplay = panzoomimageview()
+                    groupDisplay = grouppreview()
+                }
             }
             left {
                 tagView = listview {
@@ -78,27 +81,8 @@ class MainView : View("Menagerie") {
     }
 
     private fun initViewControls() {
-//        itemGrid.selectionModel.selectedItemProperty().addListener { _, _, item ->
-//            if (item != null) {
-//                tags.apply {
-//                    clear()
-//                    addAll(item.tags)
-//                    sortBy { tag: Tag -> tag.name }
-//                }
-//
-//                if (item is FileItem) {
-//                    preview.apply {
-//                        image = Image(item.file.toURI().toString())
-//                        fitImageToView()
-//                    }
-//                } else {
-//                    preview.image = null
-//                }
-//            }
-//        }
-
         // TODO remove this
-        preview.onMouseClicked = EventHandler {
+        imageDisplay.onMouseClicked = EventHandler {
             if (it.button != MouseButton.SECONDARY) return@EventHandler
 
             // TODO extract this into a utility function?
@@ -122,25 +106,60 @@ class MainView : View("Menagerie") {
         }
     }
 
-    fun preview(item: Item) {
-        when (item) {
-            is ImageItem -> {
-                preview.image = image(item.file, true)
-                preview.fitImageToView()
+    /**
+     * Sets the next item to display
+     *
+     * If called from off the main JavaFX thread, an update will be queued. Once the JavaFX thread processes the event, only the latest change will be applied
+     */
+    fun display(item: Item) {
+        this._queuedDisplay = item
+
+        runOnUIThread {
+            val newItem = this@MainView._queuedDisplay ?: return@runOnUIThread
+            this@MainView._queuedDisplay = null
+
+            groupDisplay.group = null
+            groupDisplay.hide()
+            imageDisplay.image = null
+            imageDisplay.hide()
+
+            when (newItem) {
+                is ImageItem -> {
+                    imageDisplay.image = image(newItem.file, true)
+                    imageDisplay.show()
+                }
+                is GroupItem -> {
+                    groupDisplay.group = item as GroupItem
+                    groupDisplay.show()
+                }
+                else -> {
+                    println("${newItem.id}: $newItem")
+                    // TODO previews for other item types
+                }
             }
-            else -> {
-                println("${item.id}: $item")
-                // TODO previews for other item types
-            }
+            tagView.items.bind(newItem.tags) { it }
+            Platform.runLater { imageDisplay.fitImageToView() } // TODO this nightmare still doesn't work
         }
-        tagView.items.bind(item.tags) { it }
     }
 
+    /**
+     * Sets the next list of items to display
+     *
+     * If called from off the main JavaFX thread, an update will be queued. Once the JavaFX thread processes the event, only the latest change will be applied
+     */
     fun setItems(items: List<Item>) {
-        itemGrid.items.apply {
-            clear()
-            addAll(items)
-            if (items.isNotEmpty()) preview(items[0])
+        this._queuedItems = items
+
+        runOnUIThread {
+            val newItems = this@MainView._queuedItems ?: return@runOnUIThread
+            this@MainView._queuedItems = null
+
+            itemGrid.items.apply {
+                clear()
+                addAll(newItems)
+                if (newItems.isNotEmpty()) display(newItems[0])
+                // TODO select first item instead of explicitly displaying
+            }
         }
     }
 

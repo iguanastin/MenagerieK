@@ -1,11 +1,16 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.menagerie.GroupItem
+import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
+import javafx.application.Platform
+import javafx.beans.InvalidationListener
+import javafx.collections.ListChangeListener
 import javafx.scene.control.ButtonType
 import javafx.stage.Stage
 import mu.KotlinLogging
@@ -19,7 +24,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private val prefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/MyApp")
 
-    private val dbURL = prefs.get("db_url", "~/menagerie-test")
+    private val dbURL = prefs.get("db_url", "~/test-sfw-v9")
     private val dbUser = prefs.get("db_user", "sa")
     private val dbPass = prefs.get("db_pass", "")
 
