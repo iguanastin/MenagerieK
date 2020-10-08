@@ -1,6 +1,7 @@
 package com.github.iguanastin.app
 
 import javafx.scene.Cursor
+import javafx.scene.effect.DropShadow
 import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
 import tornadofx.*
@@ -50,6 +51,7 @@ class Styles : Stylesheet() {
         }
         dialogPane {
             backgroundColor += Color.web("#3b3f42")
+            effect = DropShadow(50.0, Color.BLACK).apply { spread = 0.25 }
         }
     }
 }

@@ -97,16 +97,21 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             updateQueue.put(DatabaseUntagItem(item, tag))
         }
 
+        for (item in menagerie.items) {
+            item.tagListeners.add(itemTaggedListener)
+            item.untagListeners.add(itemUntaggedListener)
+        }
+
         menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { item ->
-                    item.untagListeners.add(itemUntaggedListener)
-                    item.tagListeners.add(itemTaggedListener)
+                    item.untagListeners.remove(itemUntaggedListener)
+                    item.tagListeners.remove(itemTaggedListener)
                     updateQueue.put(DatabaseDeleteItem(item))
                 }
                 change.addedSubList.forEach { item ->
-                    item.untagListeners.remove(itemUntaggedListener)
-                    item.tagListeners.remove(itemTaggedListener)
+                    item.untagListeners.add(itemUntaggedListener)
+                    item.tagListeners.add(itemTaggedListener)
                     when (item) {
                         is ImageItem -> updateQueue.put(DatabaseCreateMedia(item))
                         else -> TODO("Unimplemented")
@@ -258,20 +263,20 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val generatedItems: MutableList<Item> = mutableListOf()
         val groupChildMap: MutableMap<Int, FileItem> = mutableMapOf()
         for (i in images.keys) {
-            val item = ImageItem(i, items[i]!!.added, files[i]!!.md5, files[i]!!.file, images[i]!!.noSimilar, images[i]!!.histogram)
+            val item = ImageItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file, images[i]!!.noSimilar, images[i]!!.histogram)
             generatedItems.add(item)
             groupChildMap[i] = item
             files.remove(i)
             items.remove(i)
         }
         for (i in files.keys) {
-            val item = FileItem(i, items[i]!!.added, files[i]!!.md5, files[i]!!.file)
+            val item = FileItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file)
             generatedItems.add(item)
             groupChildMap[i] = item
             items.remove(i)
         }
         for (i in groups.keys) {
-            val group = GroupItem(i, items[i]!!.added, groups[i]!!.title)
+            val group = GroupItem(i, items[i]!!.added, menagerie, groups[i]!!.title)
             groups[i]!!.items.forEach { id ->
                 group.addItem(groupChildMap[id]!!)
             }

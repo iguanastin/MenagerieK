@@ -17,15 +17,15 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
 
         log.debug { "Importing \"$file\"" }
 
-        val id = menagerie.takeNextItemID()
+        val id = menagerie.reserveItemID()
         val added = System.currentTimeMillis()
         val md5 = FileItem.fileHash(file)
 
         item = if (ImageItem.isImage(file)) {
             val histogram = Histogram.from(image(file))
-            ImageItem(id, added, md5, file, noSimilar = false, histogram = histogram)
+            ImageItem(id, added, menagerie, md5, file, noSimilar = false, histogram = histogram)
         } else {
-            FileItem(id, added, md5, file)
+            FileItem(id, added, menagerie, md5, file)
         }
 
         menagerie.addItem(item!!)

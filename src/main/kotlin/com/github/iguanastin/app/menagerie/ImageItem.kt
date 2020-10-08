@@ -3,7 +3,7 @@ package com.github.iguanastin.app.menagerie
 import javafx.scene.image.Image
 import java.io.File
 
-class ImageItem(id: Int, added: Long, md5: String, file: File, var noSimilar: Boolean = false, var histogram: Histogram? = null): FileItem(id, added, md5, file) {
+class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File, var noSimilar: Boolean = false, var histogram: Histogram? = null): FileItem(id, added, menagerie, md5, file) {
 
     companion object {
         val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")
@@ -14,7 +14,7 @@ class ImageItem(id: Int, added: Long, md5: String, file: File, var noSimilar: Bo
     }
 
     override fun loadThumbnail(): Image {
-        return Image(file.toURI().toString(), thumbnailWidth, thumbnailHeight, true, true, true)
+        return Image(file.toURI().toString(), thumbnailSize, thumbnailSize, true, true, true)
     }
 
     override fun similarityTo(other: Item): Double {

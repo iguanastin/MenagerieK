@@ -1,6 +1,5 @@
 package com.github.iguanastin.view
 
-import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.GroupItem
 import com.github.iguanastin.app.menagerie.Item
 import javafx.beans.property.ObjectProperty
@@ -32,8 +31,8 @@ class GroupPreview: BorderPane() {
 
         grid.cellFactory = ItemCellFactory.factory
         grid.apply {
-            cellWidth = Item.thumbnailWidth + ItemCellFactory.PADDING * 2
-            cellHeight = Item.thumbnailHeight + ItemCellFactory.PADDING * 2
+            cellWidth = ItemCellFactory.SIZE
+            cellHeight = ItemCellFactory.SIZE
             horizontalCellSpacing = 4.0
             verticalCellSpacing = 4.0
         }

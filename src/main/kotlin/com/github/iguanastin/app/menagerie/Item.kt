@@ -7,13 +7,12 @@ import javafx.scene.image.Image
 import tornadofx.*
 import java.lang.ref.WeakReference
 
-open class Item(val id: Int, val added: Long) {
+open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
 
     companion object {
         private const val defaultThumbPath: String = "/imgs/default-thumb.png"
-        const val thumbnailWidth: Double = 150.0
-        const val thumbnailHeight: Double = 150.0
-        val defaultThumbnail: Image by lazy { Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailWidth, thumbnailHeight, true, true, true) }
+        const val thumbnailSize: Double = 150.0
+        val defaultThumbnail: Image by lazy { Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailSize, thumbnailSize, true, true, true) }
     }
 
     private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()

@@ -5,24 +5,26 @@ import com.github.iguanastin.app.menagerie.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty
-import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
+import javafx.scene.control.Button
 import javafx.scene.control.ListView
+import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
-import javafx.scene.input.MouseButton
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.BorderPane
-import javafx.stage.Screen
-import javafx.stage.Stage
-import org.controlsfx.control.GridView
+import javafx.scene.layout.Priority
 import tornadofx.*
-import java.util.prefs.Preferences
 
 class MainView : View("Menagerie") {
 
     lateinit var itemDisplay: ItemDisplay
     lateinit var itemGrid: MultiSelectGridView<Item>
     lateinit var tagView: ListView<Tag>
+
+    private lateinit var editTagsPane: BorderPane
+    private lateinit var editTags: TextField
+    private lateinit var applyTagEdit: Button
 
     val items: ObservableList<Item>
         get() = itemGrid.items
@@ -57,14 +59,10 @@ class MainView : View("Menagerie") {
                 borderpane {
                     center {
                         tagView = listview {
+                            isFocusTraversable = false
                             cellFactory = TagCellFactory.factory
                             maxWidth = 200.0
                             minWidth = 200.0
-                        }
-                    }
-                    bottom {
-                        textfield {
-                            promptText = "Edit tags..."
                         }
                     }
                 }
@@ -78,8 +76,8 @@ class MainView : View("Menagerie") {
                     center {
                         itemGrid = multiselectgridview {
                             addClass(Styles.itemGridView)
-                            cellWidth = Item.thumbnailWidth + ItemCellFactory.PADDING * 2
-                            cellHeight = Item.thumbnailHeight + ItemCellFactory.PADDING * 2
+                            cellWidth = ItemCellFactory.SIZE
+                            cellHeight = ItemCellFactory.SIZE
                             horizontalCellSpacing = 4.0
                             verticalCellSpacing = 4.0
                             cellFactory = ItemCellFactory.factory
@@ -98,12 +96,60 @@ class MainView : View("Menagerie") {
                 }
             }
         }
+
+        editTagsPane = borderpane {
+            isPickOnBounds = false
+            hide()
+            padding = insets(50)
+            bottom {
+                hbox(10) {
+                    addClass(Styles.dialogPane)
+                    isPickOnBounds = false
+                    padding = insets(10)
+                    editTags = textfield {
+                        hboxConstraints {
+                            hGrow = Priority.ALWAYS
+                        }
+                        promptText = "Edit tags..."
+                    }
+                    applyTagEdit = button("Ok")
+                }
+            }
+        }
     }
 
     init {
         itemGrid.selected.addListener(InvalidationListener {
             displaying = itemGrid.selected.lastOrNull()
         })
+
+        editTagsPane.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (event.code == KeyCode.ESCAPE) editTagsPane.hide()
+        }
+        editTagsPane.visibleProperty().addListener(ChangeListener { _, _, newValue ->
+            if (!newValue) itemGrid.requestFocus()
+        })
+        editTags.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (event.code == KeyCode.ENTER) applyTagEdit.fire()
+        }
+        applyTagEdit.onAction = EventHandler { event ->
+            for (name in editTags.text.trim().split(Regex("\\s+"))) {
+                val menagerie = itemGrid.selected[0].menagerie
+                if (name.startsWith('-')) {
+                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
+                    itemGrid.selected.forEach { it.removeTag(tag) }
+                } else {
+                    var tag: Tag? = menagerie.getTag(name)
+                    if (tag == null) {
+                        tag = Tag(menagerie.reserveTagID(), name)
+                        menagerie.addTag(tag)
+                    }
+                    itemGrid.selected.forEach { it.addTag(tag) }
+                }
+            }
+            editTagsPane.hide()
+            event.consume()
+        }
 
         val displayTagsListener = InvalidationListener {
             tags.apply {
@@ -122,6 +168,20 @@ class MainView : View("Menagerie") {
         })
 
         Platform.runLater { itemGrid.requestFocus() }
+
+        root.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                if (event.code == KeyCode.E) {
+                    editTagsPane.show()
+                    editTags.requestFocus()
+                }
+            }
+            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                if (event.code == KeyCode.Q) {
+                    Platform.exit()
+                }
+            }
+        }
     }
 
 }

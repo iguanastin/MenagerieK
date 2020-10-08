@@ -57,14 +57,6 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initViewsAndControls(stage: Stage) {
         initMainStageProperties(stage)
-
-        root.root.onKeyPressed = EventHandler { event ->
-            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.Q) {
-                    Platform.exit()
-                }
-            }
-        }
     }
 
     override fun stop() {

@@ -5,7 +5,7 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import tornadofx.*
 
-class GroupItem(id: Int, added: Long, title: String = "") : Item(id, added) {
+class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") : Item(id, added, menagerie) {
 
     val titleProperty = SimpleStringProperty(title)
     var title: String

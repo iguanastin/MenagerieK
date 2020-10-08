@@ -4,7 +4,7 @@ import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin
 import java.io.File
 import java.io.IOException
 
-open class FileItem(id: Int, added: Long, var md5: String, var file: File): Item(id, added) {
+open class FileItem(id: Int, added: Long, menagerie: Menagerie, var md5: String, var file: File): Item(id, added, menagerie) {
 
     companion object {
 
