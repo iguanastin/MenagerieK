@@ -1,21 +1,28 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.menagerie.FileItem
+import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
+import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
+import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
+import javafx.scene.input.TransferMode
 import javafx.stage.Screen
 import javafx.stage.Stage
 import mu.KotlinLogging
 import tornadofx.*
 import java.io.File
+import java.io.IOException
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -54,6 +61,84 @@ class MyApp : App(MainView::class, Styles::class) {
                 // TODO show error to user
                 log.error("Error occurred while importing", e)
             }
+
+            initViewControls()
+        }
+    }
+
+    private fun initViewControls() {
+        Platform.runLater {
+            root.items.addAll(menagerie.items.reversed())
+            if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
+        }
+        menagerie.items.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { runOnUIThread { root.items.remove(it) } }
+                change.addedSubList.forEach { item ->
+                    runOnUIThread {
+                        for (i in root.items.indices) {
+                            if (item.id > root.items[i].id) {
+                                root.items.add(i, item)
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        root.root.onDragOver = EventHandler { event ->
+            if (event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
+                root.dragOverlay.show()
+                event.apply {
+                    acceptTransferModes(*TransferMode.ANY)
+                    consume()
+                }
+            }
+        }
+        root.root.onDragDropped = EventHandler { event ->
+            if (event.isAccepted) {
+                // TODO improve this
+                if (event.dragboard.url != null) {
+                    importer.enqueue(RemoteImportJob.intoDirectory(event.dragboard.url, File("D:\\Downloads")))
+                }
+                if (event.dragboard.files?.isNotEmpty() == true) {
+                    event.dragboard.files.forEach { file -> importer.enqueue(ImportJob(file)) }
+                }
+
+                event.apply {
+                    isDropCompleted = true
+                    consume()
+                }
+            }
+        }
+        root.root.onDragExited = EventHandler {
+            root.dragOverlay.hide()
+        }
+
+        root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (event.code == KeyCode.DELETE) {
+                val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
+                if (del.isNotEmpty()) {
+                    del.forEach {
+                        log.info("Removing item: $it")
+                        menagerie.removeItem(it)
+                    }
+
+                    if (!event.isShortcutDown) {
+                        del.forEach {
+                            if (it is FileItem) {
+                                try {
+                                    log.info("Deleting file: ${it.file}")
+                                    it.file.delete()
+                                } catch (e: IOException) {
+                                    log.error("Exception while deleting file: ${it.file}", e)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -79,10 +164,6 @@ class MyApp : App(MainView::class, Styles::class) {
                 try {
                     menagerie = manager.loadMenagerie()
                     importer = MenagerieImporter(menagerie)
-                    Platform.runLater {
-                        root.items.addAll(menagerie.items.reversed())
-                        if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
-                    }
 
                     after?.invoke(manager, menagerie, importer)
                 } catch (e: MenagerieDatabaseException) {

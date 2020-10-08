@@ -3,9 +3,6 @@ package com.github.iguanastin.app.menagerie.database.updates
 import com.github.iguanastin.app.menagerie.GroupItem
 import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import java.sql.Connection
-import java.sql.PreparedStatement
 
 class DatabaseCreateGroup(id: Int, added: Long, val title: String, val items: List<Item>): DatabaseCreateItem(id, added) {
 
@@ -13,20 +10,13 @@ class DatabaseCreateGroup(id: Int, added: Long, val title: String, val items: Li
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getCachedStatement(this, "default")
+        val ps = db.getPrepared("DatabaseCreateGroup", "INSERT INTO groups(id, title) VALUES(?, ?, ?);")
 
         ps.setInt(1, id)
         ps.setNString(2, title)
         ps.setNClob(3, items.joinToString(separator = ",").reader())
 
         return super.sync(db) + ps.executeUpdate()
-    }
-
-    override fun prepareStatement(conn: Connection, key: String): PreparedStatement {
-        return when (key) {
-            "default" -> conn.prepareStatement("INSERT INTO groups(id, title) VALUES(?, ?, ?);")
-            else -> throw MenagerieDatabaseException("Invalid statement key: $key")
-        }
     }
 
 }

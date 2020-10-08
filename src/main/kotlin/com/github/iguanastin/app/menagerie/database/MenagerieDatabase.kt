@@ -24,7 +24,8 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val migrations: List<DatabaseMigration> = listOf(InitializeDatabaseV8(), MigrateDatabase8To9())
     }
 
-    private val db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
+    val db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
+    private val preparedCache: MutableMap<String, PreparedStatement> = mutableMapOf()
     var genericStatement: Statement = db.createStatement()
         get() {
             if (field.isClosed) field = db.createStatement()
@@ -32,7 +33,6 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         }
         private set
     var version: Int = retrieveVersion()
-    private val preparedCache: Map<String, PreparedStatement> = mutableMapOf()
 
     private val updateQueue: BlockingQueue<DatabaseUpdate> = LinkedBlockingQueue()
 
@@ -62,11 +62,6 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
             log.info("Database updater thread stopped ($url)")
         }
-    }
-
-
-    fun getCachedStatement(owner: DatabaseUpdate, key: String): PreparedStatement {
-        return preparedCache["${owner.javaClass.name}.$key"] ?: owner.prepareStatement(db, key)
     }
 
     fun loadMenagerie(): Menagerie {
@@ -112,10 +107,12 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 change.addedSubList.forEach { item ->
                     item.untagListeners.add(itemUntaggedListener)
                     item.tagListeners.add(itemTaggedListener)
-                    when (item) {
-                        is ImageItem -> updateQueue.put(DatabaseCreateMedia(item))
+                    updateQueue.put(when (item) {
+                        is ImageItem -> DatabaseCreateImage(item)
+                        is FileItem -> DatabaseCreateFile(item)
+                        is GroupItem -> DatabaseCreateGroup(item)
                         else -> TODO("Unimplemented")
-                    }
+                    })
                 }
             }
         })
@@ -351,6 +348,15 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 return -1
             }
         }
+    }
+
+    fun getPrepared(key: String, statement: String): PreparedStatement {
+        var ps = preparedCache[key]
+        if (ps == null) {
+            ps = db.prepareStatement(statement)!!
+            preparedCache[key] = ps
+        }
+        return ps
     }
 
     /**

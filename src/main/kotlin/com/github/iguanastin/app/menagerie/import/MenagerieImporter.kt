@@ -29,9 +29,12 @@ class MenagerieImporter(val menagerie: Menagerie) {
                 if (job == null) continue
 
                 try {
+                    log.info("Importing: ${job.file}")
                     val item = job.import(menagerie)
+                    log.info("Successfully imported: ${job.item}")
                     onImport.forEach { it(item) }
                 } catch (e: Exception) {
+                    job.cleanupAfterError(e)
                     onError.forEach { it(e) }
                 }
             }

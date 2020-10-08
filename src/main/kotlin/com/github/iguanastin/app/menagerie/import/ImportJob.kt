@@ -21,11 +21,17 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
         val added = System.currentTimeMillis()
         val md5 = FileItem.fileHash(file)
 
-        item = if (ImageItem.isImage(file)) {
-            val histogram = Histogram.from(image(file))
-            ImageItem(id, added, menagerie, md5, file, noSimilar = false, histogram = histogram)
-        } else {
-            FileItem(id, added, menagerie, md5, file)
+        item = when {
+            ImageItem.isImage(file) -> {
+                val histogram = Histogram.from(image(file))
+                ImageItem(id, added, menagerie, md5, file, noSimilar = false, histogram = histogram)
+            }
+            VideoItem.isVideo(file) -> {
+                VideoItem(id, added, menagerie, md5, file)
+            }
+            else -> {
+                FileItem(id, added, menagerie, md5, file)
+            }
         }
 
         menagerie.addItem(item!!)
@@ -36,5 +42,7 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
 
         return item!!
     }
+
+    open fun cleanupAfterError(e: Exception) {}
 
 }

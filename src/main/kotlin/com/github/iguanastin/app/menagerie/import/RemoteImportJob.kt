@@ -10,7 +10,8 @@ import java.net.URL
 import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
-class RemoteImportJob private constructor(val url: String, file: File): ImportJob(file) {
+
+class RemoteImportJob private constructor(val url: String, file: File) : ImportJob(file) {
 
     companion object {
         fun intoFile(url: String, file: File): RemoteImportJob {
@@ -33,6 +34,12 @@ class RemoteImportJob private constructor(val url: String, file: File): ImportJo
         }
     }
 
+    init {
+        if (file.exists()) {
+            throw FileAlreadyExistsException(file)
+        }
+    }
+
 
     override fun import(menagerie: Menagerie): Item {
         log.debug { "Importing remote \"$url\" into file: \"$file\"" }
@@ -44,19 +51,28 @@ class RemoteImportJob private constructor(val url: String, file: File): ImportJo
 
     private fun download(url: String, into: File) {
         val conn = URL(url).openConnection() as HttpURLConnection
-        conn.addRequestProperty("User-Agent", "Mozilla/4.0")
-        Channels.newChannel(conn.inputStream).use { rbs ->
-            FileOutputStream(into).use { fos ->
-                val size: Long = conn.contentLengthLong
-                val chunkSize: Long = 4096
-                var i: Long = 0
-                while (i < size) {
-                    fos.channel.transferFrom(rbs, i, chunkSize)
-                    i += chunkSize
+        try {
+            conn.addRequestProperty("User-Agent", "Mozilla/4.0")
+            Channels.newChannel(conn.inputStream).use { rbs ->
+                FileOutputStream(into).use { fos ->
+                    val size: Long = conn.contentLengthLong
+                    val chunkSize: Long = 4096
+                    var i: Long = 0
+                    while (i < size) {
+                        fos.channel.transferFrom(rbs, i, chunkSize)
+                        i += chunkSize
+                    }
                 }
             }
+        } finally {
+            conn.disconnect()
         }
-        conn.disconnect()
+    }
+
+    override fun cleanupAfterError(e: Exception) {
+        super.cleanupAfterError(e)
+
+        if (file.exists()) file.delete()
     }
 
 }

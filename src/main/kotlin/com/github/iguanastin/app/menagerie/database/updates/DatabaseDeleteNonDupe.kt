@@ -1,11 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
 import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import java.sql.Connection
-import java.sql.PreparedStatement
 
 class DatabaseDeleteNonDupe(private val item1ID: Int, private val item2ID: Int): DatabaseUpdate() {
 
@@ -14,19 +10,12 @@ class DatabaseDeleteNonDupe(private val item1ID: Int, private val item2ID: Int):
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getCachedStatement(this, "default")
+        val ps = db.getPrepared("DatabaseDeleteNonDupe", "DELETE FROM non_dupes WHERE item_1=? AND item_2=?;")
 
         ps.setInt(1, item1ID)
         ps.setInt(2, item2ID)
 
         return ps.executeUpdate()
-    }
-
-    override fun prepareStatement(conn: Connection, key: String): PreparedStatement {
-        when (key) {
-            "default" -> return conn.prepareStatement("DELETE FROM non_dupes WHERE item_1=? AND item_2=?;")
-            else -> throw MenagerieDatabaseException("Invalid statement key: $key")
-        }
     }
 
 }

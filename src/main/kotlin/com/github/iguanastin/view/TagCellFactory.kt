@@ -19,7 +19,7 @@ object TagCellFactory {
 
             val colorListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
                 runOnUIThread {
-                    val color = Color.web(newValue ?: "white")
+                    val color = c(newValue ?: "white")
                     nameLabel.textFill = color
                     freqLabel.textFill = color
                 }
@@ -50,7 +50,7 @@ object TagCellFactory {
                 item?.color?.addListener(colorListener)
                 item?.frequency?.removeListener(freqListener)
 
-                val color = Color.web(item?.color?.value ?: "white")
+                val color = c(item?.color?.value ?: "white")
                 nameLabel.apply {
                     text = item?.name
                     textFill = color

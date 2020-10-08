@@ -49,7 +49,7 @@ object ItemCellFactory {
                     textView = label {
                         stackpaneConstraints { alignment = Pos.CENTER }
                         textAlignment = TextAlignment.CENTER
-                        effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
+                        effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
                     }
                 }
 

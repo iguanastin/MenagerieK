@@ -2,8 +2,10 @@ package com.github.iguanastin.app
 
 import javafx.scene.Cursor
 import javafx.scene.effect.DropShadow
+import javafx.scene.layout.BorderStrokeStyle
 import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
+import javafx.scene.text.TextAlignment
 import tornadofx.*
 
 class Styles : Stylesheet() {
@@ -13,13 +15,16 @@ class Styles : Stylesheet() {
         val dialogPane by cssclass()
         val itemGridView by cssclass()
         val itemGridCell by cssclass()
+        val transparentOverlay by cssclass()
+        val dragDropDialog by cssclass()
+
         val selected by csspseudoclass()
     }
 
     init {
         root {
-            baseColor = Color.web("#3b3f42")!!
-            backgroundColor += Color.web("#3b3f42")
+            baseColor = c("#3b3f42")
+            backgroundColor += c("#3b3f42")
         }
         label and heading {
             padding = box(10.px)
@@ -32,26 +37,43 @@ class Styles : Stylesheet() {
             }
             padding = box(25.px)
             backgroundRadius += box(10.px)
-            backgroundColor += Color.color(0.25, 0.25, 0.25, 0.75)!!
+            backgroundColor += c(0.25, 0.25, 0.25, 0.75)
         }
         listCell {
             and(odd) {
-                backgroundColor += Color.web("#3e3e3e")
+                backgroundColor += c("#3e3e3e")
             }
-            backgroundColor += Color.web("#303030")
+            backgroundColor += c("#303030")
         }
         itemGridView {
             minWidth = 525.px
         }
         itemGridCell {
-            backgroundColor += Color.web("#606467")
+            backgroundColor += c("#606467")
         }
         itemGridCell and selected {
-            backgroundColor += Color.web("#4e98a8")
+            backgroundColor += c("#4e98a8")
         }
         dialogPane {
-            backgroundColor += Color.web("#3b3f42")
-            effect = DropShadow(50.0, Color.BLACK).apply { spread = 0.25 }
+            backgroundColor += c("#3b3f42")
+            effect = DropShadow(50.0, c("black")).apply { spread = 0.25 }
+        }
+        transparentOverlay {
+            backgroundColor += c(0, 0, 0, 0.33)
+        }
+        dragDropDialog {
+            fontSize = 24.px
+            wrapText = true
+            padding = box(25.px)
+            textAlignment = TextAlignment.CENTER
+
+            backgroundColor += c(0, 0, 0, 0.66)
+            backgroundRadius += box(25.px)
+
+            borderRadius += box(25.px)
+            borderStyle += BorderStrokeStyle.DASHED
+            borderColor += box(c("grey"))
+            borderWidth += box(2.px)
         }
     }
 }

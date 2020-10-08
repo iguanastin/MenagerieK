@@ -1,11 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
 import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import java.sql.Connection
-import java.sql.PreparedStatement
 
 class DatabaseCreateNonDupe(private val item1ID: Int, private val item2ID: Int): DatabaseUpdate() {
 
@@ -14,19 +10,12 @@ class DatabaseCreateNonDupe(private val item1ID: Int, private val item2ID: Int):
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getCachedStatement(this, "default")
+        val ps = db.getPrepared("DatabaseCreateNonDupe", "INSERT INTO non_dupes(item_1, item_2) VALUES (?, ?);")
 
         ps.setInt(1, item1ID)
         ps.setInt(2, item2ID)
 
         return ps.executeUpdate()
-    }
-
-    override fun prepareStatement(conn: Connection, key: String): PreparedStatement {
-        when (key) {
-            "default" -> return conn.prepareStatement("INSERT INTO non_dupes(item_1, item_2) VALUES (?, ?);")
-            else -> throw MenagerieDatabaseException("Invalid statement key: $key")
-        }
     }
 
 }

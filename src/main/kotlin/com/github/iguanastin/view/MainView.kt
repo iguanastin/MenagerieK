@@ -14,13 +14,19 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
+import javafx.scene.layout.Region
+import javafx.scene.paint.Color
+import javafx.scene.text.TextAlignment
 import tornadofx.*
+import java.io.IOException
+
 
 class MainView : View("Menagerie") {
 
     lateinit var itemDisplay: ItemDisplay
     lateinit var itemGrid: MultiSelectGridView<Item>
     lateinit var tagView: ListView<Tag>
+    lateinit var dragOverlay: BorderPane
 
     private lateinit var editTagsPane: BorderPane
     private lateinit var editTags: TextField
@@ -113,6 +119,16 @@ class MainView : View("Menagerie") {
                         promptText = "Edit tags..."
                     }
                     applyTagEdit = button("Ok")
+                }
+            }
+        }
+
+        dragOverlay = borderpane {
+            hide()
+            addClass(Styles.transparentOverlay)
+            center {
+                label("Drop here to import\n\nFiles, Folders, Urls") {
+                    addClass(Styles.dragDropDialog)
                 }
             }
         }

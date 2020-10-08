@@ -8,6 +8,4 @@ abstract class DatabaseUpdate {
 
     abstract fun sync(db: MenagerieDatabase): Int
 
-    abstract fun prepareStatement(conn: Connection, key: String): PreparedStatement
-
 }
