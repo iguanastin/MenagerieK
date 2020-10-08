@@ -10,7 +10,7 @@ class Styles : Stylesheet() {
         val heading by cssclass()
         val fourChoice by cssclass()
         val dialogPane by cssclass()
-        val gridView by cssclass()
+        val itemGridView by cssclass()
         val itemGridCell by cssclass()
         val selected by csspseudoclass()
     }
@@ -39,7 +39,7 @@ class Styles : Stylesheet() {
             }
             backgroundColor += Color.web("#303030")
         }
-        gridView {
+        itemGridView {
             minWidth = 525.px
         }
         itemGridCell {

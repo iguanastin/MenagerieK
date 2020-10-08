@@ -108,10 +108,12 @@ class MultiSelectGridView<T> : GridView<T> {
 
     fun initSelectableCell(cell: GridCell<T>) {
         cell.itemProperty().addListener(InvalidationListener {
-            if (cell.item in selected) {
-                runOnUIThread { if (!cell.hasClass(Styles.selected)) cell.addClass(Styles.selected) }
-            } else if (cell.item in selected) {
-                runOnUIThread { cell.removeClass(Styles.selected) }
+            runOnUIThread {
+                if (cell.item in selected) {
+                    cell.addClass(Styles.selected)
+                } else {
+                    cell.removeClass(Styles.selected)
+                }
             }
         })
 

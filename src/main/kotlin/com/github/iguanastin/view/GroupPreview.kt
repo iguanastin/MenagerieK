@@ -32,7 +32,6 @@ class GroupPreview: BorderPane() {
 
         grid.cellFactory = ItemCellFactory.factory
         grid.apply {
-            addClass(Styles.gridView)
             cellWidth = Item.thumbnailWidth + ItemCellFactory.PADDING * 2
             cellHeight = Item.thumbnailHeight + ItemCellFactory.PADDING * 2
             horizontalCellSpacing = 4.0
