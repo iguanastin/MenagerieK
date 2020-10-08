@@ -1,11 +1,14 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.*
 import javafx.geometry.Pos
+import javafx.scene.control.Label
+import javafx.scene.effect.DropShadow
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.paint.Color
+import javafx.scene.text.TextAlignment
 import javafx.util.Callback
 import org.controlsfx.control.GridCell
 import org.controlsfx.control.GridView
@@ -23,6 +26,7 @@ object ItemCellFactory {
 
             private lateinit var thumbView: ImageView
             private lateinit var tagView: ImageView
+            private lateinit var textView: Label
 
             init {
                 addClass(Styles.itemGridCell)
@@ -42,6 +46,11 @@ object ItemCellFactory {
                         translateX = -4.0
                         translateY = -4.0
                     }
+                    textView = label {
+                        stackpaneConstraints { alignment = Pos.CENTER }
+                        textAlignment = TextAlignment.CENTER
+                        effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
+                    }
                 }
 
                 if (grid is MultiSelectGridView) {
@@ -52,15 +61,33 @@ object ItemCellFactory {
             override fun updateItem(item: Item?, empty: Boolean) {
                 super.updateItem(item, empty)
 
+                tagView.hide()
+                textView.hide()
+
                 thumbView.image = item?.getThumbnail()
-                if (item is GroupItem) {
-                    tagView.show()
-                    tagView.image = groupTag
-//                } else if (item) {
-//                    tagView.show()
-//                    tagView.image = videoTag
-                } else {
-                    tagView.hide()
+
+                when (item) {
+                    is GroupItem -> {
+                        tagView.apply {
+                            show()
+                            image = groupTag
+                        }
+                    }
+                    is ImageItem -> {
+                        // Nothing special
+                    }
+                    is VideoItem -> {
+                        tagView.apply {
+                            show()
+                            image = videoTag
+                        }
+                    }
+                    is FileItem -> {
+                        textView.apply {
+                            show()
+                            text = item.file.name
+                        }
+                    }
                 }
             }
 

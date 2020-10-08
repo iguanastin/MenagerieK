@@ -270,7 +270,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             items.remove(i)
         }
         for (i in files.keys) {
-            val item = FileItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file)
+            val item = if (VideoItem.isVideo(files[i]!!.file)) {
+                VideoItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file)
+            } else {
+                FileItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file)
+            }
             generatedItems.add(item)
             groupChildMap[i] = item
             items.remove(i)

@@ -3,6 +3,7 @@ package com.github.iguanastin.app
 import com.github.iguanastin.app.menagerie.Menagerie
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
+import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.runOnUIThread
@@ -14,6 +15,7 @@ import javafx.stage.Screen
 import javafx.stage.Stage
 import mu.KotlinLogging
 import tornadofx.*
+import java.io.File
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -41,7 +43,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         log.info("Starting app")
 
-        initViewsAndControls(stage)
+        initMainStageProperties(stage)
 
         loadMenagerie(stage) { manager, menagerie, importer ->
             manager.updateErrorHandlers.add { e ->
@@ -53,10 +55,6 @@ class MyApp : App(MainView::class, Styles::class) {
                 log.error("Error occurred while importing", e)
             }
         }
-    }
-
-    private fun initViewsAndControls(stage: Stage) {
-        initMainStageProperties(stage)
     }
 
     override fun stop() {
