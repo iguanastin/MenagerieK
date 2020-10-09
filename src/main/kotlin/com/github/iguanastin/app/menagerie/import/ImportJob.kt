@@ -6,13 +6,13 @@ import mu.KotlinLogging
 import java.io.File
 
 private val log = KotlinLogging.logger {}
-open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null, var onFinish: ((Item) -> Unit)? = null) {
+open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null, var onFinish: ((FileItem) -> Unit)? = null) {
 
-    var item: Item? = null
+    var item: FileItem? = null
         private set
 
 
-    open fun import(menagerie: Menagerie): Item {
+    open fun import(menagerie: Menagerie): FileItem {
         onStart?.invoke(this)
 
         log.debug { "Importing \"$file\"" }

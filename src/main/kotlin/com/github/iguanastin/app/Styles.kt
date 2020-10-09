@@ -75,5 +75,9 @@ class Styles : Stylesheet() {
             borderColor += box(c("grey"))
             borderWidth += box(2.px)
         }
+        textField {
+            textFill = c("white")
+            backgroundColor += c("#242424")
+        }
     }
 }

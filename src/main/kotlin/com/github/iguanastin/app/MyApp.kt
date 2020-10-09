@@ -3,6 +3,7 @@ package com.github.iguanastin.app
 import com.github.iguanastin.app.menagerie.FileItem
 import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
+import com.github.iguanastin.app.menagerie.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.ImportJob
@@ -62,7 +63,22 @@ class MyApp : App(MainView::class, Styles::class) {
                 log.error("Error occurred while importing", e)
             }
 
+            purgeZombieTags(menagerie)
+
             initViewControls()
+        }
+    }
+
+    private fun purgeZombieTags(menagerie: Menagerie) {
+        val toRemove = mutableSetOf<Tag>()
+        for (tag in menagerie.tags) {
+            if (tag.frequency.get() == 0) {
+                toRemove.add(tag)
+            }
+        }
+        toRemove.forEach {
+            log.info("Purging zombie tag: $it")
+            menagerie.removeTag(it)
         }
     }
 

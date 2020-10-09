@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.import
 
+import com.github.iguanastin.app.menagerie.FileItem
 import com.github.iguanastin.app.menagerie.Item
 import com.github.iguanastin.app.menagerie.Menagerie
 import mu.KotlinLogging
@@ -41,7 +42,7 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
     }
 
 
-    override fun import(menagerie: Menagerie): Item {
+    override fun import(menagerie: Menagerie): FileItem {
         log.debug { "Importing remote \"$url\" into file: \"$file\"" }
 
         download(url, file)

@@ -51,7 +51,6 @@ class MainView : View("Menagerie") {
             tagView.items = value
         }
 
-
     override val root = stackpane {
         borderpane {
             center {

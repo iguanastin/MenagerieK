@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.database.migration.DatabaseMigration
 import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabaseV8
 import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
 import com.github.iguanastin.app.menagerie.database.updates.*
+import javafx.beans.InvalidationListener
 import javafx.collections.ListChangeListener
 import mu.KotlinLogging
 import java.io.File
@@ -95,6 +96,16 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         for (item in menagerie.items) {
             item.tagListeners.add(itemTaggedListener)
             item.untagListeners.add(itemUntaggedListener)
+
+            if (item is FileItem) {
+                // TODO
+            }
+            if (item is ImageItem) {
+                // TODO
+            }
+            if (item is GroupItem) {
+                // TODO
+            }
         }
 
         menagerie.items.addListener(ListChangeListener { change ->
@@ -107,6 +118,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 change.addedSubList.forEach { item ->
                     item.untagListeners.add(itemUntaggedListener)
                     item.tagListeners.add(itemTaggedListener)
+                    // TODO add tags for other item properties
                     updateQueue.put(when (item) {
                         is ImageItem -> DatabaseCreateImage(item)
                         is FileItem -> DatabaseCreateFile(item)

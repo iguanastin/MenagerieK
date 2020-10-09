@@ -28,4 +28,8 @@ class Tag(val id: Int, val name: String, color: String? = null, frequency: Int =
         return true
     }
 
+    override fun toString(): String {
+        return "($id) $name"
+    }
+
 }

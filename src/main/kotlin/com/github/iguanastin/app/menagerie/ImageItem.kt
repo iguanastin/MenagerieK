@@ -1,9 +1,23 @@
 package com.github.iguanastin.app.menagerie
 
+import javafx.beans.property.BooleanProperty
+import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.scene.image.Image
 import java.io.File
 
-class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File, var noSimilar: Boolean = false, var histogram: Histogram? = null): FileItem(id, added, menagerie, md5, file) {
+class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File, noSimilar: Boolean = false, histogram: Histogram? = null): FileItem(id, added, menagerie, md5, file) {
+
+    val noSimilarProperty: BooleanProperty = SimpleBooleanProperty(noSimilar)
+    var noSimilar: Boolean
+        get() = noSimilarProperty.get()
+        set(value) = noSimilarProperty.set(value)
+
+    val histogramProperty: ObjectProperty<Histogram?> = SimpleObjectProperty(histogram)
+    var histogram: Histogram?
+        get() = histogramProperty.get()
+        set(value) = histogramProperty.set(value)
 
     companion object {
         val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")

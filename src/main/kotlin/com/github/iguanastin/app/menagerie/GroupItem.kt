@@ -26,6 +26,10 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         }
     }
 
+    fun moveItem(item: FileItem, index: Int) {
+        _items.move(item, index)
+    }
+
     fun removeItem(item: Item): Boolean {
         return _items.remove(item)
     }
