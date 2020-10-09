@@ -18,8 +18,8 @@ object ItemCellFactory {
 
     const val SIZE: Double = Item.thumbnailSize + 10
 
-    val videoTag: Image by lazy { Image(javaClass.getResource("/imgs/group_tag.png").toExternalForm(), true) }
-    val groupTag: Image by lazy { Image(javaClass.getResource("/imgs/video_tag.png").toExternalForm(), true) }
+    val groupTag: Image by lazy { Image(javaClass.getResource("/imgs/group_tag.png").toExternalForm(), true) }
+    val videoTag: Image by lazy { Image(javaClass.getResource("/imgs/video_tag.png").toExternalForm(), true) }
 
     val factory = Callback<GridView<Item>, GridCell<Item>> { grid ->
         object : GridCell<Item>() {
@@ -71,6 +71,10 @@ object ItemCellFactory {
                         tagView.apply {
                             show()
                             image = groupTag
+                        }
+                        textView.apply {
+                            show()
+                            text = item.title
                         }
                     }
                     is ImageItem -> {

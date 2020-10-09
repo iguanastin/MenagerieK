@@ -14,11 +14,7 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
-import javafx.scene.layout.Region
-import javafx.scene.paint.Color
-import javafx.scene.text.TextAlignment
 import tornadofx.*
-import java.io.IOException
 
 
 class MainView : View("Menagerie") {
@@ -51,83 +47,87 @@ class MainView : View("Menagerie") {
             tagView.items = value
         }
 
-    override val root = stackpane {
-        borderpane {
-            center {
-                itemDisplay = itemdisplay {
-                    paddingLeft = 5
-                    paddingTop = 5
-                    paddingBottom = 5
-                }
-            }
-            left {
-                borderpane {
-                    center {
-                        tagView = listview {
-                            isFocusTraversable = false
-                            cellFactory = TagCellFactory.factory
-                            maxWidth = 200.0
-                            minWidth = 200.0
-                        }
+    override val root = topenabledstackpane {
+        focusingstackpane {
+            borderpane {
+                center {
+                    itemDisplay = itemdisplay {
+                        paddingLeft = 5
+                        paddingTop = 5
+                        paddingBottom = 5
                     }
                 }
-            }
-            right {
-                borderpane {
-                    padding = insets(4)
-                    top {
-                        textfield()
-                    }
-                    center {
-                        itemGrid = multiselectgridview {
-                            addClass(Styles.itemGridView)
-                            cellWidth = ItemCellFactory.SIZE
-                            cellHeight = ItemCellFactory.SIZE
-                            horizontalCellSpacing = 4.0
-                            verticalCellSpacing = 4.0
-                            cellFactory = ItemCellFactory.factory
-                        }
-                    }
-                    bottom {
-                        borderpane {
-                            left {
-                                button("Something")
-                            }
-                            right {
-                                button("Else")
+                left {
+                    borderpane {
+                        center {
+                            tagView = listview {
+                                isFocusTraversable = false
+                                cellFactory = TagCellFactory.factory
+                                maxWidth = 200.0
+                                minWidth = 200.0
                             }
                         }
                     }
                 }
-            }
-        }
-
-        editTagsPane = borderpane {
-            isPickOnBounds = false
-            hide()
-            padding = insets(50)
-            bottom {
-                hbox(10) {
-                    addClass(Styles.dialogPane)
-                    isPickOnBounds = false
-                    padding = insets(10)
-                    editTags = textfield {
-                        hboxConstraints {
-                            hGrow = Priority.ALWAYS
+                right {
+                    borderpane {
+                        padding = insets(4)
+                        top {
+                            textfield()
                         }
-                        promptText = "Edit tags..."
+                        center {
+                            itemGrid = multiselectgridview {
+                                addClass(Styles.itemGridView)
+                                cellWidth = ItemCellFactory.SIZE
+                                cellHeight = ItemCellFactory.SIZE
+                                horizontalCellSpacing = 4.0
+                                verticalCellSpacing = 4.0
+                                cellFactory = ItemCellFactory.factory
+                            }
+                        }
+                        bottom {
+                            borderpane {
+                                left {
+                                    button("Something")
+                                }
+                                right {
+                                    button("Else")
+                                }
+                            }
+                        }
                     }
-                    applyTagEdit = button("Ok")
                 }
             }
-        }
 
-        dragOverlay = borderpane {
-            hide()
-            addClass(Styles.transparentOverlay)
-            center {
-                label("Drop here to import\n\nFiles, Folders, Urls") {
-                    addClass(Styles.dragDropDialog)
+            focuses = itemGrid
+
+            editTagsPane = borderpane {
+                isPickOnBounds = false
+                hide()
+                padding = insets(50)
+                bottom {
+                    hbox(10) {
+                        addClass(Styles.dialogPane)
+                        isPickOnBounds = false
+                        padding = insets(10)
+                        editTags = textfield {
+                            hboxConstraints {
+                                hGrow = Priority.ALWAYS
+                            }
+                            promptText = "Edit tags..."
+                        }
+                        applyTagEdit = button("Ok")
+                    }
+                }
+            }
+
+            dragOverlay = borderpane {
+                hide()
+                addClass(Styles.transparentOverlay)
+                center {
+                    label("Drop here to import\n\nFiles, Folders, Urls") {
+                        addClass(Styles.dragDropDialog)
+                    }
                 }
             }
         }

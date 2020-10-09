@@ -10,6 +10,8 @@ import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
+import com.github.iguanastin.view.dialog.ConfirmStackDialog
+import com.github.iguanastin.view.dialog.InfoStackDialog
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
@@ -24,6 +26,7 @@ import mu.KotlinLogging
 import tornadofx.*
 import java.io.File
 import java.io.IOException
+import java.util.Collections.addAll
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -136,22 +139,28 @@ class MyApp : App(MainView::class, Styles::class) {
             if (event.code == KeyCode.DELETE) {
                 val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
                 if (del.isNotEmpty()) {
-                    del.forEach {
-                        log.info("Removing item: $it")
-                        menagerie.removeItem(it)
-                    }
-
                     if (!event.isShortcutDown) {
-                        del.forEach {
-                            if (it is FileItem) {
-                                try {
-                                    log.info("Deleting file: ${it.file}")
-                                    it.file.delete()
-                                } catch (e: IOException) {
-                                    log.error("Exception while deleting file: ${it.file}", e)
+                        root.root.add(ConfirmStackDialog("Delete items?", "Delete items and their files?\nWARNING: Deletes files!", onConfirm = {
+                            del.forEach {
+                                if (it is FileItem) {
+                                    try {
+                                        log.info("Removing item: $it")
+                                        menagerie.removeItem(it)
+                                        log.info("Deleting file: ${it.file}")
+                                        it.file.delete()
+                                    } catch (e: IOException) {
+                                        log.error("Exception while deleting file: ${it.file}", e)
+                                    }
                                 }
                             }
-                        }
+                        }))
+                    } else {
+                        root.root.add(ConfirmStackDialog("Drop items?", "Drop these items from the database?\n(Does not delete files)", onConfirm = {
+                            del.forEach {
+                                log.info("Removing item: $it")
+                                menagerie.removeItem(it)
+                            }
+                        }))
                     }
                 }
             }

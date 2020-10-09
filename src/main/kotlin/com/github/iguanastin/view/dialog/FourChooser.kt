@@ -1,4 +1,4 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
 import javafx.event.EventHandler

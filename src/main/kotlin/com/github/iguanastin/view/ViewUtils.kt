@@ -1,6 +1,7 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.view.dialog.fourChooser
 import javafx.application.Platform
 import javafx.event.EventTarget
 import javafx.scene.control.Alert

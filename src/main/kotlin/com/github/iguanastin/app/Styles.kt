@@ -79,5 +79,8 @@ class Styles : Stylesheet() {
             textFill = c("white")
             backgroundColor += c("#242424")
         }
+        button {
+            padding = box(5.px, 10.px)
+        }
     }
 }
