@@ -1,7 +1,9 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.model.GroupItem
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.view.ItemCellFactory
+import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ChangeListener

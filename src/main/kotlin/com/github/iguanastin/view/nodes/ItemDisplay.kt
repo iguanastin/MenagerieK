@@ -1,9 +1,10 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.ImageItem
-import com.github.iguanastin.app.menagerie.Item
-import javafx.application.Platform
+import com.github.iguanastin.app.menagerie.model.GroupItem
+import com.github.iguanastin.app.menagerie.model.ImageItem
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.view.image
+import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.event.EventTarget

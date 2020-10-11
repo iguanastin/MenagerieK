@@ -1,12 +1,12 @@
 package com.github.iguanastin.app
 
-import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
+import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread

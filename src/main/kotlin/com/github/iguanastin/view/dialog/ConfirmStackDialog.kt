@@ -1,6 +1,6 @@
 package com.github.iguanastin.view.dialog
 
-import com.github.iguanastin.view.TopEnabledStackPane
+import com.github.iguanastin.view.nodes.TopEnabledStackPane
 import javafx.event.EventHandler
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode

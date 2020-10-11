@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.FileItem
+import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import java.io.File
 

@@ -1,9 +1,8 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
 import javafx.beans.InvalidationListener
 import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
-import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.scene.image.Image
 import tornadofx.*

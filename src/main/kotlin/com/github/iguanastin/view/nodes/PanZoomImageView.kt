@@ -21,8 +21,10 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  */
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
+import com.github.iguanastin.view.blockUntilLoaded
+import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.DoubleProperty
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.event.EventTarget

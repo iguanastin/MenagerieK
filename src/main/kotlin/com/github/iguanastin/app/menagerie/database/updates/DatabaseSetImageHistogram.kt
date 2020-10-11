@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.Histogram
-import com.github.iguanastin.app.menagerie.ImageItem
+import com.github.iguanastin.app.menagerie.model.Histogram
+import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetImageHistogram(private val itemID: Int, private val histogram: Histogram?): DatabaseUpdate() {

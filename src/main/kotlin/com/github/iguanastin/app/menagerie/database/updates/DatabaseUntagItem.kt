@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Tag
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseUntagItem(private val itemID: Int, private val tagID: Int): DatabaseUpdate() {

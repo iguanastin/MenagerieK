@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.ImageItem
+import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetImageNoSimilar(private val itemID: Int, private val noSimilar: Boolean): DatabaseUpdate() {

@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
 import com.github.iguanastin.view.blockUntilLoaded
 import javafx.scene.image.Image

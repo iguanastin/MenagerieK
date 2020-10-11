@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.database.migration
 
-import com.github.iguanastin.app.menagerie.ImageItem
+import com.github.iguanastin.app.menagerie.model.ImageItem
 import mu.KotlinLogging
 import java.sql.Connection
 import java.sql.ResultSet

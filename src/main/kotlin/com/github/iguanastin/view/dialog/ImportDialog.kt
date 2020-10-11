@@ -1,6 +1,6 @@
 package com.github.iguanastin.view.dialog
 
-import com.github.iguanastin.view.TopEnabledStackPane
+import com.github.iguanastin.view.nodes.TopEnabledStackPane
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.layout.VBox
@@ -24,30 +24,40 @@ class ImportDialog(files: List<File>, var individually: () -> Unit = {}, var asG
                 }
             }
 
-            button("Individually") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    close()
-                    individually()
+            vbox(10.0) {
+                button("Individually") {
+                    maxWidth = Double.MAX_VALUE
+                    style { padding = box(10.px) }
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        close()
+                        individually()
+                    }
                 }
-            }
-            button("As group") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    close()
-                    asGroup()
+                button("As group") {
+                    maxWidth = Double.MAX_VALUE
+                    style { padding = box(10.px) }
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        close()
+                        asGroup()
+                    }
                 }
-            }
-            for (file in files) {
-                if (file.isDirectory) {
-                    button("Folders as groups") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            close()
-                            dirsAsGroups()
+                if (files.size > 1) {
+                    for (file in files) {
+                        if (file.isDirectory) {
+                            button("Folders as groups") {
+                                maxWidth = Double.MAX_VALUE
+                                style { padding = box(10.px) }
+                                onAction = EventHandler { event ->
+                                    event.consume()
+                                    close()
+                                    dirsAsGroups()
+                                }
+                            }
+                            break
                         }
                     }
-                    break
                 }
             }
 

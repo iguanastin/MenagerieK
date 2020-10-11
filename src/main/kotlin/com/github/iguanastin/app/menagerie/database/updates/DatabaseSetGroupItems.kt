@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.GroupItem
+import com.github.iguanastin.app.menagerie.model.FileItem
+import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetGroupItems(private val itemID: Int, private val ids: List<Int>): DatabaseUpdate() {

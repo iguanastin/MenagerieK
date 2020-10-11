@@ -21,7 +21,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  */
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
 import javafx.event.EventTarget
 import javafx.scene.image.Image

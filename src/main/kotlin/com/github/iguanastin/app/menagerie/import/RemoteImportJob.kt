@@ -1,8 +1,7 @@
 package com.github.iguanastin.app.menagerie.import
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Menagerie
+import com.github.iguanastin.app.menagerie.model.FileItem
+import com.github.iguanastin.app.menagerie.model.Menagerie
 import mu.KotlinLogging
 import java.io.File
 import java.io.FileOutputStream

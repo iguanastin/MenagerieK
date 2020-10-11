@@ -1,11 +1,10 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
 import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
-import javafx.beans.value.ChangeListener
 import java.io.File
 import java.io.IOException
 

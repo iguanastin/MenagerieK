@@ -1,14 +1,14 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.*
+import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.view.nodes.MultiSelectGridView
 import javafx.beans.value.ChangeListener
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.effect.DropShadow
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
-import javafx.scene.paint.Color
 import javafx.scene.text.TextAlignment
 import javafx.util.Callback
 import org.controlsfx.control.GridCell

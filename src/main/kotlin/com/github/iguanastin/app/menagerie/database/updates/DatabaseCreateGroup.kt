@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.model.GroupItem
+import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseCreateGroup(id: Int, added: Long, val title: String, val items: List<Item>): DatabaseCreateItem(id, added) {

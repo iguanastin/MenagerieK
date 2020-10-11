@@ -1,6 +1,7 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.view.runOnUIThread
 import com.sun.javafx.scene.control.skin.VirtualFlow
 import impl.org.controlsfx.skin.GridViewSkin
 import javafx.beans.InvalidationListener

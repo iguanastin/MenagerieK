@@ -1,7 +1,9 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.*
-import com.github.iguanastin.app.menagerie.*
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty

@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener

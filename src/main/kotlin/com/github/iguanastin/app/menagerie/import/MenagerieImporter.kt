@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.import
 
-import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Menagerie
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.Menagerie
 import mu.KotlinLogging
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue

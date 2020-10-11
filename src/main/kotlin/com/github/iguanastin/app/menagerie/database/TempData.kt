@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.database
 
-import com.github.iguanastin.app.menagerie.Histogram
+import com.github.iguanastin.app.menagerie.model.Histogram
 import java.io.File
 
 

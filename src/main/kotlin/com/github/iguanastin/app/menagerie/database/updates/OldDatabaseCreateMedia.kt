@@ -1,12 +1,9 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.Histogram
-import com.github.iguanastin.app.menagerie.ImageItem
+import com.github.iguanastin.app.menagerie.model.Histogram
+import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import java.io.File
-import java.sql.Connection
-import java.sql.PreparedStatement
 
 class OldDatabaseCreateMedia(private val id: Int, private val added: Long, private val md5: String?, private val file: File, private val noSimilar: Boolean, private val histogram: Histogram?): DatabaseUpdate() {
 

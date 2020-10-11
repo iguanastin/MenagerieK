@@ -1,11 +1,10 @@
 package com.github.iguanastin.view
 
-import com.github.iguanastin.app.menagerie.Tag
+import com.github.iguanastin.app.menagerie.model.Tag
 import javafx.beans.value.ChangeListener
 import javafx.scene.control.Label
 import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
-import javafx.scene.paint.Color
 import javafx.util.Callback
 import tornadofx.*
 

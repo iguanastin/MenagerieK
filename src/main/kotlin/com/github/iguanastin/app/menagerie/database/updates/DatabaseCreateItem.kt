@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.Item
+import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 open class DatabaseCreateItem(val id: Int, val added: Long): DatabaseUpdate() {

@@ -1,11 +1,10 @@
 package com.github.iguanastin.app.menagerie.database
 
-import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.app.menagerie.database.migration.DatabaseMigration
 import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabaseV8
 import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
 import com.github.iguanastin.app.menagerie.database.updates.*
-import javafx.beans.InvalidationListener
+import com.github.iguanastin.app.menagerie.model.*
 import javafx.collections.ListChangeListener
 import mu.KotlinLogging
 import java.io.File

@@ -1,4 +1,4 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.nodes
 
 import javafx.event.EventTarget
 import javafx.scene.Node

@@ -1,6 +1,6 @@
 package com.github.iguanastin.app.menagerie.import
 
-import com.github.iguanastin.app.menagerie.*
+import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.view.image
 import mu.KotlinLogging
 import java.io.File

@@ -1,7 +1,6 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.GroupItem
+import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetFileMD5(private val itemID: Int, private val md5: String): DatabaseUpdate() {

@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
 import java.io.File
 import java.nio.file.Files

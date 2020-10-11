@@ -1,7 +1,6 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app.menagerie.model
 
-
-class HistogramReadException : Exception {
+class MenagerieException: Exception {
     constructor() : super()
     constructor(message: String) : super(message)
     constructor(message: String, cause: Throwable) : super(message, cause)

@@ -1,8 +1,8 @@
 package com.github.iguanastin.app.menagerie.import
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.GroupItem
-import com.github.iguanastin.app.menagerie.Menagerie
+import com.github.iguanastin.app.menagerie.model.FileItem
+import com.github.iguanastin.app.menagerie.model.GroupItem
+import com.github.iguanastin.app.menagerie.model.Menagerie
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 
