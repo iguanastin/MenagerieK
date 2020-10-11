@@ -1,12 +1,13 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.view.TopEnabledStackPane
 import javafx.event.EventHandler
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import tornadofx.*
 
-class ConfirmStackDialog(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", onConfirm: () -> Unit = {}, onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
+class ConfirmStackDialog(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", var onConfirm: () -> Unit = {}, var onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
 
     private lateinit var cancelButton: Button
     private lateinit var confirmButton: Button
@@ -29,16 +30,16 @@ class ConfirmStackDialog(header: String, message: String, confirmText: String = 
                     hbox(10) {
                         confirmButton = button(confirmText) {
                             onAction = EventHandler { event ->
-                                onConfirm()
                                 close()
                                 event.consume()
+                                onConfirm()
                             }
                         }
                         cancelButton = button(cancelText) {
                             onAction = EventHandler { event ->
-                                onCancel()
                                 close()
                                 event.consume()
+                                onCancel()
                             }
                         }
                     }
@@ -48,8 +49,8 @@ class ConfirmStackDialog(header: String, message: String, confirmText: String = 
 
         addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.ENTER) {
-                confirmButton.fire()
                 event.consume()
+                confirmButton.fire()
             }
         }
     }
@@ -59,3 +60,5 @@ class ConfirmStackDialog(header: String, message: String, confirmText: String = 
     }
 
 }
+
+fun TopEnabledStackPane.confirm(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", op: ConfirmStackDialog.() -> Unit = {}) = ConfirmStackDialog(header, message, confirmText, cancelText).attachTo(this, op)

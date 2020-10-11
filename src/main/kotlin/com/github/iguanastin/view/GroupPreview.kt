@@ -7,20 +7,21 @@ import javafx.beans.property.SimpleObjectProperty
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
+import javafx.scene.effect.DropShadow
 import javafx.scene.layout.BorderPane
 import org.controlsfx.control.GridView
 import tornadofx.*
 
-class GroupPreview: BorderPane() {
+class GroupPreview : BorderPane() {
 
     val groupProperty: ObjectProperty<GroupItem?> = SimpleObjectProperty(null)
     var group: GroupItem?
-    get() {
-        return groupProperty.get()
-    }
-    set(value) {
-        groupProperty.set(value)
-    }
+        get() {
+            return groupProperty.get()
+        }
+        set(value) {
+            groupProperty.set(value)
+        }
 
     private val grid: GridView<Item> = GridView<Item>()
     private val title: Label = Label()
@@ -39,9 +40,13 @@ class GroupPreview: BorderPane() {
         center = grid
 
         top = title
-        title.borderpaneConstraints { alignment = Pos.CENTER }
-        title.style {
-            fontSize = 24.px
+        title.apply {
+            borderpaneConstraints { alignment = Pos.CENTER }
+            isWrapText = true
+            effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
+            style {
+                fontSize = 24.px
+            }
         }
 
         groupProperty.addListener(ChangeListener { _, _, newValue ->
@@ -54,7 +59,6 @@ class GroupPreview: BorderPane() {
             }
         })
     }
-
 }
 
 fun EventTarget.grouppreview(op: GroupPreview.() -> Unit = {}) = GroupPreview().attachTo(this, op)

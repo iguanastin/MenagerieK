@@ -17,6 +17,7 @@ class Styles : Stylesheet() {
         val itemGridCell by cssclass()
         val transparentOverlay by cssclass()
         val dragDropDialog by cssclass()
+        val multiSelectButton by cssclass()
 
         val selected by csspseudoclass()
     }
@@ -81,6 +82,10 @@ class Styles : Stylesheet() {
         }
         button {
             padding = box(5.px, 10.px)
+        }
+        multiSelectButton {
+            prefHeight = 100.px
+            padding = box(25.px)
         }
     }
 }

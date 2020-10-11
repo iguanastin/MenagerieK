@@ -20,6 +20,11 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
         get() = fileProperty.get()
         set(value) = fileProperty.set(value)
 
+    val elementOfProperty: ObjectProperty<GroupItem?> = SimpleObjectProperty(null)
+    var elementOf: GroupItem?
+        get() = elementOfProperty.get()
+        set(value) = elementOfProperty.set(value)
+
     companion object {
         fun fileHash(file: File): String {
             try {

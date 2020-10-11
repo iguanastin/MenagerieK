@@ -28,8 +28,8 @@ open class StackDialog(var onClose: () -> Unit = {}): BorderPane() {
     }
 
     open fun close() {
-        onClose()
         removeFromParent()
+        onClose()
     }
 
 }

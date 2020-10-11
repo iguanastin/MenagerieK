@@ -18,6 +18,10 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
 
     fun addItem(item: FileItem, index: Int? = null): Boolean {
         if (!_items.contains(item)) {
+            if (item.elementOf != null) {
+                item.elementOf?.removeItem(item)
+            }
+            item.elementOf = this
             if (index == null) _items.add(item)
             else _items.add(index, item)
             return true
@@ -30,7 +34,8 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         _items.move(item, index)
     }
 
-    fun removeItem(item: Item): Boolean {
+    fun removeItem(item: FileItem): Boolean {
+        item.elementOf = null
         return _items.remove(item)
     }
 

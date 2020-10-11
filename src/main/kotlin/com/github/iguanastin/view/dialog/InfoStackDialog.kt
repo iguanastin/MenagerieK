@@ -27,9 +27,9 @@ class InfoStackDialog(header: String, message: String, okText: String = "Ok", on
                 right {
                     okButton = button(okText) {
                         onAction = EventHandler { event ->
-                            onOk()
                             close()
                             event.consume()
+                            onOk()
                         }
                     }
                 }
@@ -38,8 +38,8 @@ class InfoStackDialog(header: String, message: String, okText: String = "Ok", on
 
         addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.ENTER) {
-                okButton.fire()
                 event.consume()
+                okButton.fire()
             }
         }
     }

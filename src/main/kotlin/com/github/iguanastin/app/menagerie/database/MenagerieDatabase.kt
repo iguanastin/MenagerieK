@@ -67,7 +67,6 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
     fun loadMenagerie(): Menagerie {
         log.info("Loading Menagerie from database ($url)")
-        if (needsMigration()) migrateDatabase()
 
         val menagerie = Menagerie()
 

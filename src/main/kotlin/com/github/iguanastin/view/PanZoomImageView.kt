@@ -34,6 +34,7 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.input.ScrollEvent
 import tornadofx.*
 import java.util.*
+import kotlin.concurrent.thread
 
 /**
  * An ImageView that dynamically fits to the parent node and implements zooming and panning with the mouse.
@@ -83,8 +84,19 @@ class PanZoomImageView : DynamicImageView {
         updateViewPort()
         val img = image
         if (img != null) {
-            scale.set(getFitScale(img))
-            updateViewPort()
+            val fit = {
+                scale.set(getFitScale(img))
+                updateViewPort()
+            }
+            if (img.isBackgroundLoading && img.progress != 1.0) {
+                // TODO use only one thread instead of spawning one-offs?
+                thread(start = true) {
+                    img.blockUntilLoaded()
+                    if (image == img) runOnUIThread(fit)
+                }
+            } else {
+                fit()
+            }
         }
     }
 

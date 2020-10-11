@@ -35,32 +35,30 @@ class ItemDisplay : StackPane() {
                 display(newValue)
             }
         })
+
+        imageDisplay.imageProperty().addListener(ChangeListener { _, _, newValue ->
+            imageDisplay.isVisible = newValue != null
+        })
+        imageDisplay.disableWhen(imageDisplay.visibleProperty().not())
+
+        groupDisplay.groupProperty.addListener(ChangeListener { _, _, newValue ->
+            groupDisplay.isVisible = newValue != null
+        })
+        groupDisplay.disableWhen(groupDisplay.visibleProperty().not())
     }
 
 
     private fun display(item: Item?) {
-        imageDisplay.apply {
-            image = null
-            hide()
-        }
-        groupDisplay.apply {
-            group = null
-            hide()
-        }
+        imageDisplay.image = null
+        groupDisplay.group = null
 
         when (item) {
             is GroupItem -> {
-                groupDisplay.apply {
-                    group = item
-                    show()
-                }
+                groupDisplay.group = item
             }
             is ImageItem -> {
-                imageDisplay.apply {
-                    image = image(item.file, true)
-                    show()
-                    Platform.runLater { fitImageToView() } // TODO this nightmare still doesn't work
-                }
+                imageDisplay.image = image(item.file, true)
+                imageDisplay.fitImageToView()
             }
             null -> {
                 // Do nothing

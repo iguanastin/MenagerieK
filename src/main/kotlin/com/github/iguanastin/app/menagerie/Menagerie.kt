@@ -50,6 +50,10 @@ class Menagerie {
         return itemIdMap[id]
     }
 
+    fun hasItem(id: Int): Boolean {
+        return itemIdMap.containsKey(id)
+    }
+
     fun addItem(item: Item): Boolean {
         return if (item.id !in itemIdMap.keys) {
             _items.add(item)
@@ -73,6 +77,10 @@ class Menagerie {
             if (tag.name == name) return tag
         }
         return null
+    }
+
+    fun hasTag(id: Int): Boolean {
+        return tagIdMap.containsKey(id)
     }
 
     fun addTag(tag: Tag): Boolean {

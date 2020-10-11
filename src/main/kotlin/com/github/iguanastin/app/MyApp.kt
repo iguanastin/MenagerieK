@@ -10,8 +10,8 @@ import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
-import com.github.iguanastin.view.dialog.ConfirmStackDialog
-import com.github.iguanastin.view.dialog.InfoStackDialog
+import com.github.iguanastin.view.dialog.ProgressDialog
+import com.github.iguanastin.view.dialog.confirm
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
@@ -26,7 +26,6 @@ import mu.KotlinLogging
 import tornadofx.*
 import java.io.File
 import java.io.IOException
-import java.util.Collections.addAll
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
@@ -37,7 +36,8 @@ class MyApp : App(MainView::class, Styles::class) {
     private val uiPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/context")
 
-    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
+    //    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
+    private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
     private val dbUser = contextPrefs.get("db_user", "sa")
     private val dbPass = contextPrefs.get("db_pass", "")
 
@@ -68,6 +68,11 @@ class MyApp : App(MainView::class, Styles::class) {
 
             purgeZombieTags(menagerie)
 
+            runOnUIThread {
+                root.items.addAll((menagerie.items.reversed() as MutableList).apply { removeIf { it is FileItem && it.elementOf != null } })
+                if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
+            }
+
             initViewControls()
         }
     }
@@ -86,10 +91,6 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initViewControls() {
-        Platform.runLater {
-            root.items.addAll(menagerie.items.reversed())
-            if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
-        }
         menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { runOnUIThread { root.items.remove(it) } }
@@ -140,28 +141,40 @@ class MyApp : App(MainView::class, Styles::class) {
                 val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
                 if (del.isNotEmpty()) {
                     if (!event.isShortcutDown) {
-                        root.root.add(ConfirmStackDialog("Delete items?", "Delete items and their files?\nWARNING: Deletes files!", onConfirm = {
-                            del.forEach {
-                                if (it is FileItem) {
-                                    try {
-                                        log.info("Removing item: $it")
-                                        menagerie.removeItem(it)
-                                        log.info("Deleting file: ${it.file}")
-                                        it.file.delete()
-                                    } catch (e: IOException) {
-                                        log.error("Exception while deleting file: ${it.file}", e)
-                                    }
-                                }
+                        root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
+                            onConfirm = {
+                                deleteFiles(del)
                             }
-                        }))
+                        }
                     } else {
-                        root.root.add(ConfirmStackDialog("Drop items?", "Drop these items from the database?\n(Does not delete files)", onConfirm = {
-                            del.forEach {
-                                log.info("Removing item: $it")
-                                menagerie.removeItem(it)
+                        root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
+                            onConfirm = {
+                                deleteItems(del)
                             }
-                        }))
+                        }
                     }
+                }
+            }
+        }
+    }
+
+    private fun deleteItems(del: List<Item>) {
+        del.forEach {
+            log.info("Removing item: $it")
+            menagerie.removeItem(it)
+        }
+    }
+
+    private fun deleteFiles(del: List<Item>) {
+        deleteItems(del)
+
+        del.forEach {
+            if (it is FileItem) {
+                try {
+                    log.info("Deleting file: ${it.file}")
+                    it.file.delete()
+                } catch (e: IOException) {
+                    log.error("Exception while deleting file: ${it.file}", e)
                 }
             }
         }
@@ -178,7 +191,9 @@ class MyApp : App(MainView::class, Styles::class) {
             e.printStackTrace()
         }
 
-        manager.closeAndCompress()
+        thread(start = true) {
+            manager.closeAndCompress()
+        }
     }
 
     private fun loadMenagerie(stage: Stage, after: ((manager: MenagerieDatabase, menagerie: Menagerie, importer: MenagerieImporter) -> Unit)? = null) {
@@ -186,25 +201,39 @@ class MyApp : App(MainView::class, Styles::class) {
             manager = MenagerieDatabase(dbURL, dbUser, dbPass)
 
             val load: () -> Unit = {
-                try {
-                    menagerie = manager.loadMenagerie()
-                    importer = MenagerieImporter(menagerie)
+                runOnUIThread {
+                    val progress = ProgressDialog(header = "Loading database", message = "($dbURL)")
+                    root.root.add(progress)
 
-                    after?.invoke(manager, menagerie, importer)
-                } catch (e: MenagerieDatabaseException) {
-                    e.printStackTrace()
-                    runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                    thread(start = true) {
+                        try {
+                            menagerie = manager.loadMenagerie()
+                            importer = MenagerieImporter(menagerie)
+                            runOnUIThread { progress.close() }
+
+                            after?.invoke(manager, menagerie, importer)
+                        } catch (e: MenagerieDatabaseException) {
+                            e.printStackTrace()
+                            runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                        }
+                    }
                 }
             }
             val migrate: () -> Unit = {
-                thread(start = true) {
-                    try {
-                        manager.migrateDatabase()
+                runOnUIThread {
+                    val progress = ProgressDialog(header = "Migrating database to v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}", message = " ($dbURL)")
+                    root.root.add(progress)
 
-                        load()
-                    } catch (e: MenagerieDatabaseException) {
-                        e.printStackTrace()
-                        runOnUIThread { error(title = "Error", header = "Failed to migrate database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                    thread(start = true) {
+                        try {
+                            manager.migrateDatabase()
+                            runOnUIThread { progress.close() }
+
+                            load()
+                        } catch (e: MenagerieDatabaseException) {
+                            e.printStackTrace()
+                            runOnUIThread { error(title = "Error", header = "Failed to migrate database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                        }
                     }
                 }
             }
@@ -224,7 +253,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     error(title = "Incompatible database", header = "Database v${manager.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = stage)
                 }
             } else {
-                thread(start = true) { load() }
+                load()
             }
         } catch (e: Exception) {
             error(title = "Error", header = "Failed to connect to database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage)
