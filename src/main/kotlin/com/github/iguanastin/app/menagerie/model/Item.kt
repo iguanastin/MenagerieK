@@ -24,8 +24,8 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     init {
         tags.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { tag -> tag.frequency.value-- }
-                change.addedSubList.forEach { tag -> tag.frequency.value++ }
+                change.removed.forEach { tag -> tag.frequency-- }
+                change.addedSubList.forEach { tag -> tag.frequency++ }
 
                 val itemChange = ItemChange(this, if (change.wasAdded()) {
                     change.addedSubList

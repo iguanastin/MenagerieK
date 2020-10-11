@@ -5,7 +5,7 @@ import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseCreateTag(private val id: Int, private val name: String, private val color: String?): DatabaseUpdate() {
 
-    constructor(tag: Tag): this(tag.id, tag.name, tag.color.value)
+    constructor(tag: Tag): this(tag.id, tag.name, tag.color)
 
 
     override fun sync(db: MenagerieDatabase): Int {

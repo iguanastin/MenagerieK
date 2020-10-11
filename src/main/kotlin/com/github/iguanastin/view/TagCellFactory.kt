@@ -1,7 +1,9 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.view.nodes.TagColorPicker
 import javafx.beans.value.ChangeListener
+import javafx.event.EventHandler
 import javafx.scene.control.Label
 import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
@@ -38,25 +40,32 @@ object TagCellFactory {
                         freqLabel = label()
                     }
                 }
+
+                contextmenu {
+                    item("", graphic = TagColorPicker { color ->
+                        hide()
+                        item.color = color
+                    })
+                }
             }
 
             override fun updateItem(item: Tag?, empty: Boolean) {
-                getItem()?.color?.removeListener(colorListener)
-                getItem()?.frequency?.removeListener(freqListener)
+                getItem()?.colorProperty?.removeListener(colorListener)
+                getItem()?.frequencyProperty?.removeListener(freqListener)
 
                 super.updateItem(item, empty)
 
-                item?.color?.addListener(colorListener)
-                item?.frequency?.removeListener(freqListener)
+                item?.colorProperty?.addListener(colorListener)
+                item?.frequencyProperty?.removeListener(freqListener)
 
-                val color = c(item?.color?.value ?: "white")
+                val color = c(item?.color ?: "white")
                 nameLabel.apply {
                     text = item?.name
                     textFill = color
                 }
                 freqLabel.apply {
                     text = if (item != null) {
-                        "${item.frequency.value}"
+                        "${item.frequency}"
                     } else {
                         null
                     }

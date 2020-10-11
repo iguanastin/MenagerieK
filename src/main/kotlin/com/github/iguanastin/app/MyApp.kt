@@ -78,7 +78,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun purgeZombieTags(menagerie: Menagerie) {
         val toRemove = mutableSetOf<Tag>()
         for (tag in menagerie.tags) {
-            if (tag.frequency.get() == 0) {
+            if (tag.frequency == 0) {
                 toRemove.add(tag)
             }
         }

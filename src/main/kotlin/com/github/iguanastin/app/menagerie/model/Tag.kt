@@ -7,8 +7,15 @@ import javafx.beans.property.StringProperty
 
 class Tag(val id: Int, val name: String, color: String? = null, frequency: Int = 0) {
 
-    val color: StringProperty = SimpleStringProperty(color)
-    val frequency: IntegerProperty = SimpleIntegerProperty(frequency.coerceAtLeast(0))
+    val colorProperty: StringProperty = SimpleStringProperty(color)
+    var color: String?
+        get() = colorProperty.get()
+        set(value) = colorProperty.set(value)
+
+    val frequencyProperty: IntegerProperty = SimpleIntegerProperty(frequency.coerceAtLeast(0))
+    var frequency: Int
+        get() = frequencyProperty.get()
+        set(value) = frequencyProperty.set(value)
 
     // TODO tag notes
 
