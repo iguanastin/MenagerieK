@@ -1,9 +1,6 @@
 package com.github.iguanastin.app
 
-import com.github.iguanastin.app.menagerie.FileItem
-import com.github.iguanastin.app.menagerie.Item
-import com.github.iguanastin.app.menagerie.Menagerie
-import com.github.iguanastin.app.menagerie.Tag
+import com.github.iguanastin.app.menagerie.*
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.ImportJob
@@ -11,10 +8,7 @@ import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
-import com.github.iguanastin.view.dialog.ImportDialog
-import com.github.iguanastin.view.dialog.ProgressDialog
-import com.github.iguanastin.view.dialog.confirm
-import com.github.iguanastin.view.dialog.importdialog
+import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
@@ -140,47 +134,71 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.isShortcutDown && event.code == KeyCode.I) {
-                runOnUIThread {
-                    if (event.isShiftDown) {
-                        val dc = DirectoryChooser()
-                        val dir = contextPrefs.get("import_last_dir", null)
-                        if (dir != null) dc.initialDirectory = File(dir)
-                        dc.title = "Import directory"
-                        val folder = dc.showDialog(root.currentWindow)
-                        if (folder != null) {
-                            contextPrefs.put("import_last_dir", folder.parent)
-                            importFilesDialog(listOf(folder))
-                        }
-                    } else {
-                        val fc = FileChooser()
-                        val dir = contextPrefs.get("import_last_dir", null)
-                        if (dir != null) fc.initialDirectory = File(dir)
-                        fc.title = "Import files"
-                        val files = fc.showOpenMultipleDialog(root.currentWindow)
-                        if (!files.isNullOrEmpty()) {
-                            contextPrefs.put("import_last_dir", files.first().parent)
-                            importFilesDialog(files)
-                        }
+            if (event.code == KeyCode.I && event.isShortcutDown) {
+                importShortcut(event.isShiftDown)
+                event.consume()
+            }
+            if (event.code == KeyCode.DELETE) {
+                deleteShortcut(event.isShortcutDown)
+                event.consume()
+            }
+            if (event.code == KeyCode.R && event.isShortcutDown && !event.isShiftDown) {
+                renameGroupShortcut()
+                event.consume()
+            }
+        }
+    }
+
+    private fun renameGroupShortcut() {
+        if (root.itemGrid.selected.size == 1 && root.itemGrid.selected.first() is GroupItem) {
+            val group = root.itemGrid.selected.first() as GroupItem
+
+            root.root.add(TextInputDialog(header = "Rename group", text = group.title, onAccept = {
+                group.title = it
+            }))
+        }
+    }
+
+    private fun deleteShortcut(shortcutDown: Boolean) {
+        val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
+        if (del.isNotEmpty()) {
+            if (!shortcutDown) {
+                root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
+                    onConfirm = {
+                        deleteFiles(del)
+                    }
+                }
+            } else {
+                root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
+                    onConfirm = {
+                        deleteItems(del)
                     }
                 }
             }
-            if (event.code == KeyCode.DELETE) {
-                val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
-                if (del.isNotEmpty()) {
-                    if (!event.isShortcutDown) {
-                        root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
-                            onConfirm = {
-                                deleteFiles(del)
-                            }
-                        }
-                    } else {
-                        root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
-                            onConfirm = {
-                                deleteItems(del)
-                            }
-                        }
-                    }
+        }
+    }
+
+    private fun importShortcut(shiftDown: Boolean) {
+        runOnUIThread {
+            if (shiftDown) {
+                val dc = DirectoryChooser()
+                val dir = contextPrefs.get("import_last_dir", null)
+                if (dir != null) dc.initialDirectory = File(dir)
+                dc.title = "Import directory"
+                val folder = dc.showDialog(root.currentWindow)
+                if (folder != null) {
+                    contextPrefs.put("import_last_dir", folder.parent)
+                    importFilesDialog(listOf(folder))
+                }
+            } else {
+                val fc = FileChooser()
+                val dir = contextPrefs.get("import_last_dir", null)
+                if (dir != null) fc.initialDirectory = File(dir)
+                fc.title = "Import files"
+                val files = fc.showOpenMultipleDialog(root.currentWindow)
+                if (!files.isNullOrEmpty()) {
+                    contextPrefs.put("import_last_dir", files.first().parent)
+                    importFilesDialog(files)
                 }
             }
         }
@@ -245,9 +263,13 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun deleteItems(del: List<Item>) {
-        del.forEach {
-            log.info("Removing item: $it")
-            menagerie.removeItem(it)
+        del.forEach { item ->
+            log.info("Removing item: $item")
+            menagerie.removeItem(item)
+            if (item is GroupItem) item.items.forEach {
+                log.info("Removing item: $it")
+                menagerie.removeItem(it)
+            }
         }
     }
 
@@ -261,6 +283,17 @@ class MyApp : App(MainView::class, Styles::class) {
                     it.file.delete()
                 } catch (e: IOException) {
                     log.error("Exception while deleting file: ${it.file}", e)
+                }
+            } else if (it is GroupItem) {
+                for (item in it.items) {
+                    if (item is FileItem) {
+                        try {
+                            log.info("Deleting file: ${item.file}")
+                            item.file.delete()
+                        } catch (e: IOException) {
+                            log.error("Exception while deleting file: ${item.file}", e)
+                        }
+                    }
                 }
             }
         }

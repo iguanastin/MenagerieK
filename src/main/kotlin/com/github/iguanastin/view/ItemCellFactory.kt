@@ -2,6 +2,7 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.*
+import javafx.beans.value.ChangeListener
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.effect.DropShadow
@@ -27,6 +28,10 @@ object ItemCellFactory {
             private lateinit var thumbView: ImageView
             private lateinit var tagView: ImageView
             private lateinit var textView: Label
+
+            private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
+                textView.text = newValue
+            }
 
             init {
                 addClass(Styles.itemGridCell)
@@ -60,6 +65,8 @@ object ItemCellFactory {
             }
 
             override fun updateItem(item: Item?, empty: Boolean) {
+                cleanUpCurrentItem()
+
                 super.updateItem(item, empty)
 
                 tagView.hide()
@@ -77,6 +84,7 @@ object ItemCellFactory {
                             show()
                             text = item.title
                         }
+                        item.titleProperty.addListener(groupTitleListener)
                     }
                     is ImageItem -> {
                         // Nothing special
@@ -92,6 +100,14 @@ object ItemCellFactory {
                             show()
                             text = item.file.name
                         }
+                    }
+                }
+            }
+
+            private fun cleanUpCurrentItem() {
+                when (val item = item) {
+                    is GroupItem -> {
+                        item.titleProperty.removeListener(groupTitleListener)
                     }
                 }
             }

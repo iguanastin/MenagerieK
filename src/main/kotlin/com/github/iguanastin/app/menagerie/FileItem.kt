@@ -5,6 +5,7 @@ import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
+import javafx.beans.value.ChangeListener
 import java.io.File
 import java.io.IOException
 
@@ -24,6 +25,21 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
     var elementOf: GroupItem?
         get() = elementOfProperty.get()
         set(value) = elementOfProperty.set(value)
+
+    init {
+        md5Property.addListener { _, old, new ->
+            val change = FileItemChange(this, md5 = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+        fileProperty.addListener { _, old, new ->
+            val change = FileItemChange(this, file = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+        elementOfProperty.addListener { _, old, new ->
+            val change = FileItemChange(this, elementOf = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+    }
 
     companion object {
         fun fileHash(file: File): String {

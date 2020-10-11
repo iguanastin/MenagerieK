@@ -1,8 +1,11 @@
 package com.github.iguanastin.app.menagerie
 
+import javafx.beans.InvalidationListener
 import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.scene.image.Image
 import tornadofx.*
 
 class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") : Item(id, added, menagerie) {
@@ -14,6 +17,18 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
 
     private val _items: ObservableList<FileItem> = FXCollections.observableArrayList()
     val items: ObservableList<FileItem> = _items.asUnmodifiable()
+
+    init {
+        titleProperty.addListener { _, old, new ->
+            val change = GroupItemChange(this, title = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+
+        _items.addListener(InvalidationListener {
+            val change = GroupItemChange(this, items = _items)
+            changeListeners.forEach { listener -> listener(change) }
+        })
+    }
 
 
     fun addItem(item: FileItem, index: Int? = null): Boolean {
@@ -28,6 +43,14 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         } else {
             return false
         }
+    }
+
+    override fun loadThumbnail(): Image {
+        if (items.isNotEmpty()) {
+            return items.first().getThumbnail()
+        }
+
+        return super.loadThumbnail()
     }
 
     fun moveItem(item: FileItem, index: Int) {

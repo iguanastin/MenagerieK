@@ -19,6 +19,17 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         get() = histogramProperty.get()
         set(value) = histogramProperty.set(value)
 
+    init {
+        noSimilarProperty.addListener { _, old, new ->
+            val change = ImageItemChange(this, noSimilar = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+        histogramProperty.addListener { _, old, new ->
+            val change = ImageItemChange(this, histogram = Change(old, new))
+            changeListeners.forEach { listener -> listener(change) }
+        }
+    }
+
     companion object {
         val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")
 

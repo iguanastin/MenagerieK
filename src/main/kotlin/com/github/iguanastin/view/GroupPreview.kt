@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.GroupItem
 import com.github.iguanastin.app.menagerie.Item
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.value.ChangeListener
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
@@ -25,6 +26,10 @@ class GroupPreview : BorderPane() {
 
     private val grid: GridView<Item> = GridView<Item>()
     private val title: Label = Label()
+
+    private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
+        title.text = newValue
+    }
 
     init {
         isMouseTransparent = true
@@ -49,7 +54,10 @@ class GroupPreview : BorderPane() {
             }
         }
 
-        groupProperty.addListener(ChangeListener { _, _, newValue ->
+        groupProperty.addListener { _, oldValue, newValue ->
+            oldValue?.titleProperty?.removeListener(groupTitleListener)
+            newValue?.titleProperty?.addListener(groupTitleListener)
+
             runOnUIThread {
                 title.text = newValue?.title
                 grid.items.apply {
@@ -57,7 +65,7 @@ class GroupPreview : BorderPane() {
                     if (newValue != null) addAll(newValue.items)
                 }
             }
-        })
+        }
     }
 }
 

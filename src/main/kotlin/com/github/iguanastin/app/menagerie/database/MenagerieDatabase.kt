@@ -85,39 +85,47 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     private fun attachTo(menagerie: Menagerie) {
         log.info("Attaching database manager to Menagerie ($url)")
 
-        val itemTaggedListener = { item: Item, tag: Tag ->
-            updateQueue.put(DatabaseTagItem(item, tag))
-        }
-        val itemUntaggedListener = { item: Item, tag: Tag ->
-            updateQueue.put(DatabaseUntagItem(item, tag))
+        val changeListener: (ItemChangeBase) -> Unit = { change ->
+            when (change) {
+                is ImageItemChange -> {
+                    // TODO update histogram
+                    // TODO update noSimilar
+                }
+                is FileItemChange -> {
+                    // TODO update md5
+                    // TODO update file
+                }
+                is GroupItemChange -> {
+                    if (change.title != null) {
+                        updateQueue.put(DatabaseSetGroupTitle(change.item.id, change.title.new))
+                    }
+                    if (!change.items.isNullOrEmpty()) {
+                        updateQueue.put(DatabaseSetGroupItems(change.item as GroupItem, change.items))
+                    }
+                }
+                is ItemChange -> {
+                    if (!change.tagsAdded.isNullOrEmpty()) {
+                        change.tagsAdded.forEach { updateQueue.put(DatabaseTagItem(change.item, it)) }
+                    }
+                    if (!change.tagsRemoved.isNullOrEmpty()) {
+                        change.tagsRemoved.forEach { updateQueue.put(DatabaseUntagItem(change.item, it)) }
+                    }
+                }
+            }
         }
 
         for (item in menagerie.items) {
-            item.tagListeners.add(itemTaggedListener)
-            item.untagListeners.add(itemUntaggedListener)
-
-            if (item is FileItem) {
-                // TODO
-            }
-            if (item is ImageItem) {
-                // TODO
-            }
-            if (item is GroupItem) {
-                // TODO
-            }
+            item.changeListeners.add(changeListener)
         }
 
         menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { item ->
-                    item.untagListeners.remove(itemUntaggedListener)
-                    item.tagListeners.remove(itemTaggedListener)
+                    item.changeListeners.remove(changeListener)
                     updateQueue.put(DatabaseDeleteItem(item))
                 }
                 change.addedSubList.forEach { item ->
-                    item.untagListeners.add(itemUntaggedListener)
-                    item.tagListeners.add(itemTaggedListener)
-                    // TODO add tags for other item properties
+                    item.changeListeners.add(changeListener)
                     updateQueue.put(when (item) {
                         is ImageItem -> DatabaseCreateImage(item)
                         is FileItem -> DatabaseCreateFile(item)
