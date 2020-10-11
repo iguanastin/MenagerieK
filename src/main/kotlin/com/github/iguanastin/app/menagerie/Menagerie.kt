@@ -4,6 +4,7 @@ import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import tornadofx.*
+import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 class Menagerie {
@@ -17,6 +18,7 @@ class Menagerie {
     val items: ObservableList<Item> = _items.asUnmodifiable()
     private val itemIdMap: MutableMap<Int, Item> = mutableMapOf()
     private val nextItemID = AtomicInteger(0)
+    private val files: MutableSet<File> = mutableSetOf()
 
     private val _knownNonDupes: ObservableList<Pair<Item, Item>> = FXCollections.observableArrayList()
     val knownNonDupes: ObservableList<Pair<Item, Item>> = _knownNonDupes.asUnmodifiable()
@@ -25,8 +27,14 @@ class Menagerie {
     init {
         items.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { itemIdMap.remove(it.id) }
-                change.addedSubList.forEach { itemIdMap[it.id] = it }
+                change.removed.forEach {
+                    itemIdMap.remove(it.id)
+                    if (it is FileItem) files.remove(it.file)
+                }
+                change.addedSubList.forEach {
+                    itemIdMap[it.id] = it
+                    if (it is FileItem) files.add(it.file)
+                }
             }
         })
         tags.addListener(ListChangeListener { change ->
@@ -54,11 +62,19 @@ class Menagerie {
         return itemIdMap.containsKey(id)
     }
 
+    fun hasFile(file: File): Boolean {
+        return file in files
+    }
+
     fun addItem(item: Item): Boolean {
         return if (item.id !in itemIdMap.keys) {
-            _items.add(item)
-            nextItemID.getAndUpdate { it.coerceAtLeast(item.id + 1) }
-            true
+            if (item is FileItem && item.file in files) {
+                false
+            } else {
+                _items.add(item)
+                nextItemID.getAndUpdate { it.coerceAtLeast(item.id + 1) }
+                true
+            }
         } else {
             false
         }

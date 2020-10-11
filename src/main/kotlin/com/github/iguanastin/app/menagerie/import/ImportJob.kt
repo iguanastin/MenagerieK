@@ -17,6 +17,8 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
 
         log.debug { "Importing \"$file\"" }
 
+        if (menagerie.hasFile(file)) throw MenagerieException("File already present in Menagerie: $file")
+
         val id = menagerie.reserveItemID()
         val added = System.currentTimeMillis()
         val md5 = FileItem.fileHash(file)

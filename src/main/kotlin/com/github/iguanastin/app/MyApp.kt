@@ -209,7 +209,7 @@ class MyApp : App(MainView::class, Styles::class) {
             individually = {
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        recursiveFiles(file).forEach { importer.enqueue(ImportJob(it)) }
+                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) importer.enqueue(ImportJob(it)) }
                     } else {
                         importer.enqueue(ImportJob(file))
                     }
@@ -219,9 +219,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 val jobs = mutableListOf<ImportJob>()
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        file.listFiles()?.forEach { jobs.add(ImportJob(it)) }
+                        file.listFiles()?.forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
                     } else {
-                        jobs.add(ImportJob(file))
+                        if (!menagerie.hasFile(file)) jobs.add(ImportJob(file))
                     }
                 }
 
@@ -236,9 +236,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 for (file in files) {
                     if (file.isDirectory) {
                         val jobs = mutableListOf<ImportJob>()
-                        recursiveFiles(file).forEach { jobs.add(ImportJob(it)) }
+                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
                         ImportJobIntoGroup.asGroup(jobs, file.name).forEach { importer.enqueue(it) }
-                    } else {
+                    } else if (!menagerie.hasFile(file)) {
                         importer.enqueue(ImportJob(file))
                     }
                 }
