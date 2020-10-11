@@ -183,6 +183,7 @@ class PanZoomImageView : DynamicImageView {
             }
         }
         addEventHandler(ScrollEvent.SCROLL) { event: ScrollEvent ->
+            if (image == null) return@addEventHandler
             val fitScale = getFitScale(image)
             val work: MutableList<Double> = ArrayList()
             for (v in SCALES) {

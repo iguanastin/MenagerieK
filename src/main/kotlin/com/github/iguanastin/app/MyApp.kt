@@ -7,19 +7,23 @@ import com.github.iguanastin.app.menagerie.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.import.ImportJob
+import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.view.MainView
+import com.github.iguanastin.view.dialog.ImportDialog
 import com.github.iguanastin.view.dialog.ProgressDialog
 import com.github.iguanastin.view.dialog.confirm
+import com.github.iguanastin.view.dialog.importdialog
 import com.github.iguanastin.view.runOnUIThread
-import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.TransferMode
+import javafx.stage.DirectoryChooser
+import javafx.stage.FileChooser
 import javafx.stage.Screen
 import javafx.stage.Stage
 import mu.KotlinLogging
@@ -118,12 +122,11 @@ class MyApp : App(MainView::class, Styles::class) {
         }
         root.root.onDragDropped = EventHandler { event ->
             if (event.isAccepted) {
-                // TODO improve this
-                if (event.dragboard.url != null) {
-                    importer.enqueue(RemoteImportJob.intoDirectory(event.dragboard.url, File("D:\\Downloads")))
+                if (event.dragboard.url?.startsWith("http") == true) {
+                    importer.enqueue(RemoteImportJob.intoDirectory(event.dragboard.url, File("D:\\Downloads"))) // Better downloads folder
                 }
                 if (event.dragboard.files?.isNotEmpty() == true) {
-                    event.dragboard.files.forEach { file -> importer.enqueue(ImportJob(file)) }
+                    importFilesDialog(event.dragboard.files)
                 }
 
                 event.apply {
@@ -137,6 +140,31 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (event.isShortcutDown && event.code == KeyCode.I) {
+                runOnUIThread {
+                    if (event.isShiftDown) {
+                        val dc = DirectoryChooser()
+                        val dir = contextPrefs.get("import_last_dir", null)
+                        if (dir != null) dc.initialDirectory = File(dir)
+                        dc.title = "Import directory"
+                        val folder = dc.showDialog(root.currentWindow)
+                        if (folder != null) {
+                            contextPrefs.put("import_last_dir", folder.parent)
+                            importFilesDialog(listOf(folder))
+                        }
+                    } else {
+                        val fc = FileChooser()
+                        val dir = contextPrefs.get("import_last_dir", null)
+                        if (dir != null) fc.initialDirectory = File(dir)
+                        fc.title = "Import files"
+                        val files = fc.showOpenMultipleDialog(root.currentWindow)
+                        if (!files.isNullOrEmpty()) {
+                            contextPrefs.put("import_last_dir", files.first().parent)
+                            importFilesDialog(files)
+                        }
+                    }
+                }
+            }
             if (event.code == KeyCode.DELETE) {
                 val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
                 if (del.isNotEmpty()) {
@@ -155,6 +183,64 @@ class MyApp : App(MainView::class, Styles::class) {
                     }
                 }
             }
+        }
+    }
+
+    private fun importFilesDialog(files: List<File>) {
+        root.root.importdialog(files) {
+            individually = {
+                files.forEach { file ->
+                    if (file.isDirectory) {
+                        recursiveFiles(file).forEach { importer.enqueue(ImportJob(it)) }
+                    } else {
+                        importer.enqueue(ImportJob(file))
+                    }
+                }
+            }
+            asGroup = {
+                val jobs = mutableListOf<ImportJob>()
+                files.forEach { file ->
+                    if (file.isDirectory) {
+                        file.listFiles()?.forEach { jobs.add(ImportJob(it)) }
+                    } else {
+                        jobs.add(ImportJob(file))
+                    }
+                }
+
+                var title = "Unnamed Group"
+                if (files.size == 1 && files.first().isDirectory) {
+                    title = files.first().name
+                }
+
+                ImportJobIntoGroup.asGroup(jobs, title).forEach { importer.enqueue(it) }
+            }
+            dirsAsGroups = {
+                for (file in files) {
+                    if (file.isDirectory) {
+                        val jobs = mutableListOf<ImportJob>()
+                        recursiveFiles(file).forEach { jobs.add(ImportJob(it)) }
+                        ImportJobIntoGroup.asGroup(jobs, file.name).forEach { importer.enqueue(it) }
+                    } else {
+                        importer.enqueue(ImportJob(file))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun recursiveFiles(folder: File): List<File> {
+        if (folder.isDirectory) {
+            val result = mutableListOf<File>()
+            folder.listFiles()?.sortedWith(WindowsExplorerComparator())!!.forEach {
+                if (it.isDirectory) {
+                    result.addAll(recursiveFiles(it))
+                } else {
+                    result.add(it)
+                }
+            }
+            return result
+        } else {
+            return listOf(folder)
         }
     }
 

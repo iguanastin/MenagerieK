@@ -27,6 +27,7 @@ class ImportJobIntoGroup private constructor(job: ImportJob, val group: ObjectPr
         if (g == null) {
             g = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, groupTitle)
             menagerie.addItem(g)
+            group.set(g)
         }
 
         val item = super.import(menagerie)

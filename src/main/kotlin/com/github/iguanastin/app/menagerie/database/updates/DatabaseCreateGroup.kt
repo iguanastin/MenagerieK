@@ -10,7 +10,7 @@ class DatabaseCreateGroup(id: Int, added: Long, val title: String, val items: Li
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getPrepared("DatabaseCreateGroup", "INSERT INTO groups(id, title) VALUES(?, ?, ?);")
+        val ps = db.getPrepared("DatabaseCreateGroup", "INSERT INTO groups(id, title, items) VALUES(?, ?, ?);")
 
         ps.setInt(1, id)
         ps.setNString(2, title)
