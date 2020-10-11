@@ -88,28 +88,20 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val changeListener: (ItemChangeBase) -> Unit = { change ->
             when (change) {
                 is ImageItemChange -> {
-                    // TODO update histogram
-                    // TODO update noSimilar
+                    if (change.histogram != null) updateQueue.put(DatabaseSetImageHistogram(change.item as ImageItem, change.histogram.new))
+                    if (change.noSimilar != null) updateQueue.put(DatabaseSetImageNoSimilar(change.item as ImageItem, change.noSimilar.new))
                 }
                 is FileItemChange -> {
-                    // TODO update md5
-                    // TODO update file
+                    if (change.md5 != null) updateQueue.put(DatabaseSetFileMD5(change.item as FileItem, change.md5.new))
+                    if (change.file != null) updateQueue.put(DatabaseSetFilePath(change.item as FileItem, change.file.new))
                 }
                 is GroupItemChange -> {
-                    if (change.title != null) {
-                        updateQueue.put(DatabaseSetGroupTitle(change.item.id, change.title.new))
-                    }
-                    if (!change.items.isNullOrEmpty()) {
-                        updateQueue.put(DatabaseSetGroupItems(change.item as GroupItem, change.items))
-                    }
+                    if (change.title != null) updateQueue.put(DatabaseSetGroupTitle(change.item.id, change.title.new))
+                    if (!change.items.isNullOrEmpty()) updateQueue.put(DatabaseSetGroupItems(change.item as GroupItem, change.items))
                 }
                 is ItemChange -> {
-                    if (!change.tagsAdded.isNullOrEmpty()) {
-                        change.tagsAdded.forEach { updateQueue.put(DatabaseTagItem(change.item, it)) }
-                    }
-                    if (!change.tagsRemoved.isNullOrEmpty()) {
-                        change.tagsRemoved.forEach { updateQueue.put(DatabaseUntagItem(change.item, it)) }
-                    }
+                    if (!change.tagsAdded.isNullOrEmpty()) change.tagsAdded.forEach { updateQueue.put(DatabaseTagItem(change.item, it)) }
+                    if (!change.tagsRemoved.isNullOrEmpty()) change.tagsRemoved.forEach { updateQueue.put(DatabaseUntagItem(change.item, it)) }
                 }
             }
         }

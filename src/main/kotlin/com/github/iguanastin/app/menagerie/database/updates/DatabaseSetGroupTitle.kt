@@ -9,7 +9,7 @@ class DatabaseSetGroupTitle(private val itemID: Int, private val title: String):
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getPrepared("DatabaseSetGroupItems", "UPDATE groups SET title=? WHERE id=?;")
+        val ps = db.getPrepared("DatabaseSetGroupTitle", "UPDATE groups SET title=? WHERE id=?;")
 
         ps.setNString(1, title)
         ps.setInt(2, itemID)
