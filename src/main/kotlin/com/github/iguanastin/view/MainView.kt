@@ -3,10 +3,12 @@ package com.github.iguanastin.view
 import com.github.iguanastin.app.*
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.scene.control.Button
@@ -30,8 +32,10 @@ class MainView : View("Menagerie") {
     private lateinit var editTags: TextField
     private lateinit var applyTagEdit: Button
 
-    val items: ObservableList<Item>
-        get() = itemGrid.items
+    val viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
+    var view: MenagerieView?
+        get() = viewProperty.get()
+        set(value) = viewProperty.set(value)
 
     val displayingProperty: ObjectProperty<Item?>
         get() = itemDisplay.itemProperty
@@ -136,10 +140,32 @@ class MainView : View("Menagerie") {
     }
 
     init {
+        initViewPropertyListener()
+        initDisplayLastSelectedListener()
+        initEditTagsDialog()
+        initTagsListener()
+        initRootKeyPressedListener()
+
+        Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    private fun initViewPropertyListener() {
+        viewProperty.addListener { _, oldValue, newValue ->
+            oldValue?.close()
+            itemGrid.items.clear()
+
+            newValue?.attachTo(itemGrid.items)
+            if (itemGrid.items.isNotEmpty()) itemGrid.select(itemGrid.items.first())
+        }
+    }
+
+    private fun initDisplayLastSelectedListener() {
         itemGrid.selected.addListener(InvalidationListener {
             displaying = itemGrid.selected.lastOrNull()
         })
+    }
 
+    private fun initEditTagsDialog() {
         editTagsPane.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.ESCAPE) editTagsPane.hide()
         }
@@ -167,7 +193,25 @@ class MainView : View("Menagerie") {
             editTagsPane.hide()
             event.consume()
         }
+    }
 
+    private fun initRootKeyPressedListener() {
+        root.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                if (event.code == KeyCode.E) {
+                    editTagsPane.show()
+                    editTags.requestFocus()
+                }
+            }
+            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                if (event.code == KeyCode.Q) {
+                    Platform.exit()
+                }
+            }
+        }
+    }
+
+    private fun initTagsListener() {
         val displayTagsListener = InvalidationListener {
             tags.apply {
                 clear()
@@ -183,22 +227,6 @@ class MainView : View("Menagerie") {
                 if (new != null) addAll(new.tags.sortedBy { it.name })
             }
         })
-
-        Platform.runLater { itemGrid.requestFocus() }
-
-        root.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.E) {
-                    editTagsPane.show()
-                    editTags.requestFocus()
-                }
-            }
-            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.Q) {
-                    Platform.exit()
-                }
-            }
-        }
     }
 
 }

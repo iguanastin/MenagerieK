@@ -36,9 +36,7 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
             }
         }
 
-        menagerie.addItem(item!!)
-
-        log.debug { "Imported \"$file\" with: id=$id, added=$added, md5=$md5" }
+        log.debug { "Generated item for \"$file\" with: id=$id, added=$added, md5=$md5" }
 
         onFinish?.invoke(item!!)
 

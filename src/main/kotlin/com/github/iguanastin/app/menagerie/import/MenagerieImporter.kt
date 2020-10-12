@@ -31,6 +31,7 @@ class MenagerieImporter(val menagerie: Menagerie) {
                 try {
                     log.info("Importing: ${job.file}")
                     val item = job.import(menagerie)
+                    menagerie.addItem(item)
                     log.info("Successfully imported: ${job.item}")
                     onImport.forEach { it(item) }
                 } catch (e: Exception) {

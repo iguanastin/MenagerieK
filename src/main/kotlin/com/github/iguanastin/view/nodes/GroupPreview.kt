@@ -1,12 +1,15 @@
 package com.github.iguanastin.view.nodes
 
+import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
+import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ChangeListener
+import javafx.collections.ListChangeListener
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
@@ -30,7 +33,15 @@ class GroupPreview : BorderPane() {
     private val title: Label = Label()
 
     private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
-        title.text = newValue
+        runOnUIThread { title.text = newValue }
+    }
+    private val groupItemsListener: InvalidationListener = InvalidationListener {
+        runOnUIThread {
+            grid.items.apply {
+                clear()
+                addAll(group?.items ?: return@apply)
+            }
+        }
     }
 
     init {
@@ -58,7 +69,9 @@ class GroupPreview : BorderPane() {
 
         groupProperty.addListener { _, oldValue, newValue ->
             oldValue?.titleProperty?.removeListener(groupTitleListener)
+            oldValue?.items?.removeListener(groupItemsListener)
             newValue?.titleProperty?.addListener(groupTitleListener)
+            newValue?.items?.addListener(groupItemsListener)
 
             runOnUIThread {
                 title.text = newValue?.title

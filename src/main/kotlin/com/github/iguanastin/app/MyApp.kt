@@ -7,6 +7,8 @@ import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.menagerie.view.IsGroupedFilter
+import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
@@ -67,8 +69,7 @@ class MyApp : App(MainView::class, Styles::class) {
             purgeZombieTags(menagerie)
 
             runOnUIThread {
-                root.items.addAll((menagerie.items.reversed() as MutableList).apply { removeIf { it is FileItem && it.elementOf != null } })
-                if (root.items.isNotEmpty()) root.itemGrid.select(root.items.first())
+                root.view = MenagerieView(menagerie, true, IsGroupedFilter(true))
             }
 
             initViewControls()
@@ -89,22 +90,6 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initViewControls() {
-        menagerie.items.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                change.removed.forEach { runOnUIThread { root.items.remove(it) } }
-                change.addedSubList.forEach { item ->
-                    runOnUIThread {
-                        for (i in root.items.indices) {
-                            if (item.id > root.items[i].id) {
-                                root.items.add(i, item)
-                                break
-                            }
-                        }
-                    }
-                }
-            }
-        })
-
         root.root.onDragOver = EventHandler { event ->
             if (event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
                 root.dragOverlay.show()
