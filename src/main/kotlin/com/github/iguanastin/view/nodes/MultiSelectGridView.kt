@@ -1,6 +1,7 @@
 package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.view.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import com.sun.javafx.scene.control.skin.VirtualFlow
 import impl.org.controlsfx.skin.GridViewSkin
@@ -96,6 +97,16 @@ class MultiSelectGridView<T> : GridView<T> {
                 KeyCode.END -> {
                     selectUtility(items.last(), event)
                 }
+                KeyCode.PAGE_DOWN -> {
+                    val visibleRows = (height / (cellHeight + verticalCellSpacing)).toInt()
+                    val next = (current + visibleRows * getItemsInRow()).coerceAtMost(items.lastIndex)
+                    selectUtility(items[next], event)
+                }
+                KeyCode.PAGE_UP -> {
+                    val visibleRows = (height / (cellHeight + verticalCellSpacing)).toInt()
+                    val next = (current - visibleRows * getItemsInRow()).coerceAtLeast(0)
+                    selectUtility(items[next], event)
+                }
                 else -> {
                     // Do nothing
                 }
@@ -129,7 +140,7 @@ class MultiSelectGridView<T> : GridView<T> {
         })
 
         cell.setOnMouseClicked { event ->
-            if (cell.item != null && event.button == MouseButton.PRIMARY) {
+            if (cell.item != null && event.button == MouseButton.PRIMARY && event.clickCount == 1) {
                 selectUtility(cell.item, event)
                 event.consume()
             }

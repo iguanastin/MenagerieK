@@ -9,7 +9,7 @@ import javafx.collections.ObservableList
 import tornadofx.*
 import kotlin.collections.sortBy
 
-class MenagerieView(val menagerie: Menagerie, val descending: Boolean = true, vararg val filters: ViewFilter) {
+class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val filters: Iterable<ViewFilter>) {
 
     var items: ObservableList<Item>? = null
         private set

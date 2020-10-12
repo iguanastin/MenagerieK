@@ -7,12 +7,14 @@ import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.IsGroupedFilter
+import com.github.iguanastin.app.menagerie.view.ElementOfFilter
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.view.MainView
-import com.github.iguanastin.view.dialog.*
+import com.github.iguanastin.view.dialog.ProgressDialog
+import com.github.iguanastin.view.dialog.TextInputDialog
+import com.github.iguanastin.view.dialog.confirm
+import com.github.iguanastin.view.dialog.importdialog
 import com.github.iguanastin.view.runOnUIThread
-import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
@@ -36,8 +38,8 @@ class MyApp : App(MainView::class, Styles::class) {
     private val uiPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/context")
 
-    //    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
-    private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
+    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
+    //    private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
     private val dbUser = contextPrefs.get("db_user", "sa")
     private val dbPass = contextPrefs.get("db_pass", "")
 
@@ -69,7 +71,7 @@ class MyApp : App(MainView::class, Styles::class) {
             purgeZombieTags(menagerie)
 
             runOnUIThread {
-                root.view = MenagerieView(menagerie, true, IsGroupedFilter(true))
+                root.navigateForward(MenagerieView(menagerie, "", true, listOf(ElementOfFilter(null, true))))
             }
 
             initViewControls()
@@ -309,7 +311,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     val progress = ProgressDialog(header = "Loading database", message = "($dbURL)")
                     root.root.add(progress)
 
-                    thread(start = true) {
+                    thread(name = "Menagerie Loader", start = true) {
                         try {
                             menagerie = manager.loadMenagerie()
                             importer = MenagerieImporter(menagerie)
@@ -328,7 +330,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     val progress = ProgressDialog(header = "Migrating database to v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}", message = " ($dbURL)")
                     root.root.add(progress)
 
-                    thread(start = true) {
+                    thread(name = "Database migrator thread", start = true) {
                         try {
                             manager.migrateDatabase()
                             runOnUIThread { progress.close() }

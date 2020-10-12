@@ -89,8 +89,9 @@ class Menagerie {
     }
 
     fun getTag(name: String): Tag? {
+        val lName = name.toLowerCase()
         for (tag in tagIdMap.values) {
-            if (tag.name == name) return tag
+            if (tag.name == lName) return tag
         }
         return null
     }

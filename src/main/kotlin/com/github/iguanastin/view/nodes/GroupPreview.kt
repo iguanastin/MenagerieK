@@ -48,7 +48,7 @@ class GroupPreview : BorderPane() {
         isMouseTransparent = true
         padding = insets(100)
 
-        grid.cellFactory = ItemCellFactory.factory
+        grid.cellFactory = ItemCellFactory.factory()
         grid.apply {
             cellWidth = ItemCellFactory.SIZE
             cellHeight = ItemCellFactory.SIZE

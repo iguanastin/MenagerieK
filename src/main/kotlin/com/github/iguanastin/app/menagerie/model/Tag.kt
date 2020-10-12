@@ -5,8 +5,9 @@ import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 
-class Tag(val id: Int, val name: String, color: String? = null, frequency: Int = 0) {
+class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) {
 
+    val name: String = name.toLowerCase()
     val colorProperty: StringProperty = SimpleStringProperty(color)
     var color: String?
         get() = colorProperty.get()

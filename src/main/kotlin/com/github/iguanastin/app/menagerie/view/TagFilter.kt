@@ -9,4 +9,12 @@ class TagFilter(val tag: Tag, exclude: Boolean): ViewFilter(exclude) {
         return invertIfExcluded(tag in item.tags)
     }
 
+    override fun toString(): String {
+        return if (exclude) {
+            "-${tag.name}"
+        } else {
+            tag.name
+        }
+    }
+
 }
