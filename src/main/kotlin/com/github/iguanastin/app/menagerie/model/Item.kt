@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
+import com.github.iguanastin.view.Thumbnail
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -19,7 +20,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     val tags: ObservableList<Tag> = _tags.asUnmodifiable()
     val changeListeners: MutableSet<(ItemChangeBase) -> Unit> = mutableSetOf()
 
-    private var thumbnailCache: WeakReference<Image> = WeakReference(null)
+    private var thumbnailCache: WeakReference<Thumbnail> = WeakReference(null)
 
     init {
         tags.addListener(ListChangeListener { change ->
@@ -44,16 +45,16 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     }
 
 
-    fun getThumbnail(): Image {
+    fun getThumbnail(): Thumbnail {
         var img = thumbnailCache.get()
         if (img == null) {
-            img = loadThumbnail()
+            img = Thumbnail(this)
             thumbnailCache = WeakReference(img)
         }
         return img
     }
 
-    protected open fun loadThumbnail(): Image {
+    open fun loadThumbnail(): Image {
         return defaultThumbnail
     }
 

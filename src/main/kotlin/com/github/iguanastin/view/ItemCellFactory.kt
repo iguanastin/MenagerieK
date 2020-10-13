@@ -75,7 +75,19 @@ object ItemCellFactory {
                     tagView.hide()
                     textView.hide()
 
-                    thumbView.image = item?.getThumbnail()
+                    val thumb = item?.getThumbnail()
+                    if (thumb != null) {
+                        if (thumb.isLoaded) {
+                            thumbView.image = thumb.image
+                        } else {
+                            thumbView.image = null
+                            thumb.want(this) {
+                                runOnUIThread { thumbView.image = it.image }
+                            }
+                        }
+                    } else {
+                        thumbView.image = null
+                    }
 
                     when (item) {
                         is GroupItem -> {
@@ -113,6 +125,7 @@ object ItemCellFactory {
                             item.titleProperty.removeListener(groupTitleListener)
                         }
                     }
+                    item?.getThumbnail()?.unWant(this)
                 }
 
             }

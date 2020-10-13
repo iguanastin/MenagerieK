@@ -46,7 +46,7 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
 
     override fun loadThumbnail(): Image {
         if (items.isNotEmpty()) {
-            return items.first().getThumbnail()
+            return items.first().loadThumbnail()
         }
 
         return super.loadThumbnail()
