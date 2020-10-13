@@ -75,18 +75,9 @@ object ItemCellFactory {
                     tagView.hide()
                     textView.hide()
 
-                    val thumb = item?.getThumbnail()
-                    if (thumb != null) {
-                        if (thumb.isLoaded) {
-                            thumbView.image = thumb.image
-                        } else {
-                            thumbView.image = null
-                            thumb.want(this) {
-                                runOnUIThread { thumbView.image = it.image }
-                            }
-                        }
-                    } else {
-                        thumbView.image = null
+                    thumbView.image = null
+                    item?.getThumbnail()?.want(this) {
+                        runOnUIThread { if (getItem() == it.item) thumbView.image = it.image }
                     }
 
                     when (item) {
