@@ -1,7 +1,6 @@
 package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.view.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import com.sun.javafx.scene.control.skin.VirtualFlow
 import impl.org.controlsfx.skin.GridViewSkin
@@ -82,13 +81,11 @@ class MultiSelectGridView<T> : GridView<T> {
                     event.consume()
                 }
                 KeyCode.UP -> {
-                    if (row <= 0) selectUtility(items[0], event)
-                    else selectUtility(items[current - getItemsInRow()], event)
+                    selectUtility(items[(current - getItemsInRow()).coerceAtLeast(0)], event)
                     event.consume()
                 }
                 KeyCode.DOWN -> {
-                    if (row >= items.size / getItemsInRow()) selectUtility(items.last(), event)
-                    else selectUtility(items[current + getItemsInRow()], event)
+                    selectUtility(items[(current + getItemsInRow()).coerceAtMost(items.lastIndex)], event)
                     event.consume()
                 }
                 KeyCode.HOME -> {

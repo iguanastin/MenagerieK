@@ -13,9 +13,11 @@ import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
+import javafx.beans.Observable
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.ReadOnlyObjectProperty
 import javafx.beans.property.SimpleObjectProperty
+import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.geometry.Pos
@@ -155,7 +157,7 @@ class MainView : View("Menagerie") {
                         bottom {
                             borderpane {
                                 left {
-                                    importsButton = button("Imports")
+                                    importsButton = button("Imports: 0")
                                 }
                                 right {
                                     button("Else")
@@ -212,12 +214,41 @@ class MainView : View("Menagerie") {
         initSearchFieldAutoComplete()
         initEditTagsAutoComplete()
         initSelectedItemCounterListeners()
+        initImportsButton()
+
+        Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    private fun initImportsButton() {
         importsButton.onAction = EventHandler { event ->
             event.consume()
             root.add(ImportQueueDialog(imports))
         }
 
-        Platform.runLater { itemGrid.requestFocus() }
+        val finishedListener: (observable: Observable) -> Unit = { _ ->
+            updateImportsButton()
+        }
+        imports.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { it.finishedProperty.removeListener(finishedListener) }
+                change.addedSubList.forEach { it.finishedProperty.addListener(finishedListener) }
+
+                updateImportsButton()
+            }
+        })
+    }
+
+    private fun updateImportsButton() {
+        runOnUIThread {
+            val count = imports.count { !it.isFinished }
+            importsButton.text = "Imports: $count"
+            if (count > 0) {
+                if (!importsButton.hasClass(Styles.blueBase)) importsButton.addClass(Styles.blueBase)
+            } else {
+                importsButton.removeClass(Styles.blueBase)
+            }
+            importsButton.applyCss()
+        }
     }
 
     private fun initSelectedItemCounterListeners() {

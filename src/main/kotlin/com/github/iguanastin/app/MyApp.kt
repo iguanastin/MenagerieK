@@ -65,8 +65,10 @@ class MyApp : App(MainView::class, Styles::class) {
                 log.error("Error occurred while importing", e)
             }
             importer.onQueued.add { job ->
-                root.imports.add(ImportNotification(job))
-                root.imports.sortBy { it.isFinished }
+                runOnUIThread {
+                    root.imports.add(ImportNotification(job))
+                    root.imports.sortBy { it.isFinished }
+                }
             }
 
             purgeZombieTags(menagerie)
@@ -231,6 +233,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     }
                 }
             }
+            if (!scene.window.isFocused) scene.window.requestFocus()
         }
     }
 

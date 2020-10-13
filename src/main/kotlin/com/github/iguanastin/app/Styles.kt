@@ -18,6 +18,7 @@ class Styles : Stylesheet() {
         val dragDropDialog by cssclass()
         val multiSelectButton by cssclass()
 
+        val blueBase by csspseudoclass()
         val selected by csspseudoclass()
         val softSelected by csspseudoclass()
         val finished by csspseudoclass()
@@ -100,6 +101,9 @@ class Styles : Stylesheet() {
             and(multiSelectButton) {
                 prefHeight = 100.px
                 padding = box(25.px)
+            }
+            and(blueBase) {
+                baseColor = c("#4e98a8")
             }
         }
     }
