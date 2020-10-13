@@ -8,6 +8,8 @@ import com.github.iguanastin.app.menagerie.view.ElementOfFilter
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.app.menagerie.view.TagFilter
 import com.github.iguanastin.app.menagerie.view.ViewFilter
+import com.github.iguanastin.view.dialog.ImportNotification
+import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
@@ -50,6 +52,7 @@ class MainView : View("Menagerie") {
     private lateinit var shuffleToggle: ToggleButton
     private lateinit var selectedCountLabel: Label
     private lateinit var searchButton: Button
+    private lateinit var importsButton: Button
 
     private val _viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
     val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
@@ -69,6 +72,8 @@ class MainView : View("Menagerie") {
         set(value) {
             tagView.items = value
         }
+
+    val imports: ObservableList<ImportNotification> = observableListOf()
 
     val history: ObservableList<ViewHistory> = observableListOf()
 
@@ -150,7 +155,7 @@ class MainView : View("Menagerie") {
                         bottom {
                             borderpane {
                                 left {
-                                    button("Something")
+                                    importsButton = button("Imports")
                                 }
                                 right {
                                     button("Else")
@@ -207,6 +212,10 @@ class MainView : View("Menagerie") {
         initSearchFieldAutoComplete()
         initEditTagsAutoComplete()
         initSelectedItemCounterListeners()
+        importsButton.onAction = EventHandler { event ->
+            event.consume()
+            root.add(ImportQueueDialog(imports))
+        }
 
         Platform.runLater { itemGrid.requestFocus() }
     }
@@ -457,6 +466,9 @@ class MainView : View("Menagerie") {
                     event.consume()
                     searchTextField.selectAll()
                     searchTextField.requestFocus()
+                } else if (event.code == KeyCode.N) {
+                    event.consume()
+                    importsButton.fire()
                 }
             } else if (!event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
                 if (event.code == KeyCode.ESCAPE) {

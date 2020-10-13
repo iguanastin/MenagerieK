@@ -10,10 +10,7 @@ import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.ElementOfFilter
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.view.MainView
-import com.github.iguanastin.view.dialog.ProgressDialog
-import com.github.iguanastin.view.dialog.TextInputDialog
-import com.github.iguanastin.view.dialog.confirm
-import com.github.iguanastin.view.dialog.importdialog
+import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
@@ -66,6 +63,9 @@ class MyApp : App(MainView::class, Styles::class) {
             importer.onError.add { e ->
                 // TODO show error to user
                 log.error("Error occurred while importing", e)
+            }
+            importer.onQueued.add { job ->
+                root.imports.add(ImportNotification(job))
             }
 
             purgeZombieTags(menagerie)

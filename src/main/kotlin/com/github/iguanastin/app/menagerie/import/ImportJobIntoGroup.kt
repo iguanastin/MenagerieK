@@ -6,7 +6,7 @@ import com.github.iguanastin.app.menagerie.model.Menagerie
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 
-class ImportJobIntoGroup private constructor(job: ImportJob, val group: ObjectProperty<GroupItem>, val groupTitle: String): ImportJob(job.file, null, null) {
+class ImportJobIntoGroup private constructor(job: ImportJob, val group: ObjectProperty<GroupItem>, val groupTitle: String): ImportJob(job.file) {
 
     companion object {
         fun asGroup(jobs: Iterable<ImportJob>, groupTitle: String): List<ImportJob> {

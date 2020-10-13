@@ -1,6 +1,5 @@
 package com.github.iguanastin.app.menagerie.import
 
-import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import mu.KotlinLogging
 import java.util.concurrent.BlockingQueue
@@ -15,8 +14,8 @@ class MenagerieImporter(val menagerie: Menagerie) {
     private var importThreadRunning = false
     private val importQueue: BlockingQueue<ImportJob> = LinkedBlockingQueue()
 
-    val onImport: MutableSet<(Item) -> Unit> = mutableSetOf()
     val onError: MutableSet<(Exception) -> Unit> = mutableSetOf()
+    val onQueued: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
 
 
     init {
@@ -26,16 +25,18 @@ class MenagerieImporter(val menagerie: Menagerie) {
             while (importThreadRunning) {
                 val job = importQueue.poll(3, TimeUnit.SECONDS)
                 if (!importThreadRunning) break
-                if (job == null) continue
+                if (job == null || job.isCancelled) continue
 
                 try {
                     log.info("Importing: ${job.file}")
+                    job.onStart.forEach { it(job) }
                     val item = job.import(menagerie)
                     menagerie.addItem(item)
+                    job.onFinish.forEach { it(item) }
                     log.info("Successfully imported: ${job.item}")
-                    onImport.forEach { it(item) }
                 } catch (e: Exception) {
                     job.cleanupAfterError(e)
+                    job.onError.forEach { it(e) }
                     onError.forEach { it(e) }
                 }
             }
@@ -46,6 +47,7 @@ class MenagerieImporter(val menagerie: Menagerie) {
 
     fun enqueue(job: ImportJob) {
         importQueue.put(job)
+        onQueued.forEach { it(job) }
     }
 
     fun close() {

@@ -3,7 +3,6 @@ package com.github.iguanastin.app
 import javafx.scene.Cursor
 import javafx.scene.effect.DropShadow
 import javafx.scene.layout.BorderStrokeStyle
-import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import tornadofx.*
@@ -21,6 +20,7 @@ class Styles : Stylesheet() {
 
         val selected by csspseudoclass()
         val softSelected by csspseudoclass()
+        val finished by csspseudoclass()
     }
 
     init {
@@ -28,39 +28,47 @@ class Styles : Stylesheet() {
             baseColor = c("#3b3f42")
             backgroundColor += c("#3b3f42")
         }
-        label and heading {
-            padding = box(10.px)
-            fontSize = 20.px
-            fontWeight = FontWeight.BOLD
-        }
-        label and fourChoice {
-            and(hover) {
-                cursor = Cursor.HAND
+        label {
+            and(heading) {
+                padding = box(10.px)
+                fontSize = 20.px
+                fontWeight = FontWeight.BOLD
             }
-            padding = box(25.px)
-            backgroundRadius += box(10.px)
-            backgroundColor += c(0.25, 0.25, 0.25, 0.75)
+            and(fourChoice) {
+                and(hover) {
+                    cursor = Cursor.HAND
+                }
+                padding = box(25.px)
+                backgroundRadius += box(10.px)
+                backgroundColor += c(0.25, 0.25, 0.25, 0.75)
+            }
+            and(selected) {
+                backgroundColor += c("#4e98a8")
+            }
+            and(softSelected) {
+                backgroundColor += c("#00565e")
+            }
+        }
+        listView {
+            backgroundColor += c("#303030")
         }
         listCell {
+            backgroundColor += c("#303030")
             and(odd) {
                 backgroundColor += c("#3e3e3e")
             }
-            backgroundColor += c("#303030")
+            and(finished) {
+                backgroundColor += c("#242424")
+            }
         }
         itemGridView {
             minWidth = 525.px
         }
         itemGridCell {
             backgroundColor += c("#606467")
-        }
-        itemGridCell and selected {
-            backgroundColor += c("#4e98a8")
-        }
-        label and selected {
-            backgroundColor += c("#4e98a8")
-        }
-        label and softSelected {
-            backgroundColor += c("#00565e")
+            and(selected) {
+                backgroundColor += c("#4e98a8")
+            }
         }
         dialogPane {
             backgroundColor += c("#3b3f42")
@@ -89,10 +97,10 @@ class Styles : Stylesheet() {
         }
         button {
             padding = box(5.px, 10.px)
-        }
-        multiSelectButton {
-            prefHeight = 100.px
-            padding = box(25.px)
+            and(multiSelectButton) {
+                prefHeight = 100.px
+                padding = box(25.px)
+            }
         }
     }
 }

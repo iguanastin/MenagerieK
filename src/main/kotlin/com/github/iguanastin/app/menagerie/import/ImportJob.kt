@@ -6,14 +6,23 @@ import mu.KotlinLogging
 import java.io.File
 
 private val log = KotlinLogging.logger {}
-open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null, var onFinish: ((FileItem) -> Unit)? = null) {
+open class ImportJob(val file: File) {
+
+    var onStart: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
+    var onProgress: MutableSet<(String, Double) -> Unit> = mutableSetOf()
+    var onError: MutableSet<(Exception) -> Unit> = mutableSetOf()
+    var onFinish: MutableSet<(FileItem) -> Unit> = mutableSetOf()
+
+    @Volatile
+    var isCancelled: Boolean = false
+        private set
 
     var item: FileItem? = null
         private set
 
 
     open fun import(menagerie: Menagerie): FileItem {
-        onStart?.invoke(this)
+        onProgress.forEach { it("Importing file", 0.0) }
 
         log.debug { "Importing \"$file\"" }
 
@@ -21,10 +30,12 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
 
         val id = menagerie.reserveItemID()
         val added = System.currentTimeMillis()
+        onProgress.forEach { it("Hashing file", 0.33) }
         val md5 = FileItem.fileHash(file)
 
         item = when {
             ImageItem.isImage(file) -> {
+                onProgress.forEach { it("Creating histogram", 0.66) }
                 val histogram = Histogram.from(image(file))
                 ImageItem(id, added, menagerie, md5, file, noSimilar = false, histogram = histogram)
             }
@@ -38,11 +49,15 @@ open class ImportJob(val file: File, var onStart: ((ImportJob) -> Unit)? = null,
 
         log.debug { "Generated item for \"$file\" with: id=$id, added=$added, md5=$md5" }
 
-        onFinish?.invoke(item!!)
+        onProgress.forEach { it("Finished importing", 1.0) }
 
         return item!!
     }
 
     open fun cleanupAfterError(e: Exception) {}
+
+    fun cancel() {
+        isCancelled = true
+    }
 
 }

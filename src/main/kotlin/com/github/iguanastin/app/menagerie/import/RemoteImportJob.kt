@@ -50,6 +50,7 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
     }
 
     private fun download(url: String, into: File) {
+        onProgress.forEach { it("Downloading", 0.0) }
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.addRequestProperty("User-Agent", "Mozilla/4.0")
@@ -59,6 +60,7 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
                     val chunkSize: Long = 4096
                     var i: Long = 0
                     while (i < size) {
+                        onProgress.forEach { it("Downloading", i.toDouble() / size) }
                         fos.channel.transferFrom(rbs, i, chunkSize)
                         i += chunkSize
                     }
