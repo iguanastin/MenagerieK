@@ -65,9 +65,9 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
             }
 
             override fun updateItem(item: ImportNotification?, empty: Boolean) {
-                item?.statusProperty?.removeListener(statusListener)
-                item?.progressProperty?.removeListener(progressListener)
-                item?.finishedProperty?.removeListener(finishedListener)
+                getItem()?.statusProperty?.removeListener(statusListener)
+                getItem()?.progressProperty?.removeListener(progressListener)
+                getItem()?.finishedProperty?.removeListener(finishedListener)
                 statusLabel.text = ""
                 sourceLabel.text = ""
                 progressBar.progress = 0.0
@@ -124,22 +124,18 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
         }
 
         val isFinishedListener = InvalidationListener { _, ->
-            runOnUIThread { list.items.sortBy { it.isFinished } }
+            runOnUIThread { imports.sortBy { it.isFinished } }
         }
-
-        list.items.addAll(imports)
-        list.items.sortBy { it.isFinished }
-        list.items.forEach { it.finishedProperty.addListener(isFinishedListener) }
+        imports.forEach { it.finishedProperty.addListener(isFinishedListener) }
+        imports.sortBy { it.isFinished }
         imports.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { it.finishedProperty.removeListener(isFinishedListener) }
                 change.addedSubList.forEach { it.finishedProperty.addListener(isFinishedListener) }
-
-                list.items.removeAll(change.removed)
-                list.items.addAll(change.addedSubList)
-                list.items.sortBy { it.isFinished }
             }
         })
+
+        list.items = imports
     }
 
 }

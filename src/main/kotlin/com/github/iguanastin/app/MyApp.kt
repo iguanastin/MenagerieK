@@ -66,6 +66,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
             importer.onQueued.add { job ->
                 root.imports.add(ImportNotification(job))
+                root.imports.sortBy { it.isFinished }
             }
 
             purgeZombieTags(menagerie)
@@ -206,7 +207,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 val jobs = mutableListOf<ImportJob>()
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        file.listFiles()?.forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
+                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
                     } else {
                         if (!menagerie.hasFile(file)) jobs.add(ImportJob(file))
                     }
