@@ -71,7 +71,7 @@ class MyApp : App(MainView::class, Styles::class) {
             purgeZombieTags(menagerie)
 
             runOnUIThread {
-                root.navigateForward(MenagerieView(menagerie, "", true, listOf(ElementOfFilter(null, true))))
+                root.navigateForward(MenagerieView(menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
             }
 
             initViewControls()

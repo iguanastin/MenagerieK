@@ -9,7 +9,7 @@ import javafx.collections.ObservableList
 import tornadofx.*
 import kotlin.collections.sortBy
 
-class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val filters: Iterable<ViewFilter>) {
+class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<ViewFilter>) {
 
     var items: ObservableList<Item>? = null
         private set
@@ -62,6 +62,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
     private fun sortItems() {
+        // TODO implement shuffle
         if (descending) {
             items?.sortByDescending { it.id }
         } else {

@@ -16,18 +16,20 @@ import javafx.beans.property.ReadOnlyObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
-import javafx.scene.control.Button
-import javafx.scene.control.ListView
-import javafx.scene.control.TextField
+import javafx.geometry.Pos
+import javafx.scene.control.*
+import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseButton
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
+import javafx.stage.Popup
+import javafx.stage.PopupWindow
 import mu.KotlinLogging
 import tornadofx.*
-import java.lang.NumberFormatException
+import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
 
@@ -43,6 +45,11 @@ class MainView : View("Menagerie") {
     private lateinit var applyTagEdit: Button
     private lateinit var searchTextField: TextField
     private lateinit var backButton: Button
+    private lateinit var descendingToggle: ToggleButton
+    private lateinit var openGroupsToggle: ToggleButton
+    private lateinit var shuffleToggle: ToggleButton
+    private lateinit var selectedCountLabel: Label
+    private lateinit var searchButton: Button
 
     private val _viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
     val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
@@ -91,18 +98,43 @@ class MainView : View("Menagerie") {
                     borderpane {
                         padding = insets(4)
                         top {
-                            hbox(5.0) {
+                            vbox(5.0) {
                                 padding = insets(5.0)
-                                backButton = button("\uD83E\uDC44") {
-                                    isDisable = true
-                                    onAction = EventHandler { event ->
-                                        event.consume()
-                                        navigateBack()
+                                hbox(5.0) {
+                                    backButton = button("\uD83E\uDC44") {
+                                        isDisable = true
+                                        onAction = EventHandler { event ->
+                                            event.consume()
+                                            navigateBack()
+                                        }
+                                    }
+                                    searchTextField = textfield {
+                                        hgrow = Priority.ALWAYS
+                                        promptText = "Search"
                                     }
                                 }
-                                searchTextField = textfield {
-                                    hgrow = Priority.ALWAYS
-                                    promptText = "Search"
+                                borderpane {
+                                    left {
+                                        hbox(5.0) {
+                                            alignment = Pos.CENTER_LEFT
+                                            descendingToggle = togglebutton(selectFirst = true) {
+                                                graphic = ImageView(MainView::class.java.getResource("/imgs/descending.png").toExternalForm())
+                                            }
+                                            openGroupsToggle = togglebutton(selectFirst = false) {
+                                                graphic = ImageView(MainView::class.java.getResource("/imgs/opengroups.png").toExternalForm())
+                                            }
+                                            shuffleToggle = togglebutton(selectFirst = false) {
+                                                graphic = ImageView(MainView::class.java.getResource("/imgs/shuffle.png").toExternalForm())
+                                            }
+                                        }
+                                    }
+                                    right {
+                                        hbox(5.0) {
+                                            alignment = Pos.CENTER_LEFT
+                                            selectedCountLabel = label("0/0")
+                                            searchButton = button("Search")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -174,8 +206,17 @@ class MainView : View("Menagerie") {
         initSearchListener()
         initSearchFieldAutoComplete()
         initEditTagsAutoComplete()
+        initSelectedItemCounterListeners()
 
         Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    private fun initSelectedItemCounterListeners() {
+        val listener = InvalidationListener {
+            selectedCountLabel.text = "${itemGrid.selected.size}/${itemGrid.items.size}"
+        }
+        itemGrid.items.addListener(listener)
+        itemGrid.selected.addListener(listener)
     }
 
     private fun initEditTagsAutoComplete() {
@@ -218,14 +259,35 @@ class MainView : View("Menagerie") {
         }
     }
 
+    private fun displaySearchError(error: String) {
+        val popup = Popup().apply {
+            anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
+            content.add(label(error) {
+                addClass(Styles.dialogPane)
+                style {
+                    fontSize = 18.px
+                    textFill = c("red")
+                }
+                padding = insets(10.0)
+            })
+        }
+        val bounds = searchTextField.localToScreen(searchTextField.layoutBounds)
+        popup.show(searchTextField, bounds.minX, bounds.maxY + 20.0)
+        thread(start = true) {
+            Thread.sleep(5000)
+            runOnUIThread { popup.hide() }
+        }
+    }
+
     private fun initSearchListener() {
-        searchTextField.onAction = EventHandler { event ->
+        searchButton.onAction = EventHandler { event ->
             val view = viewProperty.get() ?: return@EventHandler
             event.consume()
             val text = searchTextField.text.trim()
             val filters = mutableListOf<ViewFilter>()
 
             for (str in text.split(Regex("\\s+"))) {
+                if (str.isBlank()) continue
                 val exclude = str.startsWith('-')
                 val word = if (exclude) str.substring(1) else str
 
@@ -240,21 +302,30 @@ class MainView : View("Menagerie") {
                             if (item is GroupItem) {
                                 filters.add(ElementOfFilter(item, exclude))
                             } else {
-                                // TODO throw error and stop search. Display error to user?
+                                displaySearchError("No group in \"$word\" with ID: ${parameter.toInt()}")
+                                return@EventHandler
                             }
                         } catch (e: NumberFormatException) {
-                            // TODO throw error and stop search. Display error to user?
+                            displaySearchError("Parameter in \"$word\" is not a number: $parameter")
+                            return@EventHandler
                         }
                     }
                 } else {
-                    val tag = view.menagerie.getTag(word) ?: continue
+                    val tag = view.menagerie.getTag(word)
+                    if (tag == null) {
+                        displaySearchError("No such tag: \"$word\"")
+                        return@EventHandler
+                    }
                     filters.add(TagFilter(tag, exclude))
                 }
             }
 
-            navigateForward(MenagerieView(view.menagerie, searchTextField.text, true, filters)) // TODO descending toggle?
+            if (!openGroupsToggle.isSelected) filters.add(ElementOfFilter(null, true))
+
+            navigateForward(MenagerieView(view.menagerie, searchTextField.text, descendingToggle.isSelected, shuffleToggle.isSelected, filters))
             itemGrid.requestFocus()
         }
+        searchTextField.onAction = searchButton.onAction
     }
 
     private fun initHistoryListener() {
@@ -268,7 +339,7 @@ class MainView : View("Menagerie") {
     fun navigateBack() {
         val back = history.removeLastOrNull() ?: return
         _viewProperty.set(back.view)
-        searchTextField.text = back.view.searchString
+
         itemGrid.selected.apply {
             clear()
             addAll(back.selected)
@@ -284,7 +355,7 @@ class MainView : View("Menagerie") {
     private fun onItemAction(item: Item) {
         if (item is GroupItem) {
             val filter = ElementOfFilter(item, false)
-            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, listOf(filter)))
+            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter)))
         } else {
             // TODO some action for activating other items?
         }
@@ -314,13 +385,26 @@ class MainView : View("Menagerie") {
     }
 
     private fun initViewListener() {
-        viewProperty.addListener { _, oldValue, newValue ->
+        _viewProperty.addListener { _, oldValue, newValue ->
             oldValue?.close()
             itemGrid.items.clear()
 
-            newValue?.attachTo(itemGrid.items)
-            searchTextField.text = newValue?.searchString ?: ""
-            if (itemGrid.items.isNotEmpty()) itemGrid.select(itemGrid.items.first())
+            if (newValue != null) {
+                newValue.attachTo(itemGrid.items)
+                if (itemGrid.items.isNotEmpty()) itemGrid.select(itemGrid.items.first())
+
+                searchTextField.text = newValue.searchString
+
+                descendingToggle.isSelected = newValue.descending
+
+                openGroupsToggle.isSelected = true
+                for (filter in newValue.filters) {
+                    if (filter is ElementOfFilter && filter.group == null && filter.exclude) {
+                        openGroupsToggle.isSelected = false
+                        break
+                    }
+                }
+            }
         }
     }
 
