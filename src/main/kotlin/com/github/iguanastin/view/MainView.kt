@@ -92,6 +92,7 @@ class MainView : View("Menagerie") {
                         padding = insets(4)
                         top {
                             hbox(5.0) {
+                                padding = insets(5.0)
                                 backButton = button("\uD83E\uDC44") {
                                     isDisable = true
                                     onAction = EventHandler { event ->
@@ -171,8 +172,50 @@ class MainView : View("Menagerie") {
         initRootKeyPressedListener()
         initHistoryListener()
         initSearchListener()
+        initSearchFieldAutoComplete()
+        initEditTagsAutoComplete()
 
         Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    private fun initEditTagsAutoComplete() {
+        editTags.bindAutoComplete { predict ->
+            val result = mutableListOf<Tag>()
+            var word = predict.toLowerCase()
+            val exclude = word.startsWith('-')
+            if (exclude) word = word.substring(1)
+
+            if (exclude) {
+                itemGrid.selected.forEach { item ->
+                    item.tags.forEach { tag ->
+                        if (tag.name.startsWith(word) && tag !in result) result.add(tag)
+                    }
+                }
+            } else {
+                viewProperty.get()?.menagerie?.tags?.forEach { tag ->
+                    if (tag.name.startsWith(word)) result.add(tag)
+                }
+            }
+            result.sortByDescending { it.frequency }
+
+            result.subList(0, 8.coerceAtMost(result.size)).map { if (exclude) "-${it.name}" else it.name }
+        }
+    }
+
+    private fun initSearchFieldAutoComplete() {
+        searchTextField.bindAutoComplete { predict ->
+            val result = mutableListOf<Tag>()
+            var word = predict.toLowerCase()
+            val exclude = word.startsWith('-')
+            if (exclude) word = word.substring(1)
+
+            viewProperty.get()?.menagerie?.tags?.forEach { tag ->
+                if (tag.name.startsWith(word)) result.add(tag)
+            }
+            result.sortByDescending { it.frequency }
+
+            result.subList(0, 8.coerceAtMost(result.size)).map { if (exclude) "-${it.name}" else it.name }
+        }
     }
 
     private fun initSearchListener() {
@@ -294,8 +337,10 @@ class MainView : View("Menagerie") {
         editTagsPane.visibleProperty().addListener(ChangeListener { _, _, newValue ->
             if (!newValue) itemGrid.requestFocus()
         })
-        editTags.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ENTER) applyTagEdit.fire()
+        editTags.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (!event.isAltDown && !event.isShiftDown && event.code == KeyCode.ENTER) {
+                applyTagEdit.fire()
+            }
         }
         applyTagEdit.onAction = EventHandler { event ->
             for (name in editTags.text.trim().split(Regex("\\s+"))) {

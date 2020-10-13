@@ -20,6 +20,7 @@ class Styles : Stylesheet() {
         val multiSelectButton by cssclass()
 
         val selected by csspseudoclass()
+        val softSelected by csspseudoclass()
     }
 
     init {
@@ -54,6 +55,12 @@ class Styles : Stylesheet() {
         }
         itemGridCell and selected {
             backgroundColor += c("#4e98a8")
+        }
+        label and selected {
+            backgroundColor += c("#4e98a8")
+        }
+        label and softSelected {
+            backgroundColor += c("#00565e")
         }
         dialogPane {
             backgroundColor += c("#3b3f42")
