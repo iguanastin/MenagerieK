@@ -6,7 +6,7 @@ import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.scene.image.Image
 import tornadofx.*
-import java.lang.ref.WeakReference
+import java.lang.ref.SoftReference
 
 open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
 
@@ -20,7 +20,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     val tags: ObservableList<Tag> = _tags.asUnmodifiable()
     val changeListeners: MutableSet<(ItemChangeBase) -> Unit> = mutableSetOf()
 
-    private var thumbnailCache: WeakReference<Thumbnail> = WeakReference(null)
+    private var thumbnailCache: SoftReference<Thumbnail> = SoftReference(null)
 
     init {
         tags.addListener(ListChangeListener { change ->
@@ -49,7 +49,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
         var img = thumbnailCache.get()
         if (img == null) {
             img = Thumbnail(this)
-            thumbnailCache = WeakReference(img)
+            thumbnailCache = SoftReference(img)
         }
         return img
     }
