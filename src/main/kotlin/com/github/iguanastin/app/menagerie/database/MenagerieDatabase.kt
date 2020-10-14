@@ -329,7 +329,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 val i1 = menagerie.getItem(rs.getInt("item_1"))
                 val i2 = menagerie.getItem(rs.getInt("item_2"))
                 if (i1 == null || i2 == null) continue
-                menagerie.addNonDupe(i1 to i2)
+                menagerie.addNonDupe(SimilarPair(i1, i2, 1.0))
                 i++
             }
         }

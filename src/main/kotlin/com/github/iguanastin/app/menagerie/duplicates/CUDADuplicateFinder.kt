@@ -1,12 +1,9 @@
 package com.github.iguanastin.app.menagerie.duplicates
 
-import com.github.iguanastin.app.menagerie.model.Histogram
-import com.github.iguanastin.app.menagerie.model.ImageItem
-import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.*
 import jcuda.Pointer
 import jcuda.Sizeof
 import jcuda.driver.*
-import java.util.*
 
 object CUDADuplicateFinder {
 
@@ -25,9 +22,10 @@ object CUDADuplicateFinder {
      * @param maxResults Maximum number of results to return
      * @return Set of similar pairs found with the given confidence
      */
-    fun findDuplicates(smallSet: List<Item>, largeSet: List<Item>, confidence: Float, maxResults: Int): List<SimilarPair<ImageItem>> {
+    fun findDuplicates(smallSet: List<Item>, largeSet: List<Item>, confidence: Float, maxResults: Int): List<SimilarPair<Item>> {
 
         // TODO find exact hash duplicates (CUDA only does histogram similarities)
+        // Probably need another kernel for this
 
         // Construct a clean dataset
         val trueSet1: List<ImageItem> = getCleanedSet(smallSet)
@@ -67,10 +65,11 @@ object CUDADuplicateFinder {
         launchKernel(maxResults, function, N1, N2, d_data1, d_data2, d_confs1, d_confs2, d_ids1, d_ids2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
 
         // Get results from device
-        val results: List<SimilarPair<ImageItem>> = getResultsFromDevice(trueSet1, trueSet2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+        val results: List<SimilarPair<Item>> = getResultsFromDevice(largeSet[0].menagerie, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
 
         // Free device memory
         freeDeviceMemory(d_data1, d_data2, d_confs1, d_confs2, d_ids1, d_ids2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+
         return results
     }
 
@@ -118,7 +117,7 @@ object CUDADuplicateFinder {
         return function
     }
 
-    private fun getResultsFromDevice(set1: List<ImageItem>, set2: List<ImageItem>, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr): List<SimilarPair<ImageItem>> {
+    private fun getResultsFromDevice(menagerie: Menagerie, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr): List<SimilarPair<Item>> {
         // Get result count from device
         val resultCountArr = IntArray(1)
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultCountArr), d_resultCount, Sizeof.INT.toLong())
@@ -130,22 +129,16 @@ object CUDADuplicateFinder {
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsID1), d_resultsID1, resultCount * Sizeof.INT.toLong())
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsID2), d_resultsID2, resultCount * Sizeof.INT.toLong())
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsSimilarity), d_resultsSimilarity, resultCount * Sizeof.FLOAT.toLong())
-        val results: MutableList<SimilarPair<ImageItem>> = ArrayList<SimilarPair<ImageItem>>()
+        val results: MutableList<SimilarPair<Item>> = mutableListOf()
         for (i in 0 until resultCount) {
-            val pair: SimilarPair<ImageItem> = SimilarPair(getItemByID(resultsID1[i], set1, set2), getItemByID(resultsID2[i], set1, set2), resultsSimilarity[i].toDouble())
-            if (!results.contains(pair)) results.add(pair)
+            val i1 = menagerie.getItem(resultsID1[i])
+            val i2 = menagerie.getItem(resultsID2[i])
+            if (i1 != null && i2 != null) {
+                val pair: SimilarPair<Item> = SimilarPair(i1, i2, resultsSimilarity[i].toDouble())
+                if (!results.contains(pair)) results.add(pair)
+            }
         }
         return results
-    }
-
-    private fun getItemByID(id: Int, set1: List<ImageItem>, set2: List<ImageItem>): ImageItem {
-        for (item in set1) {
-            if (item.id == id) return item
-        }
-        for (item in set2) {
-            if (item.id == id) return item
-        }
-        return null!!
     }
 
     private fun launchKernel(maxResults: Int, function: CUfunction, N1: Int, N2: Int, d_data1: CUdeviceptr, d_data2: CUdeviceptr, d_confs1: CUdeviceptr, d_confs2: CUdeviceptr, d_ids1: CUdeviceptr, d_ids2: CUdeviceptr, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr) {

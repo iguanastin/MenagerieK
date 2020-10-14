@@ -36,7 +36,8 @@ class MyApp : App(MainView::class, Styles::class) {
     private val contextPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/context")
 
     private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
-//        private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
+
+    //    private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
     private val dbUser = contextPrefs.get("db_user", "sa")
     private val dbPass = contextPrefs.get("db_pass", "")
 

@@ -20,8 +20,8 @@ class Menagerie {
     private val nextItemID = AtomicInteger(0)
     private val files: MutableSet<File> = mutableSetOf()
 
-    private val _knownNonDupes: ObservableList<Pair<Item, Item>> = FXCollections.observableArrayList()
-    val knownNonDupes: ObservableList<Pair<Item, Item>> = _knownNonDupes.asUnmodifiable()
+    private val _knownNonDupes: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
+    val knownNonDupes: ObservableList<SimilarPair<Item>> = _knownNonDupes.asUnmodifiable()
 
 
     init {
@@ -114,11 +114,11 @@ class Menagerie {
         return _tags.remove(tag)
     }
 
-    fun hasDupe(dupe: Pair<Item, Item>): Boolean {
-        return dupe in _knownNonDupes || dupe.second to dupe.first in _knownNonDupes
+    fun hasDupe(dupe: SimilarPair<Item>): Boolean {
+        return dupe in _knownNonDupes
     }
 
-    fun addNonDupe(dupe: Pair<Item, Item>): Boolean {
+    fun addNonDupe(dupe: SimilarPair<Item>): Boolean {
         return if (!hasDupe(dupe)) {
             _knownNonDupes.add(dupe)
             true
@@ -127,8 +127,8 @@ class Menagerie {
         }
     }
 
-    fun removeNonDupe(dupe: Pair<Item, Item>): Boolean {
-        return _knownNonDupes.remove(dupe) || _knownNonDupes.remove(dupe.second to dupe.first)
+    fun removeNonDupe(dupe: SimilarPair<Item>): Boolean {
+        return _knownNonDupes.remove(dupe)
     }
 
 }

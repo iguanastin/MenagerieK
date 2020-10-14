@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.duplicates
+package com.github.iguanastin.app.menagerie.model
 
 /**
  * An object representing a pair and their similarity.
@@ -8,7 +8,6 @@ package com.github.iguanastin.app.menagerie.duplicates
 class SimilarPair<T>(val obj1: T, val obj2: T, val similarity: Double) {
 
     init {
-        if (obj1 == null || obj2 == null) throw NullPointerException("Objects must not be null")
         require(obj1 != obj2) { "Objects must not be equal" }
         require(!(similarity < 0 || similarity > 1)) { "Similarity must be between 0 and 1, inclusive: $similarity" }
     }
