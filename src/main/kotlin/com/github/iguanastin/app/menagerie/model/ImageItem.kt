@@ -31,6 +31,7 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
     }
 
     companion object {
+        val noSimilarMax: Double = 0.9
         val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")
 
         fun isImage(file: File): Boolean {

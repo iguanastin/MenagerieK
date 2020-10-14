@@ -16,6 +16,8 @@ class MenagerieImporter(val menagerie: Menagerie) {
 
     val onError: MutableSet<(Exception) -> Unit> = mutableSetOf()
     val onQueued: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
+    val beforeEach: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
+    val afterEach: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
 
 
     init {
@@ -29,10 +31,12 @@ class MenagerieImporter(val menagerie: Menagerie) {
 
                 try {
                     log.info("Importing: ${job.file}")
+                    beforeEach.forEach { it(job) }
                     job.onStart.forEach { it(job) }
                     val item = job.import(menagerie)
                     menagerie.addItem(item)
                     job.onFinish.forEach { it(item) }
+                    afterEach.forEach { it(job) }
                     log.info("Successfully imported: ${job.item}")
                 } catch (e: Exception) {
                     job.cleanupAfterError(e)

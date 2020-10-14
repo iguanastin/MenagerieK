@@ -37,7 +37,21 @@ open class ImportJob(val file: File) {
             ImageItem.isImage(file) -> {
                 onProgress.forEach { it("Creating histogram", 0.66) }
                 val histogram = Histogram.from(image(file))
-                ImageItem(id, added, menagerie, md5, file, noSimilar = false, histogram = histogram)
+
+                onProgress.forEach { it("Finding similar items", 0.8) }
+                var noSimilar = true
+                for (item in menagerie.items) {
+                    if (histogram == null) break
+                    if (item is ImageItem) {
+                        val h2 = item.histogram
+                        if (h2 != null && histogram.similarityTo(h2) > ImageItem.noSimilarMax) {
+                            noSimilar = false
+                            item.noSimilar = false
+                        }
+                    }
+                }
+
+                ImageItem(id, added, menagerie, md5, file, noSimilar = noSimilar, histogram = histogram)
             }
             VideoItem.isVideo(file) -> {
                 VideoItem(id, added, menagerie, md5, file)
