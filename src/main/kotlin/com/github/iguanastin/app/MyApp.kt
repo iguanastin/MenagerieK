@@ -37,8 +37,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
 
-//    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
-        private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
+    private val dbURL = contextPrefs.get("db_url", "~/menagerie")
     private val dbUser = contextPrefs.get("db_user", "sa")
     private val dbPass = contextPrefs.get("db_pass", "")
 
@@ -144,12 +143,16 @@ class MyApp : App(MainView::class, Styles::class) {
             if (event.code == KeyCode.D && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
                 event.consume()
                 val pairs = if (contextPrefs.getBoolean("cuda", false)) {
-                    CUDADuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, 0.95F, 100000)
+                    CUDADuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, contextPrefs.getDouble("confidence", 0.95).toFloat(), 100000)
                 } else {
-                    CPUDuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, 0.95)
+                    CPUDuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, contextPrefs.getDouble("confidence", 0.95))
                 }
                 if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
                 root.root.add(DuplicateResolverDialog(pairs.asObservable()))
+            }
+            if (event.code == KeyCode.S && event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+                event.consume()
+                root.root.add(SettingsDialog(contextPrefs))
             }
         }
     }
@@ -163,7 +166,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         val folderPath = contextPrefs.get("downloads", null)
 
-        if (folderPath == null) {
+        if (folderPath.isNullOrBlank()) {
             val dc = DirectoryChooser()
             dc.title = "Download into folder"
             download(dc.showDialog(root.currentWindow))
@@ -212,22 +215,22 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             if (shiftDown) {
                 val dc = DirectoryChooser()
-                val dir = contextPrefs.get("import_last_dir", null)
+                val dir = contextPrefs.get("downloads", null)
                 if (dir != null) dc.initialDirectory = File(dir)
                 dc.title = "Import directory"
                 val folder = dc.showDialog(root.currentWindow)
                 if (folder != null) {
-                    contextPrefs.put("import_last_dir", folder.parent)
+                    contextPrefs.put("downloads", folder.parent)
                     importFilesDialog(listOf(folder))
                 }
             } else {
                 val fc = FileChooser()
-                val dir = contextPrefs.get("import_last_dir", null)
+                val dir = contextPrefs.get("downloads", null)
                 if (dir != null) fc.initialDirectory = File(dir)
                 fc.title = "Import files"
                 val files = fc.showOpenMultipleDialog(root.currentWindow)
                 if (!files.isNullOrEmpty()) {
-                    contextPrefs.put("import_last_dir", files.first().parent)
+                    contextPrefs.put("downloads", files.first().parent)
                     importFilesDialog(files)
                 }
             }
