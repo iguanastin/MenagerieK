@@ -238,18 +238,22 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             }
         }
 
-        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+        addEventFilter(KeyEvent.KEY_PRESSED) { event ->
             when (event.code) {
                 KeyCode.LEFT -> {
+                    event.consume()
                     previous()
                 }
                 KeyCode.RIGHT -> {
+                    event.consume()
                     next()
                 }
                 KeyCode.HOME -> {
+                    event.consume()
                     displaying = pairs.first()
                 }
                 KeyCode.END -> {
+                    event.consume()
                     displaying = pairs.last()
                 }
                 else -> { /* Do nothing */
