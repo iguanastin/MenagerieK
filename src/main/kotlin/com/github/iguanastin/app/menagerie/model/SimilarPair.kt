@@ -12,6 +12,10 @@ class SimilarPair<T>(val obj1: T, val obj2: T, val similarity: Double) {
         require(!(similarity < 0 || similarity > 1)) { "Similarity must be between 0 and 1, inclusive: $similarity" }
     }
 
+    fun contains(obj: T): Boolean {
+        return obj1 == obj || obj2 == obj
+    }
+
     override fun equals(other: Any?): Boolean {
         if (other !is SimilarPair<*>) return false
         return if (obj1 == other.obj1 && obj2 == other.obj2) {

@@ -114,12 +114,12 @@ class Menagerie {
         return _tags.remove(tag)
     }
 
-    fun hasDupe(dupe: SimilarPair<Item>): Boolean {
+    fun hasNonDupe(dupe: SimilarPair<Item>): Boolean {
         return dupe in _knownNonDupes
     }
 
     fun addNonDupe(dupe: SimilarPair<Item>): Boolean {
-        return if (!hasDupe(dupe)) {
+        return if (!hasNonDupe(dupe)) {
             _knownNonDupes.add(dupe)
             true
         } else {

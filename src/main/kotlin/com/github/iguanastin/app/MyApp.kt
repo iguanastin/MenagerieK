@@ -2,6 +2,8 @@ package com.github.iguanastin.app
 
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
+import com.github.iguanastin.app.menagerie.duplicates.CPUDuplicateFinder
+import com.github.iguanastin.app.menagerie.duplicates.CUDADuplicateFinder
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
@@ -32,8 +34,8 @@ private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
 
-    private val uiPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/ui")
-    private val contextPrefs: Preferences = Preferences.userRoot().node("com/github/iguanastin/MenagerieK/context")
+    private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
+    private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
 
 //    private val dbURL = contextPrefs.get("db_url", "~/test-sfw-v9")
         private val dbURL = contextPrefs.get("db_url", "~/menagerie-test")
@@ -77,6 +79,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 root.navigateForward(MenagerieView(menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
             }
 
+            var count = 0
+            menagerie.items.forEach { if (it is ImageItem && it.noSimilar) count++ }
+
             initViewControls()
         }
     }
@@ -107,7 +112,7 @@ class MyApp : App(MainView::class, Styles::class) {
         root.root.onDragDropped = EventHandler { event ->
             if (event.isAccepted) {
                 if (event.dragboard.url?.startsWith("http") == true) {
-                    importer.enqueue(RemoteImportJob.intoDirectory(event.dragboard.url, File("D:\\Downloads"))) // Better downloads folder
+                    downloadDragDropUtility(event.dragboard.url)
                 }
                 if (event.dragboard.files?.isNotEmpty() == true) {
                     importFilesDialog(event.dragboard.files)
@@ -125,16 +130,51 @@ class MyApp : App(MainView::class, Styles::class) {
 
         root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.I && event.isShortcutDown) {
-                importShortcut(event.isShiftDown)
                 event.consume()
+                importShortcut(event.isShiftDown)
             }
             if (event.code == KeyCode.DELETE) {
-                deleteShortcut(event.isShortcutDown)
                 event.consume()
+                deleteShortcut(event.isShortcutDown)
             }
             if (event.code == KeyCode.R && event.isShortcutDown && !event.isShiftDown) {
-                renameGroupShortcut()
                 event.consume()
+                renameGroupShortcut()
+            }
+            if (event.code == KeyCode.D && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+                event.consume()
+                val pairs = if (contextPrefs.getBoolean("cuda", false)) {
+                    CUDADuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, 0.95F, 100000)
+                } else {
+                    CPUDuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, 0.95)
+                }
+                if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
+                root.root.add(DuplicateResolverDialog(pairs.asObservable()))
+            }
+        }
+    }
+
+    private fun downloadDragDropUtility(url: String) {
+        val download = { folder: File? ->
+            if (folder != null && folder.exists() && folder.isDirectory) {
+                importer.enqueue(RemoteImportJob.intoDirectory(url, folder))
+            }
+        }
+
+        val folderPath = contextPrefs.get("downloads", null)
+
+        if (folderPath == null) {
+            val dc = DirectoryChooser()
+            dc.title = "Download into folder"
+            download(dc.showDialog(root.currentWindow))
+        } else {
+            val folder = File(folderPath)
+            if (folder.exists() && folder.isDirectory) {
+                download(folder)
+            } else {
+                val dc = DirectoryChooser()
+                dc.title = "Download into folder"
+                download(dc.showDialog(root.currentWindow))
             }
         }
     }
