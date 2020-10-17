@@ -14,6 +14,7 @@ import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
+import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
@@ -33,6 +34,10 @@ import kotlin.concurrent.thread
 private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
+
+    companion object {
+        val defualtConfidence = 0.95
+    }
 
     private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
@@ -140,21 +145,75 @@ class MyApp : App(MainView::class, Styles::class) {
                 event.consume()
                 renameGroupShortcut()
             }
-            if (event.code == KeyCode.D && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+            if (event.code == KeyCode.D && event.isShortcutDown && !event.isShiftDown) {
                 event.consume()
-                val pairs = if (contextPrefs.getBoolean("cuda", false)) {
-                    CUDADuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, contextPrefs.getDouble("confidence", 0.95).toFloat(), 100000)
-                } else {
-                    CPUDuplicateFinder.findDuplicates(root.itemGrid.selected, root.itemGrid.selected, contextPrefs.getDouble("confidence", 0.95))
-                }
-                if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
-                root.root.add(DuplicateResolverDialog(pairs.asObservable()))
+                duplicatesShortcut(event)
+            }
+            if (event.code == KeyCode.G && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+                event.consume()
+                groupShortcut()
+            }
+            if (event.code == KeyCode.U && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+                event.consume()
+                ungroupShortcut()
             }
             if (event.code == KeyCode.S && event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
                 event.consume()
                 root.root.add(SettingsDialog(contextPrefs))
             }
         }
+    }
+
+    private fun ungroupShortcut() {
+        if (root.itemGrid.selected.size != 1) return
+        val group = root.itemGrid.selected.first()
+        if (group !is GroupItem) return
+
+        root.root.confirm("Ungroup", "Ungroup \"${group.title}\"?") {
+            onConfirm = {
+                ArrayList(group.items).forEach { group.removeItem(it) }
+                menagerie.removeItem(group)
+            }
+        }
+    }
+
+    private fun groupShortcut() {
+        if (root.itemGrid.selected.isEmpty()) return
+
+        root.root.add(TextInputDialog("Create group", prompt = "Title", onAccept = { title ->
+            val group = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, title)
+
+            for (item in ArrayList(root.itemGrid.selected)) {
+                when (item) {
+                    is FileItem -> {
+                        group.addItem(item)
+                    }
+                    is GroupItem -> {
+                        menagerie.removeItem(item)
+                        item.items.forEach { group.addItem(it) }
+                    }
+                }
+            }
+
+            menagerie.addItem(group)
+
+            Platform.runLater {
+                root.itemGrid.select(group)
+            }
+        }))
+    }
+
+    private fun duplicatesShortcut(event: KeyEvent) {
+        val first = expandGroups(root.itemGrid.selected)
+        val second = if (event.isAltDown) expandGroups(menagerie.items) else first
+
+        val pairs = if (contextPrefs.getBoolean("cuda", false)) {
+            CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defualtConfidence).toFloat(), 100000)
+        } else {
+            CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defualtConfidence))
+        }
+        if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
+        root.root.add(DuplicateResolverDialog(pairs.asObservable()))
     }
 
     private fun downloadDragDropUtility(url: String) {

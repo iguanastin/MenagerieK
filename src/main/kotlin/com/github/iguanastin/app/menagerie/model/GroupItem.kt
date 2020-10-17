@@ -57,7 +57,7 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
     }
 
     fun removeItem(item: FileItem): Boolean {
-        item.elementOf = null
+        if (item in items) item.elementOf = null
         return _items.remove(item)
     }
 

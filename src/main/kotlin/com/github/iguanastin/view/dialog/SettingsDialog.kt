@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.app.MyApp
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.Button
@@ -123,7 +124,7 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
 
                                     row {
                                         label("Confidence: ")
-                                        confidenceTextField = textfield(prefs.getDouble("confidence", 0.95).toString()) {
+                                        confidenceTextField = textfield(prefs.getDouble("confidence", MyApp.defualtConfidence).toString()) {
                                             promptText = "0.95"
                                             filterInput { it.controlNewText.isDouble() && it.controlNewText.toDouble() in 0.9..1.0 }
                                         }
