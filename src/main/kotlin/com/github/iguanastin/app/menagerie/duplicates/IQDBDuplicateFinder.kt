@@ -2,6 +2,7 @@ package com.github.iguanastin.app.menagerie.duplicates
 
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.ImageItem
+import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.Thumbnail
 import javafx.embed.swing.SwingFXUtils
 import org.apache.http.client.HttpResponseException
@@ -162,13 +163,13 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
             val img: BufferedImage = ImageIO.read(thumb.item.file)
             var width = img.width
             var height = img.height
-            if (width > 150) {
-                height = (height * 150.0 / width).toInt()
-                width = 150
+            if (width > Item.thumbnailSize) {
+                height = (height * Item.thumbnailSize / width).toInt()
+                width = Item.thumbnailSize.toInt()
             }
-            if (height > 150) {
-                width = (width * 150.0 / height).toInt()
-                height = 150
+            if (height > Item.thumbnailSize) {
+                width = (width * Item.thumbnailSize / height).toInt()
+                height = Item.thumbnailSize.toInt()
             }
             val image = BufferedImage(width, height, img.type)
             val g: Graphics2D = image.createGraphics()
