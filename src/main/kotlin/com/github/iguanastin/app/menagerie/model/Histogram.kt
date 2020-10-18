@@ -17,7 +17,7 @@ class Histogram private constructor(
         val green: DoubleArray = DoubleArray(BIN_SIZE),
         val blue: DoubleArray = DoubleArray(BIN_SIZE)) {
 
-    var isColorful: Boolean? = null
+    private var _colorful: Boolean? = null
         get() {
             if (field == null) {
                 var d = 0.0
@@ -30,7 +30,8 @@ class Histogram private constructor(
             }
             return field
         }
-        private set
+    val isColorful: Boolean
+        get() = _colorful!!
 
 
     companion object {
@@ -123,6 +124,8 @@ class Histogram private constructor(
     }
 
     fun similarityTo(other: Histogram): Double {
+        val bwMult = if (isColorful || other.isColorful) 1.0 else 8.0
+
         var da = 0.0
         var dr = 0.0
         var dg = 0.0
@@ -133,7 +136,7 @@ class Histogram private constructor(
             dg += abs(green[i] - other.green[i])
             db += abs(blue[i] - other.blue[i])
         }
-        return 1 - (da + dr + dg + db) / 8
+        return 1 - (da + dr + dg + db) * bwMult / 8
     }
 
 
