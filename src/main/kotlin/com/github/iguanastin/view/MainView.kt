@@ -471,14 +471,14 @@ class MainView : View("Menagerie") {
                 val menagerie = itemGrid.selected[0].menagerie
                 if (name.startsWith('-')) {
                     val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
-                    itemGrid.selected.forEach { it.removeTag(tag) }
+                    ArrayList(itemGrid.selected).forEach { it.removeTag(tag) }
                 } else {
                     var tag: Tag? = menagerie.getTag(name)
                     if (tag == null) {
                         tag = Tag(menagerie.reserveTagID(), name)
                         menagerie.addTag(tag)
                     }
-                    itemGrid.selected.forEach { it.addTag(tag) }
+                    ArrayList(itemGrid.selected).forEach { it.addTag(tag) }
                 }
             }
             editTagsPane.hide()
