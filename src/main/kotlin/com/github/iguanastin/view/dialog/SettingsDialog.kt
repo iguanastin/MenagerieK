@@ -124,7 +124,7 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
 
                                     row {
                                         label("Confidence: ")
-                                        confidenceTextField = textfield(prefs.getDouble("confidence", MyApp.defualtConfidence).toString()) {
+                                        confidenceTextField = textfield(prefs.getDouble("confidence", MyApp.defaultConfidence).toString()) {
                                             promptText = "0.95"
                                             filterInput { it.controlNewText.isDouble() && it.controlNewText.toDouble() in 0.9..1.0 }
                                         }

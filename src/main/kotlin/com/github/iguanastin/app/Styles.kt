@@ -22,12 +22,14 @@ class Styles : Stylesheet() {
         val selected by csspseudoclass()
         val softSelected by csspseudoclass()
         val finished by csspseudoclass()
+
+        val baseColor = c("#3b3f42")
     }
 
     init {
         root {
-            baseColor = c("#3b3f42")
-            backgroundColor += c("#3b3f42")
+            baseColor = Styles.baseColor
+            backgroundColor += Styles.baseColor
         }
         label {
             and(heading) {
@@ -72,7 +74,7 @@ class Styles : Stylesheet() {
             }
         }
         dialogPane {
-            backgroundColor += c("#3b3f42")
+            backgroundColor += Styles.baseColor
             effect = DropShadow(50.0, c("black")).apply { spread = 0.25 }
         }
         transparentOverlay {

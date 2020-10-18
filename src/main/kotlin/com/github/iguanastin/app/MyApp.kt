@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.CPUDuplicateFinder
 import com.github.iguanastin.app.menagerie.duplicates.CUDADuplicateFinder
+import com.github.iguanastin.app.menagerie.duplicates.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
@@ -36,7 +37,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        val defualtConfidence = 0.95
+        const val defaultConfidence = 0.95
     }
 
     private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
@@ -161,6 +162,10 @@ class MyApp : App(MainView::class, Styles::class) {
                 event.consume()
                 root.root.add(SettingsDialog(contextPrefs))
             }
+            if (event.code == KeyCode.F && event.isShortcutDown && event.isShiftDown && !event.isAltDown) {
+                event.consume()
+                root.root.add(SimilarOnlineDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
+            }
         }
     }
 
@@ -208,9 +213,9 @@ class MyApp : App(MainView::class, Styles::class) {
         val second = if (event.isAltDown) expandGroups(menagerie.items) else first
 
         val pairs = if (contextPrefs.getBoolean("cuda", false)) {
-            CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defualtConfidence).toFloat(), 100000)
+            CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence).toFloat(), 100000)
         } else {
-            CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defualtConfidence))
+            CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence))
         }
         if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
         root.root.add(DuplicateResolverDialog(pairs.asObservable()))
