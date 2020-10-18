@@ -8,7 +8,6 @@ import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.TagCellFactory
 import com.github.iguanastin.view.nodes.ItemDisplay
 import com.github.iguanastin.view.nodes.itemdisplay
-import javafx.beans.Observable
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
@@ -167,6 +166,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
         }
         if (!foundNext) {
             displaying = null
+            close()
         }
 
         pairs.removeIf { it.contains(item) }
@@ -230,12 +230,6 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             }
             leftDisplay.item = newValue?.obj1
             rightDisplay.item = newValue?.obj2
-        }
-
-        pairs.addListener { _: Observable ->
-            if (pairs.isEmpty()) {
-                close()
-            }
         }
 
         addEventFilter(KeyEvent.KEY_PRESSED) { event ->

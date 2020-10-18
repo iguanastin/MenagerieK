@@ -16,6 +16,7 @@ import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
+import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
@@ -67,18 +68,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 // TODO show error to user
                 log.error("Error occurred while updating database", e)
             }
-            importer.onError.add { e ->
-                // TODO show error to user
-                log.error("Error occurred while importing", e)
-            }
-            importer.onQueued.add { job ->
-                runOnUIThread {
-                    root.imports.add(ImportNotification(job))
-                    root.imports.sortBy { it.isFinished }
-                }
-            }
 
             purgeZombieTags(menagerie)
+            initImporterListeners(importer, menagerie)
 
             runOnUIThread {
                 root.navigateForward(MenagerieView(menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
@@ -89,6 +81,33 @@ class MyApp : App(MainView::class, Styles::class) {
 
             initViewControls()
         }
+    }
+
+    private fun initImporterListeners(importer: MenagerieImporter, menagerie: Menagerie) {
+        importer.onError.add { e ->
+            // TODO show error to user
+            log.error("Error occurred while importing", e)
+        }
+        importer.onQueued.add { job ->
+            runOnUIThread {
+                root.imports.add(ImportNotification(job))
+                root.imports.sortBy { it.isFinished }
+            }
+        }
+        importer.afterEach.add { job ->
+            val item = job.item ?: return@add
+            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), menagerie.items, contextPrefs.getDouble("confidence", defaultConfidence), false)
+
+            runOnUIThread { root.similar.addAll(0, similar.filter { it !in root.similar }) }
+        }
+
+        menagerie.items.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                if (change.removedSize > 0) {
+                    runOnUIThread { root.similar.removeIf { it.obj1 in change.removed || it.obj2 in change.removed } }
+                }
+            }
+        })
     }
 
     private fun purgeZombieTags(menagerie: Menagerie) {

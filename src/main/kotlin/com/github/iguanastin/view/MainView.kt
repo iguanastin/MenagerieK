@@ -3,11 +3,10 @@ package com.github.iguanastin.view
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.SimilarPair
 import com.github.iguanastin.app.menagerie.model.Tag
-import com.github.iguanastin.app.menagerie.view.ElementOfFilter
-import com.github.iguanastin.app.menagerie.view.MenagerieView
-import com.github.iguanastin.app.menagerie.view.TagFilter
-import com.github.iguanastin.app.menagerie.view.ViewFilter
+import com.github.iguanastin.app.menagerie.view.*
+import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.nodes.*
@@ -55,6 +54,7 @@ class MainView : View("Menagerie") {
     private lateinit var selectedCountLabel: Label
     private lateinit var searchButton: Button
     private lateinit var importsButton: Button
+    private lateinit var similarButton: Button
 
     private val _viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
     val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
@@ -76,6 +76,8 @@ class MainView : View("Menagerie") {
         }
 
     val imports: ObservableList<ImportNotification> = observableListOf()
+
+    val similar: ObservableList<SimilarPair<Item>> = observableListOf()
 
     val history: ObservableList<ViewHistory> = observableListOf()
 
@@ -160,7 +162,7 @@ class MainView : View("Menagerie") {
                                     importsButton = button("Imports: 0")
                                 }
                                 right {
-                                    button("Else")
+                                    similarButton = button("Similar: 0")
                                 }
                             }
                         }
@@ -215,8 +217,38 @@ class MainView : View("Menagerie") {
         initEditTagsAutoComplete()
         initSelectedItemCounterListeners()
         initImportsButton()
+        initSimilarButton()
 
         Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    private fun initSimilarButton() {
+        similar.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                runOnUIThread {
+                    val count = change.list.size
+                    similarButton.text = "Similar: $count"
+                    if (count > 0) {
+                        if (!similarButton.hasClass(Styles.blueBase)) similarButton.addClass(Styles.blueBase)
+                    } else {
+                        similarButton.removeClass(Styles.blueBase)
+                    }
+                    similarButton.applyCss()
+                }
+            }
+        })
+
+        similarButton.onAction = EventHandler { event ->
+            event.consume()
+            this.add(DuplicateResolverDialog(similar).apply {
+                onClose = {
+                    if (similar.isNotEmpty()) {
+                        val menagerie = similar.first().obj1.menagerie
+                        similar.removeIf { menagerie.hasNonDupe(it) }
+                    }
+                }
+            })
+        }
     }
 
     private fun initImportsButton() {
@@ -350,6 +382,14 @@ class MainView : View("Menagerie") {
                             return@EventHandler
                         }
                     }
+                } else if (word.toLowerCase() in arrayOf("is:group", "is:image", "is:video", "is:file")) {
+                    filters.add(IsTypeFilter(when (word.toLowerCase()) {
+                        "is:group" -> IsTypeFilter.Type.Group
+                        "is:image" -> IsTypeFilter.Type.Image
+                        "is:video" -> IsTypeFilter.Type.Video
+                        "is:file" -> IsTypeFilter.Type.File
+                        else -> throw IllegalArgumentException("No such type: \"$word\"")
+                    }, exclude))
                 } else {
                     val tag = view.menagerie.getTag(word)
                     if (tag == null) {
@@ -505,6 +545,11 @@ class MainView : View("Menagerie") {
                 if (event.code == KeyCode.ESCAPE) {
                     event.consume()
                     itemGrid.requestFocus()
+                }
+            } else if (event.isShortcutDown && event.isShiftDown && !event.isAltDown) {
+                if (event.code == KeyCode.D) {
+                    event.consume()
+                    similarButton.fire()
                 }
             }
         }

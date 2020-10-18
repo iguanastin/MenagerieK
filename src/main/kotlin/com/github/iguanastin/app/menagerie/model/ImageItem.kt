@@ -44,7 +44,8 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
     }
 
     override fun similarityTo(other: Item): Double {
-        if (other !is ImageItem || histogram == null || other.histogram == null) return super.similarityTo(other)
+        val superSimilarity = super.similarityTo(other)
+        if (superSimilarity == 1.0 || other !is ImageItem || histogram == null || other.histogram == null) return superSimilarity
 
         return histogram!!.similarityTo(other.histogram!!)
     }

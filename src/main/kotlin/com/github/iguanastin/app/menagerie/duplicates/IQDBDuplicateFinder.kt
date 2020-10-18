@@ -94,7 +94,9 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
                     val doc = Jsoup.parse(result)
 
                     if (source.contains("danbooru", true)) {
-                        return doc.selectFirst("section#post-information")?.selectFirst("li:contains(Size:)")?.child(0)?.attr("href")
+                        val e = doc.selectFirst("section#post-information")?.selectFirst("li:contains(Size:)")
+                        if (e == null || e.children().isEmpty()) return null
+                        return e.child(0)?.attr("href")
                     } else if (source.contains("gelbooru", true) || source.contains("yande.re", true)) {
                         return doc.selectFirst("meta[property=og:image]")?.attr("content")
                     } else if (source.contains("e-shuushuu", true)) {

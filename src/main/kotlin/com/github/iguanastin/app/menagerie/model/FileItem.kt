@@ -53,7 +53,8 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
 
 
     override fun similarityTo(other: Item): Double {
-        if (other !is FileItem) return super.similarityTo(other)
+        val superSimilarity = super.similarityTo(other)
+        if (superSimilarity == 1.0 || other !is FileItem) return superSimilarity
 
         return if (md5 == other.md5 || file == other.file) {
             1.0

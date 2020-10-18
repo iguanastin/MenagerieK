@@ -61,6 +61,13 @@ open class ImportJob(val file: File) {
             }
         }
 
+        var tagme = menagerie.getTag("tagme")
+        if (tagme == null) {
+            tagme = Tag(menagerie.reserveTagID(), "tagme")
+            menagerie.addTag(tagme)
+        }
+        item?.addTag(tagme)
+
         log.debug { "Generated item for \"$file\" with: id=$id, added=$added, md5=$md5" }
 
         onProgress.forEach { it("Finished importing", 1.0) }

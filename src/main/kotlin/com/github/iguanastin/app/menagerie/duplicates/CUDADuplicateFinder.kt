@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.model.*
 import jcuda.Pointer
 import jcuda.Sizeof
 import jcuda.driver.*
+import kotlin.math.ceil
 
 object CUDADuplicateFinder {
 
@@ -31,44 +32,46 @@ object CUDADuplicateFinder {
         val trueSet1: List<ImageItem> = getCleanedSet(smallSet)
         val trueSet2: List<ImageItem> = getCleanedSet(largeSet)
 
+        if (trueSet1.isEmpty() || trueSet2.isEmpty()) return emptyList()
+
         // Get adjusted dataset size. Padded to avoid memory access errors with 64 thread blocks.
-        val N1 = Math.ceil(trueSet1.size / 64.0).toInt() * 64
-        val N2 = trueSet2.size
+        val n1 = ceil(trueSet1.size / 64.0).toInt() * 64
+        val n2 = trueSet2.size
 
         // Initialize the device and kernel
         val function = initCUFunction()
 
         // Init data array
-        val data1 = initDataArray(trueSet1, N1)
-        val data2 = initDataArray(trueSet2, N2)
+        val data1 = initDataArray(trueSet1, n1)
+        val data2 = initDataArray(trueSet2, n2)
         // Init confidence array
-        val confs1 = initConfsArray(confidence, trueSet1, N1)
-        val confs2 = initConfsArray(confidence, trueSet2, N2)
+        val confs1 = initConfsArray(confidence, trueSet1, n1)
+        val confs2 = initConfsArray(confidence, trueSet2, n2)
         //Init ids arrays
-        val ids1 = initIdsArray(trueSet1, N1)
-        val ids2 = initIdsArray(trueSet2, N2)
+        val ids1 = initIdsArray(trueSet1, n1)
+        val ids2 = initIdsArray(trueSet2, n2)
 
         // Allocate and copy data to device
-        val d_data1 = CUdeviceptr()
-        val d_data2 = CUdeviceptr()
-        val d_confs1 = CUdeviceptr()
-        val d_confs2 = CUdeviceptr()
-        val d_ids1 = CUdeviceptr()
-        val d_ids2 = CUdeviceptr()
-        val d_resultsID1 = CUdeviceptr()
-        val d_resultsID2 = CUdeviceptr()
-        val d_resultsSimilarity = CUdeviceptr()
-        val d_resultCount = CUdeviceptr()
-        allocateAndCopyToDevice(maxResults, N1, N2, data1, data2, confs1, confs2, ids1, ids2, d_data1, d_data2, d_confs1, d_confs2, d_ids1, d_ids2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+        val dData1 = CUdeviceptr()
+        val dData2 = CUdeviceptr()
+        val dConfs1 = CUdeviceptr()
+        val dConfs2 = CUdeviceptr()
+        val dIds1 = CUdeviceptr()
+        val dIds2 = CUdeviceptr()
+        val dResultsid1 = CUdeviceptr()
+        val dResultsid2 = CUdeviceptr()
+        val dResultssimilarity = CUdeviceptr()
+        val dResultcount = CUdeviceptr()
+        allocateAndCopyToDevice(maxResults, n1, n2, data1, data2, confs1, confs2, ids1, ids2, dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
 
         // Launch kernel
-        launchKernel(maxResults, function, N1, N2, d_data1, d_data2, d_confs1, d_confs2, d_ids1, d_ids2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+        launchKernel(maxResults, function, n1, n2, dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
 
         // Get results from device
-        val results: List<SimilarPair<Item>> = getResultsFromDevice(largeSet[0].menagerie, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+        val results: List<SimilarPair<Item>> = getResultsFromDevice(largeSet[0].menagerie, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
 
         // Free device memory
-        freeDeviceMemory(d_data1, d_data2, d_confs1, d_confs2, d_ids1, d_ids2, d_resultsID1, d_resultsID2, d_resultsSimilarity, d_resultCount)
+        freeDeviceMemory(dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
 
         return results
     }
