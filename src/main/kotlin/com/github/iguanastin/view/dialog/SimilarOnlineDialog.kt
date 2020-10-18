@@ -25,12 +25,16 @@ import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.MouseButton
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Priority
 import javafx.util.Callback
 import mu.KotlinLogging
 import org.controlsfx.control.GridCell
 import org.controlsfx.control.GridView
 import tornadofx.*
+import java.awt.Desktop
+import java.net.URI
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -70,6 +74,18 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                         padding = insets(5.0)
                         stackpaneConstraints { alignment = Pos.BOTTOM_RIGHT }
                         effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
+                    }
+                }
+
+                addEventHandler(MouseEvent.MOUSE_PRESSED) { event ->
+                    if (event.button == MouseButton.SECONDARY) {
+                        event.consume()
+                        if (item != null) Desktop.getDesktop().browse(URI(item.sourceUrl))
+                    } else if (event.button == MouseButton.PRIMARY) {
+                        event.consume()
+                        if (item != null) {
+                            this@SimilarOnlineDialog.parent.add(CompareSimilarOnlineDialog(viewing!!.item, item))
+                        }
                     }
                 }
             }

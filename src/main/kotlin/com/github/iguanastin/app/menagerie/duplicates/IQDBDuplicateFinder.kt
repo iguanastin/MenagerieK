@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.view.Thumbnail
 import javafx.embed.swing.SwingFXUtils
 import org.apache.http.client.HttpResponseException
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.mime.FormBodyPartBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
@@ -75,11 +76,40 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
 
             for (source in sources) {
                 val sourceName = source.substring(8).substringBefore('/')
-                matches.add(OnlineMatch(source, sourceName, thumbUrl, details))
+
+                matches.add(OnlineMatch(source, getSourceImageUrl(source), sourceName, thumbUrl, details))
             }
         }
 
         return matches
+    }
+
+    private fun getSourceImageUrl(source: String): String? {
+        val get = HttpGet(source)
+        client!!.execute(get).use { response ->
+            if (response.statusLine.statusCode == 200) {
+                response.entity.content.use { content ->
+                    val result = BufferedReader(InputStreamReader(content)).lines().collect(Collectors.joining("\n"))
+                    val doc = Jsoup.parse(result)
+
+                    if (source.contains("danbooru", true)) {
+                        return doc.selectFirst("section#post-information")?.selectFirst("li:contains(Size:)")?.child(0)?.attr("href")
+                    } else if (source.contains("gelbooru", true) || source.contains("yande.re", true)) {
+                        return doc.selectFirst("meta[property=og:image]")?.attr("content")
+                    } else if (source.contains("e-shuushuu", true)) {
+                        val e = doc.selectFirst("a.thumb_image") ?: return null
+                        return "https://e-shuushuu.net" + e.attr("href")
+                    } else if (source.contains("sankakucomplex", true)) {
+                        val e = doc.selectFirst("meta[property=og:image]") ?: return null
+                        return "http:" + e.attr("content")
+                    } else {
+                        return null
+                    }
+                }
+            } else {
+                return null
+            }
+        }
     }
 
     private fun fixLink(url: String): String {
