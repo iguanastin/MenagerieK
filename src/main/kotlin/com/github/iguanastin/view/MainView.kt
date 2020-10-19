@@ -445,7 +445,13 @@ class MainView : View("Menagerie") {
     private fun onItemAction(item: Item) {
         if (item is GroupItem) {
             val filter = ElementOfFilter(item, false)
-            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter)))
+            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter), {
+                if (it is FileItem) {
+                    it.elementOf?.items?.indexOf(it)
+                } else {
+                    it.id
+                }
+            }))
         } else {
             // TODO some action for activating other items?
         }

@@ -10,7 +10,7 @@ import tornadofx.*
 import kotlin.collections.sortBy
 import kotlin.random.Random
 
-class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<ViewFilter>) {
+class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<ViewFilter>, val sortBy: (Item) -> Int? = { it.id }) {
 
     var items: ObservableList<Item>? = null
         private set
@@ -52,7 +52,6 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
 
-
     fun attachTo(list: ObservableList<Item>) {
         close()
 
@@ -73,17 +72,13 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
     private fun sortItems() {
-        if (descending) {
-            if (shuffle) {
-                items?.sortByDescending { shuffleMap[it] }
-            } else {
-                items?.sortByDescending { it.id }
-            }
+        if (shuffle) {
+            items?.sortBy { shuffleMap[it] }
         } else {
-            if (shuffle) {
-                items?.sortBy { shuffleMap[it] }
+            if (descending) {
+                items?.sortByDescending(sortBy)
             } else {
-                items?.sortBy { it.id }
+                items?.sortBy(sortBy)
             }
         }
     }
