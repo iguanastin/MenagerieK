@@ -29,6 +29,7 @@ object ItemCellFactory {
                 private lateinit var thumbView: ImageView
                 private lateinit var tagView: ImageView
                 private lateinit var textView: Label
+                private lateinit var bottomRightLabel: Label
 
                 private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
                     textView.text = newValue
@@ -53,9 +54,15 @@ object ItemCellFactory {
                             translateY = -4.0
                         }
                         textView = label {
+                            padding = insets(2.0)
                             stackpaneConstraints { alignment = Pos.TOP_CENTER }
                             textAlignment = TextAlignment.CENTER
                             isWrapText = true
+                            effect = DropShadow(5.0, c("black")).apply { spread = 0.75 }
+                        }
+                        bottomRightLabel = label {
+                            stackpaneConstraints { alignment = Pos.BOTTOM_RIGHT }
+                            padding = insets(2.0)
                             effect = DropShadow(5.0, c("black")).apply { spread = 0.75 }
                         }
                     }
@@ -74,10 +81,20 @@ object ItemCellFactory {
 
                     tagView.hide()
                     textView.hide()
+                    bottomRightLabel.hide()
 
                     thumbView.image = null
                     item?.getThumbnail()?.want(this) {
                         runOnUIThread { if (getItem() == it.item) thumbView.image = it.image }
+                    }
+
+                    if (item is FileItem) {
+                        if (item.elementOf != null) {
+                            bottomRightLabel.apply {
+                                show()
+                                text = item.elementOf?.items?.indexOf(item)?.toString()
+                            }
+                        }
                     }
 
                     when (item) {
@@ -90,10 +107,14 @@ object ItemCellFactory {
                                 show()
                                 text = item.title
                             }
+                            bottomRightLabel.apply {
+                                show()
+                                text = item.items.size.toString()
+                            }
                             item.titleProperty.addListener(groupTitleListener)
                         }
                         is ImageItem -> {
-                            // Nothing special
+
                         }
                         is VideoItem -> {
                             tagView.apply {
