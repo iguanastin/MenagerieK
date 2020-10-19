@@ -1,10 +1,8 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.model.GroupItem
-import com.github.iguanastin.app.menagerie.model.Item
-import com.github.iguanastin.app.menagerie.model.SimilarPair
-import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.expandGroups
+import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.*
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
@@ -22,10 +20,7 @@ import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
-import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
-import javafx.scene.input.MouseButton
-import javafx.scene.input.MouseEvent
+import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
 import javafx.stage.Popup
@@ -448,6 +443,13 @@ class MainView : View("Menagerie") {
                     event.consume()
                     onItemAction(item)
                 }
+            }
+
+            addEventHandler(MouseEvent.DRAG_DETECTED) { event ->
+                event.consume()
+                val db = startDragAndDrop(*TransferMode.ANY)
+                item.getThumbnail().want(db) { db.dragView = it.image }
+                db.putFiles(expandGroups(itemGrid.selected).filter { it is FileItem }.map { (it as FileItem).file }.toMutableList())
             }
         }
         itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
