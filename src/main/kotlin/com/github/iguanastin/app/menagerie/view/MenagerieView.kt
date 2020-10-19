@@ -8,11 +8,15 @@ import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import tornadofx.*
 import kotlin.collections.sortBy
+import kotlin.random.Random
 
 class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<ViewFilter>) {
 
     var items: ObservableList<Item>? = null
         private set
+
+    private val shuffleRand = Random
+    private val shuffleMap: MutableMap<Item, Int> = mutableMapOf()
 
     private val itemChangeListener: (ItemChangeBase) -> Unit = { change ->
         val items = items
@@ -20,6 +24,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
             if (accepts(change.item)) {
                 if (change.item !in items) runOnUIThread {
                     items.add(change.item)
+                    if (shuffle) shuffleMap.computeIfAbsent(change.item) { shuffleRand.nextInt() }
                     sortItems()
                 }
             } else {
@@ -47,6 +52,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
 
+
     fun attachTo(list: ObservableList<Item>) {
         close()
 
@@ -56,6 +62,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
             it.changeListeners.add(itemChangeListener)
 
             if (accepts(it)) temp.add(it)
+            if (shuffle) shuffleMap.computeIfAbsent(it) { shuffleRand.nextInt() }
         }
 
         items = list.apply {
@@ -66,11 +73,18 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
     private fun sortItems() {
-        // TODO implement shuffle
         if (descending) {
-            items?.sortByDescending { it.id }
+            if (shuffle) {
+                items?.sortByDescending { shuffleMap[it] }
+            } else {
+                items?.sortByDescending { it.id }
+            }
         } else {
-            items?.sortBy { it.id }
+            if (shuffle) {
+                items?.sortBy { shuffleMap[it] }
+            } else {
+                items?.sortBy { it.id }
+            }
         }
     }
 

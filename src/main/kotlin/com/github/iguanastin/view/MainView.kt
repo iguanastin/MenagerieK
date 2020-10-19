@@ -401,6 +401,21 @@ class MainView : View("Menagerie") {
             itemGrid.requestFocus()
         }
         searchTextField.onAction = searchButton.onAction
+
+        searchTextField.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+                if (event.code == KeyCode.G) {
+                    event.consume()
+                    openGroupsToggle.isSelected = !openGroupsToggle.isSelected
+                } else if (event.code == KeyCode.D) {
+                    event.consume()
+                    descendingToggle.isSelected = !descendingToggle.isSelected
+                } else if (event.code == KeyCode.S) {
+                    event.consume()
+                    shuffleToggle.isSelected = !shuffleToggle.isSelected
+                }
+            }
+        }
     }
 
     private fun initHistoryListener() {
@@ -486,6 +501,8 @@ class MainView : View("Menagerie") {
                         break
                     }
                 }
+
+                shuffleToggle.isSelected = newValue.shuffle
             }
         }
     }
