@@ -104,7 +104,7 @@ class MyApp : App(MainView::class, Styles::class) {
         if (parameters.named.containsKey("db-url")) dbURL = parameters.named["db-url"] ?: defaultDatabaseUrl
 
         if (parameters.named.containsKey("dbu")) dbUser = parameters.named["dbu"] ?: defaultDatabaseUser
-        if (parameters.named.containsKey("db=user")) dbUser = parameters.named["db-user"] ?: defaultDatabaseUser
+        if (parameters.named.containsKey("db-user")) dbUser = parameters.named["db-user"] ?: defaultDatabaseUser
 
         if (parameters.named.containsKey("dbp")) dbPass = parameters.named["dbp"] ?: defaultDatabasePassword
         if (parameters.named.containsKey("db-pass")) dbPass = parameters.named["db-pass"] ?: defaultDatabasePassword
