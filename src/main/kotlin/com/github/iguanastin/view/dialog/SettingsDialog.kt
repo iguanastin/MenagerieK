@@ -68,18 +68,20 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
                                     row {
                                         label("Path/URL: ")
                                         databaseUrlTextField = textfield(prefs.get("db_url", "")) {
-                                            promptText = "~/menagerie"
+                                            promptText = MyApp.defaultDatabaseUrl
                                         }
                                     }
                                     row {
                                         label("Username: ")
                                         databaseUserTextField = textfield(prefs.get("db_user", "")) {
-                                            promptText = "sa"
+                                            promptText = MyApp.defaultDatabaseUser
                                         }
                                     }
                                     row {
                                         label("Password: ")
-                                        databasePasswordTextField = textfield(prefs.get("db_pass", ""))
+                                        databasePasswordTextField = textfield(prefs.get("db_pass", "")) {
+                                            promptText = MyApp.defaultDatabasePassword
+                                        }
                                     }
                                 }
                             }
@@ -92,7 +94,7 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
                                     paddingLeft = 10.0
                                     alignment = Pos.CENTER_LEFT
 
-                                    downloadsTextField = textfield(prefs.get("downloads", "")) {
+                                    downloadsTextField = textfield(prefs.get("downloads", MyApp.defaultDownloadsPath)) {
                                         hgrow = Priority.ALWAYS
                                         promptText = "Path to default downloads directory"
                                     }
@@ -132,7 +134,7 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
                                     row {
                                         label("CUDA hardware acceleration: ")
                                         cudaToggle = checkbox {
-                                            isSelected = prefs.getBoolean("cuda", false)
+                                            isSelected = prefs.getBoolean("cuda", MyApp.defaultCUDAEnabled)
                                         }
                                     }
                                 }

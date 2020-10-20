@@ -39,14 +39,19 @@ class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
         const val defaultConfidence = 0.95
+        const val defaultDatabaseUrl = "~/menagerie"
+        const val defaultDatabaseUser = "sa"
+        const val defaultDatabasePassword = ""
+        const val defaultCUDAEnabled = false
+        val defaultDownloadsPath: String? = null
     }
 
     private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
 
-    private val dbURL = contextPrefs.get("db_url", "~/menagerie")
-    private val dbUser = contextPrefs.get("db_user", "sa")
-    private val dbPass = contextPrefs.get("db_pass", "")
+    private lateinit var dbURL: String
+    private lateinit var dbUser: String
+    private lateinit var dbPass: String
 
     private lateinit var manager: MenagerieDatabase
     private lateinit var menagerie: Menagerie
@@ -58,6 +63,8 @@ class MyApp : App(MainView::class, Styles::class) {
     override fun start(stage: Stage) {
         super.start(stage)
         root = find(primaryView) as MainView
+
+        handleParameters()
 
         log.info("Starting app")
 
@@ -81,6 +88,26 @@ class MyApp : App(MainView::class, Styles::class) {
 
             initViewControls()
         }
+    }
+
+    private fun handleParameters() {
+        if ("--reset" in parameters.unnamed) {
+            contextPrefs.clear()
+            uiPrefs.clear()
+        }
+
+        dbURL = contextPrefs.get("db_url", defaultDatabaseUrl)
+        dbUser = contextPrefs.get("db_user", defaultDatabaseUser)
+        dbPass = contextPrefs.get("db_pass",  defaultDatabasePassword)
+
+        if (parameters.named.containsKey("db")) dbURL = parameters.named["db"] ?: defaultDatabaseUrl
+        if (parameters.named.containsKey("db-url")) dbURL = parameters.named["db-url"] ?: defaultDatabaseUrl
+
+        if (parameters.named.containsKey("dbu")) dbUser = parameters.named["dbu"] ?: defaultDatabaseUser
+        if (parameters.named.containsKey("db=user")) dbUser = parameters.named["db-user"] ?: defaultDatabaseUser
+
+        if (parameters.named.containsKey("dbp")) dbPass = parameters.named["dbp"] ?: defaultDatabasePassword
+        if (parameters.named.containsKey("db-pass")) dbPass = parameters.named["db-pass"] ?: defaultDatabasePassword
     }
 
     private fun initImporterListeners(importer: MenagerieImporter, menagerie: Menagerie) {
@@ -231,7 +258,7 @@ class MyApp : App(MainView::class, Styles::class) {
         val first = expandGroups(root.itemGrid.selected)
         val second = if (event.isAltDown) expandGroups(menagerie.items) else first
 
-        val pairs = if (contextPrefs.getBoolean("cuda", false)) {
+        val pairs = if (contextPrefs.getBoolean("cuda", defaultCUDAEnabled)) {
             CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence).toFloat(), 100000)
         } else {
             CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence))
@@ -247,7 +274,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
 
-        val folderPath = contextPrefs.get("downloads", null)
+        val folderPath = contextPrefs.get("downloads", defaultDownloadsPath)
 
         if (folderPath.isNullOrBlank()) {
             val dc = DirectoryChooser()
@@ -298,7 +325,7 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             if (shiftDown) {
                 val dc = DirectoryChooser()
-                val dir = contextPrefs.get("downloads", null)
+                val dir = contextPrefs.get("downloads", defaultDownloadsPath)
                 if (dir != null) dc.initialDirectory = File(dir)
                 dc.title = "Import directory"
                 val folder = dc.showDialog(root.currentWindow)
@@ -308,7 +335,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             } else {
                 val fc = FileChooser()
-                val dir = contextPrefs.get("downloads", null)
+                val dir = contextPrefs.get("downloads", defaultDownloadsPath)
                 if (dir != null) fc.initialDirectory = File(dir)
                 fc.title = "Import files"
                 val files = fc.showOpenMultipleDialog(root.currentWindow)
@@ -427,7 +454,7 @@ class MyApp : App(MainView::class, Styles::class) {
             e.printStackTrace()
         }
 
-        thread(start = true) {
+        thread(start = true, name = "Database Shutdown") {
             manager.closeAndCompress()
         }
     }
