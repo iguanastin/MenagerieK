@@ -1,4 +1,4 @@
-package com.github.iguanastin.app
+package com.github.iguanastin.app.utils
 
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item

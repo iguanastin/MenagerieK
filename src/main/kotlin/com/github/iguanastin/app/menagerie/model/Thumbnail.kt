@@ -1,6 +1,5 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.app.menagerie.model
 
-import com.github.iguanastin.app.menagerie.model.Item
 import javafx.scene.image.Image
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue

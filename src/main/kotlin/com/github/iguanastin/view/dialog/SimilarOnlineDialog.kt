@@ -1,12 +1,12 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.bytesToPrettyString
 import com.github.iguanastin.app.menagerie.duplicates.IQDBDuplicateFinder
 import com.github.iguanastin.app.menagerie.duplicates.OnlineMatch
 import com.github.iguanastin.app.menagerie.duplicates.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.utils.bytesToPrettyString
 import com.github.iguanastin.view.ItemCellFactory
 import com.github.iguanastin.view.gridView
 import com.github.iguanastin.view.image

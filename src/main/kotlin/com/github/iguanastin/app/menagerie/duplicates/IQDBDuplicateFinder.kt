@@ -3,7 +3,7 @@ package com.github.iguanastin.app.menagerie.duplicates
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.model.Item
-import com.github.iguanastin.view.Thumbnail
+import com.github.iguanastin.app.menagerie.model.Thumbnail
 import javafx.embed.swing.SwingFXUtils
 import org.apache.http.client.HttpResponseException
 import org.apache.http.client.methods.HttpGet

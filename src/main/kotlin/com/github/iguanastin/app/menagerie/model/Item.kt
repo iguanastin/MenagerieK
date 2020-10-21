@@ -1,6 +1,5 @@
 package com.github.iguanastin.app.menagerie.model
 
-import com.github.iguanastin.view.Thumbnail
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList

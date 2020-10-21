@@ -1,5 +1,7 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.context.MenagerieContext
+import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.MenagerieCommunicator
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
@@ -13,6 +15,8 @@ import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.ElementOfFilter
 import com.github.iguanastin.app.menagerie.view.MenagerieView
+import com.github.iguanastin.app.utils.WindowsExplorerComparator
+import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.MainView
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
@@ -188,34 +192,44 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initViewControls() {
-        root.root.onDragOver = EventHandler { event ->
-            if (context != null && event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
-                root.dragOverlay.show()
-                event.apply {
-                    acceptTransferModes(*TransferMode.ANY)
-                    consume()
+        initExternalDragDrop()
+        initItemGridKeyHandler()
+        initEditTagsControl()
+    }
+
+    private fun initEditTagsControl() {
+        root.applyTagEdit.onAction = EventHandler { event ->
+            val items = root.itemGrid.selected
+            val add = mutableListOf<Tag>()
+            val remove = mutableListOf<Tag>()
+
+            for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
+                val menagerie = root.itemGrid.selected[0].menagerie
+                if (name.startsWith('-')) {
+                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
+                    remove.add(tag)
+                } else {
+                    var tag: Tag? = menagerie.getTag(name)
+                    if (tag == null) {
+                        tag = Tag(menagerie.reserveTagID(), name)
+                        menagerie.addTag(tag)
+                    }
+                    add.add(tag)
                 }
             }
-        }
-        root.root.onDragDropped = EventHandler { event ->
-            if (context != null && event.isAccepted) {
-                if (event.dragboard.url?.startsWith("http") == true) {
-                    downloadDragDropUtility(event.dragboard.url)
-                }
-                if (event.dragboard.files?.isNotEmpty() == true) {
-                    importFilesDialog(event.dragboard.files)
-                }
 
-                event.apply {
-                    isDropCompleted = true
-                    consume()
-                }
+            val edit = TagEdit(items, add, remove)
+            if (items.isNotEmpty() && (add.isNotEmpty() || remove.isNotEmpty())) {
+                edit.applyEdit()
+                context?.tagEdits?.push(edit)
             }
-        }
-        root.root.onDragExited = EventHandler {
-            root.dragOverlay.hide()
-        }
 
+            root.editTagsPane.hide()
+            event.consume()
+        }
+    }
+
+    private fun initItemGridKeyHandler() {
         root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.I && event.isShortcutDown) {
                 event.consume()
@@ -249,6 +263,47 @@ class MyApp : App(MainView::class, Styles::class) {
                 event.consume()
                 root.root.add(SimilarOnlineDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
             }
+            if (event.code == KeyCode.Z && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+                event.consume()
+                if (context?.tagEdits?.isNotEmpty() == true) {
+                    val peek = context?.tagEdits?.peek()
+                    if (peek != null) {
+                        root.root.confirm("Undo tag edit", peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString("\n") { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
+                            context?.tagEdits?.pop()?.undoEdit()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initExternalDragDrop() {
+        root.root.onDragOver = EventHandler { event ->
+            if (context != null && event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
+                root.dragOverlay.show()
+                event.apply {
+                    acceptTransferModes(*TransferMode.ANY)
+                    consume()
+                }
+            }
+        }
+        root.root.onDragDropped = EventHandler { event ->
+            if (context != null && event.isAccepted) {
+                if (event.dragboard.url?.startsWith("http") == true) {
+                    downloadDragDropUtility(event.dragboard.url)
+                }
+                if (event.dragboard.files?.isNotEmpty() == true) {
+                    importFilesDialog(event.dragboard.files)
+                }
+
+                event.apply {
+                    isDropCompleted = true
+                    consume()
+                }
+            }
+        }
+        root.root.onDragExited = EventHandler {
+            root.dragOverlay.hide()
         }
     }
 

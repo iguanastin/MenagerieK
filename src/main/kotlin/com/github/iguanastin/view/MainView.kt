@@ -1,9 +1,9 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.expandGroups
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.*
+import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
@@ -38,10 +38,10 @@ class MainView : View("Menagerie") {
     lateinit var itemGrid: MultiSelectGridView<Item>
     lateinit var tagView: ListView<Tag>
     lateinit var dragOverlay: BorderPane
+    lateinit var applyTagEdit: Button
+    lateinit var editTags: TextField
+    lateinit var editTagsPane: BorderPane
 
-    private lateinit var editTagsPane: BorderPane
-    private lateinit var editTags: TextField
-    private lateinit var applyTagEdit: Button
     private lateinit var searchTextField: TextField
     private lateinit var backButton: Button
     private lateinit var descendingToggle: ToggleButton
@@ -531,24 +531,6 @@ class MainView : View("Menagerie") {
             if (!event.isAltDown && !event.isShiftDown && event.code == KeyCode.ENTER) {
                 applyTagEdit.fire()
             }
-        }
-        applyTagEdit.onAction = EventHandler { event ->
-            for (name in editTags.text.trim().split(Regex("\\s+"))) {
-                val menagerie = itemGrid.selected[0].menagerie
-                if (name.startsWith('-')) {
-                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
-                    ArrayList(itemGrid.selected).forEach { it.removeTag(tag) }
-                } else {
-                    var tag: Tag? = menagerie.getTag(name)
-                    if (tag == null) {
-                        tag = Tag(menagerie.reserveTagID(), name)
-                        menagerie.addTag(tag)
-                    }
-                    ArrayList(itemGrid.selected).forEach { it.addTag(tag) }
-                }
-            }
-            editTagsPane.hide()
-            event.consume()
         }
     }
 

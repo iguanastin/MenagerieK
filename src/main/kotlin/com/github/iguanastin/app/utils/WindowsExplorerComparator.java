@@ -24,7 +24,7 @@
 
 // Source: https://stackoverflow.com/a/23249000
 
-package com.github.iguanastin.app;
+package com.github.iguanastin.app.utils;
 
 import java.io.File;
 import java.util.ArrayList;
