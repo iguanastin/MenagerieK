@@ -19,7 +19,8 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
         }
 
         fun intoDirectory(url: String, downloadsDir: File, incrementIfExists: Boolean = true): RemoteImportJob {
-            val filename = getFilename(url)
+            val url = repairUrl(url)
+            val filename = URL(url).path.substringAfterLast('/')
             var file: File = downloadsDir.resolve(filename)
 
             var i = 1
@@ -33,17 +34,16 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
             return RemoteImportJob(url, file)
         }
 
-        private fun getFilename(url: String): String {
-            val urlObj = URL(url)
-            var filename = urlObj.path.substringAfterLast('/')
+        private fun repairUrl(url: String): String {
+            var url = url
 
-            if (url.startsWith("https://pbs.twimg.com/media/", true) && '.' !in filename) {
+            if (url.startsWith("https://pbs.twimg.com/media/", true) && url.substringAfterLast('/').contains('?') && !url.substringAfterLast('/').substringBefore('?').contains('.')) {
                 val query = mutableMapOf<String, String>()
-                urlObj.query.toLowerCase().split('&').forEach { query[it.substringBefore('=')] = it.substringAfter('=') }
-                filename += query["format"] ?: ".jpg"
+                url.substringAfter('?').toLowerCase().split('&').forEach { query[it.substringBefore('=')] = it.substringAfter('=') }
+                url = url.substringBefore('?') + "." + (query["format"] ?: "jpg")
             }
 
-            return filename
+            return url
         }
     }
 

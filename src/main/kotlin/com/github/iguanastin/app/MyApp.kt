@@ -89,10 +89,17 @@ class MyApp : App(MainView::class, Styles::class) {
             }
 
             purgeZombieTags(context.menagerie)
-            initImporterListeners(context.importer, context.menagerie)
+            initImporterListeners(context)
 
             runOnUIThread {
                 root.navigateForward(MenagerieView(context.menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
+
+                // Import url if in parameter
+                if (parameters.named.containsKey("import")) downloadDragDropUtility(if (parameters.named["import"]!!.startsWith("menagerie:")) {
+                    parameters.named["import"]!!.substringAfter(':')
+                } else {
+                    parameters.named["import"]!!
+                })
             }
         }
     }
@@ -140,25 +147,25 @@ class MyApp : App(MainView::class, Styles::class) {
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
 
-    private fun initImporterListeners(importer: MenagerieImporter, menagerie: Menagerie) {
-        importer.onError.add { e ->
+    private fun initImporterListeners(context: MenagerieContext) {
+        context.importer.onError.add { e ->
             // TODO show error to user
             log.error("Error occurred while importing", e)
         }
-        importer.onQueued.add { job ->
+        context.importer.onQueued.add { job ->
             runOnUIThread {
                 root.imports.add(ImportNotification(job))
                 root.imports.sortBy { it.isFinished }
             }
         }
-        importer.afterEach.add { job ->
+        context.importer.afterEach.add { job ->
             val item = job.item ?: return@add
-            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), menagerie.items, contextPrefs.getDouble("confidence", defaultConfidence), false)
+            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), context.menagerie.items, contextPrefs.getDouble("confidence", defaultConfidence), false)
 
             runOnUIThread { root.similar.addAll(0, similar.filter { it !in root.similar }) }
         }
 
-        menagerie.items.addListener(ListChangeListener { change ->
+        context.menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 if (change.removedSize > 0) {
                     runOnUIThread { root.similar.removeIf { it.obj1 in change.removed || it.obj2 in change.removed } }
