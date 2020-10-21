@@ -2,20 +2,25 @@ package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
 import javafx.beans.property.SimpleIntegerProperty
+import javafx.scene.Group
+import javafx.scene.Scene
 import javafx.scene.control.Label
 import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
+import javafx.scene.text.Text
 import javafx.stage.Popup
 import javafx.stage.PopupWindow
 import javafx.stage.Screen
 import tornadofx.*
 
 fun TextField.bindAutoComplete(provider: (String) -> List<String>) {
-    var selected = SimpleIntegerProperty(-1)
+
+    val selectedReplacement = SimpleIntegerProperty(-1)
     val popupGap = 10
     var above = false
+    val textMeasurer: Text = Text().also { Scene(Group(it)) }
     val vbox: VBox
     val popup = Popup().apply {
         addStylesheet(Styles::class)
@@ -26,16 +31,19 @@ fun TextField.bindAutoComplete(provider: (String) -> List<String>) {
             addClass(Styles.dialogPane)
         }
         content.add(vbox)
+        scene.window.focusedProperty().addListener { _, _, focused ->
+            if (!focused) this.hide()
+        }
     }
 
-    selected.addListener { _, _, newValue ->
+    selectedReplacement.addListener { _, _, newValue ->
         updateSelected(vbox, newValue.toInt(), above)
     }
 
     addEventFilter(KeyEvent.KEY_PRESSED) { event ->
         if (!popup.isShowing) return@addEventFilter
 
-        val sel = selected.get()
+        val sel = selectedReplacement.get()
 
         if ((event.isShortcutDown || sel >= 0) && !event.isShiftDown && !event.isAltDown) {
             if (event.code == KeyCode.ENTER || event.code == KeyCode.SPACE) {
@@ -56,30 +64,30 @@ fun TextField.bindAutoComplete(provider: (String) -> List<String>) {
         if (event.code == KeyCode.UP) {
             event.consume()
             if (sel < 0) {
-                selected.set(vbox.children.size - 1)
+                selectedReplacement.set(vbox.children.size - 1)
             } else {
                 if (sel == 0) {
-                    selected.set(vbox.children.size - 1)
+                    selectedReplacement.set(vbox.children.size - 1)
                 } else {
-                    selected.set(sel - 1)
+                    selectedReplacement.set(sel - 1)
                 }
             }
         } else if (event.code == KeyCode.DOWN) {
             event.consume()
             if (sel < 0) {
-                selected.set(0)
+                selectedReplacement.set(0)
             } else {
                 if (sel == vbox.children.size - 1) {
-                    selected.set(0)
+                    selectedReplacement.set(0)
                 } else {
-                    selected.set(sel + 1)
+                    selectedReplacement.set(sel + 1)
                 }
             }
         }
     }
 
     caretPositionProperty().addListener { _, _, index ->
-        selected.set(-1)
+        selectedReplacement.set(-1)
         popup.hide()
 
         if (selection.length == 0) {
@@ -99,28 +107,34 @@ fun TextField.bindAutoComplete(provider: (String) -> List<String>) {
                     }
                     vbox.applyCss()
                     vbox.layout()
-                    updateSelected(vbox, selected.get(), above)
+                    updateSelected(vbox, selectedReplacement.get(), above)
 
                     val bounds = (Screen.getScreensForRectangle(layoutX, layoutY, width, height).getOrNull(0)
                             ?: Screen.getPrimary()).visualBounds
                     val pos = localToScreen(layoutBounds.minX, layoutBounds.minY)
+
+                    val x = pos.x + textMeasurer.apply {
+                        this.text = this@bindAutoComplete.text.substring(0, index.toInt() - word.length)
+                        this.applyCss()
+                    }.layoutBounds.width
+
                     if (above) {
-                        popup.show(this, pos.x, pos.y - popupGap)
+                        popup.show(this, x, pos.y - popupGap)
                         if (popup.y < bounds.minY) {
                             popup.hide()
                             above = false
                             popup.anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
                             vbox.children.reverse()
-                            popup.show(this, pos.x, pos.y + height + popupGap)
+                            popup.show(this, x, pos.y + height + popupGap)
                         }
                     } else {
-                        popup.show(this, pos.x, pos.y + height + popupGap)
+                        popup.show(this, x, pos.y + height + popupGap)
                         if (popup.y + popup.height > bounds.maxY) {
                             popup.hide()
                             above = true
                             popup.anchorLocation = PopupWindow.AnchorLocation.CONTENT_BOTTOM_LEFT
                             vbox.children.reverse()
-                            popup.show(this, pos.x, pos.y - popupGap)
+                            popup.show(this, x, pos.y - popupGap)
                         }
                     }
                 }
