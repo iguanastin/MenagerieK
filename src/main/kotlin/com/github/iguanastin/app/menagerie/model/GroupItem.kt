@@ -61,4 +61,9 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         return _items.remove(item)
     }
 
+    fun removeAllItems() {
+        items.forEach { it.elementOf = null }
+        _items.clear()
+    }
+
 }

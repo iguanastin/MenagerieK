@@ -289,7 +289,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         for (i in groups.keys) {
             val group = GroupItem(i, items[i]!!.added, menagerie, groups[i]!!.title)
             groups[i]!!.items.forEach { id ->
-                group.addItem(groupChildMap[id]!!)
+                if (groupChildMap.containsKey(id)) group.addItem(groupChildMap[id]!!)
             }
             generatedItems.add(group)
             items.remove(i)

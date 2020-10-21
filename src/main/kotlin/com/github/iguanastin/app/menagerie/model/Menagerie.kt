@@ -29,7 +29,13 @@ class Menagerie {
             while (change.next()) {
                 change.removed.forEach {
                     itemIdMap.remove(it.id)
-                    if (it is FileItem) files.remove(it.file)
+                    if (it is FileItem) {
+                        files.remove(it.file)
+                        it.elementOf?.removeItem(it)
+                    }
+                    if (it is GroupItem) {
+                        it.removeAllItems()
+                    }
                 }
                 change.addedSubList.forEach {
                     itemIdMap[it.id] = it

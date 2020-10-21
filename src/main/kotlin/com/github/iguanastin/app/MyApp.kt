@@ -457,11 +457,13 @@ class MyApp : App(MainView::class, Styles::class) {
 
         del.forEach { item ->
             log.info("Removing item: $item")
-            menagerie.removeItem(item)
-            if (item is GroupItem) item.items.forEach {
-                log.info("Removing item: $it")
-                menagerie.removeItem(it)
+            if (item is GroupItem) {
+                ArrayList(item.items).forEach {
+                    log.info("Removing item: $it")
+                    menagerie.removeItem(it)
+                }
             }
+            menagerie.removeItem(item)
         }
     }
 
