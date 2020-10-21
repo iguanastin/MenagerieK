@@ -27,6 +27,7 @@ import javafx.stage.Popup
 import javafx.stage.PopupWindow
 import mu.KotlinLogging
 import tornadofx.*
+import java.awt.Desktop
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
@@ -452,8 +453,8 @@ class MainView : View("Menagerie") {
                     it.id
                 }
             }))
-        } else {
-            // TODO some action for activating other items?
+        } else if (item is FileItem) {
+            Desktop.getDesktop().open(item.file)
         }
     }
 

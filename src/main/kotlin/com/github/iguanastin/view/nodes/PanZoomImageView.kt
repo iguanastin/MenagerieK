@@ -23,7 +23,7 @@
  */
 package com.github.iguanastin.view.nodes
 
-import com.github.iguanastin.view.blockUntilLoaded
+import com.github.iguanastin.view.afterLoaded
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.DoubleProperty
 import javafx.beans.property.SimpleDoubleProperty
@@ -36,7 +36,6 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.input.ScrollEvent
 import tornadofx.*
 import java.util.*
-import kotlin.concurrent.thread
 
 /**
  * An ImageView that dynamically fits to the parent node and implements zooming and panning with the mouse.
@@ -91,11 +90,9 @@ class PanZoomImageView : DynamicImageView {
                 updateViewPort()
             }
             if (img.isBackgroundLoading && img.progress != 1.0) {
-                // TODO use only one thread instead of spawning one-offs?
-                thread(start = true) {
-                    img.blockUntilLoaded()
-                    if (image == img) runOnUIThread(fit)
-                }
+                    img.afterLoaded {
+                        if (image == this) runOnUIThread(fit)
+                    }
             } else {
                 fit()
             }

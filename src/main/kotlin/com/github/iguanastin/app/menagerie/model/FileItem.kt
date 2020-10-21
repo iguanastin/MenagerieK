@@ -6,9 +6,8 @@ import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 import java.io.File
-import java.io.IOException
 
-open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File): Item(id, added, menagerie) {
+open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File) : Item(id, added, menagerie) {
 
     val md5Property: StringProperty = SimpleStringProperty(md5)
     var md5: String
@@ -42,12 +41,7 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
 
     companion object {
         fun fileHash(file: File): String {
-            try {
-                return HexBin.encode(MD5Hasher.hash(file))
-            } catch (e: IOException) {
-                e.printStackTrace()
-                TODO("Better error handling")
-            }
+            return HexBin.encode(MD5Hasher.hash(file))
         }
     }
 
