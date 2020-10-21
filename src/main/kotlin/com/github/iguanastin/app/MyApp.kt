@@ -72,11 +72,10 @@ class MyApp : App(MainView::class, Styles::class) {
 
     override fun start(stage: Stage) {
         initInterProcessCommunicator()
+        handleParameters()
 
         super.start(stage)
         root = find(primaryView) as MainView
-
-        handleParameters()
 
         log.info("Starting app")
 
@@ -112,13 +111,15 @@ class MyApp : App(MainView::class, Styles::class) {
             try {
                 registry = LocateRegistry.getRegistry(1099)
 
-                val url = parameters.named["import"]!!
+                var url = parameters.named["import"]!!
+                if (url.startsWith("menagerie:")) url = url.substringAfter(':')
                 (registry.lookup(communicatorName) as MenagerieCommunicator).importUrl(url)
             } catch (e: Exception) {
                 log.error("Failed to communicate", e)
-            } finally {
-                exitProcess(0)
+                exitProcess(1)
             }
+
+            exitProcess(0)
         }
     }
 
@@ -140,6 +141,8 @@ class MyApp : App(MainView::class, Styles::class) {
 
         if (parameters.named.containsKey("dbp")) dbPass = parameters.named["dbp"] ?: defaultDatabasePassword
         if (parameters.named.containsKey("db-pass")) dbPass = parameters.named["db-pass"] ?: defaultDatabasePassword
+
+        if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
 
     private fun initImporterListeners(importer: MenagerieImporter, menagerie: Menagerie) {
