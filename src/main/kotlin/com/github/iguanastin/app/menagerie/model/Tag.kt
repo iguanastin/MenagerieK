@@ -8,6 +8,7 @@ import javafx.beans.property.StringProperty
 class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) {
 
     val name: String = name.toLowerCase()
+
     val colorProperty: StringProperty = SimpleStringProperty(color)
     var color: String?
         get() = colorProperty.get()
@@ -19,6 +20,16 @@ class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) 
         set(value) = frequencyProperty.set(value)
 
     // TODO tag notes
+
+    val changeListeners: MutableSet<(TagChange) -> Unit> = mutableSetOf()
+
+
+    init {
+        colorProperty.addListener { _, old, new ->
+            val change = TagChange(this, Change(old, new))
+            changeListeners.forEach { it(change) }
+        }
+    }
 
 
     override fun hashCode(): Int {

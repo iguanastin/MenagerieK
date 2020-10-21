@@ -33,9 +33,7 @@ class Menagerie {
                         files.remove(it.file)
                         it.elementOf?.removeItem(it)
                     }
-                    if (it is GroupItem) {
-                        it.removeAllItems()
-                    }
+                    it.invalidate()
                 }
                 change.addedSubList.forEach {
                     itemIdMap[it.id] = it
@@ -87,6 +85,8 @@ class Menagerie {
     }
 
     fun removeItem(item: Item): Boolean {
+        // TODO invalidate item
+        // TODO remove tags or decrement their frequencies
         return _items.remove(item)
     }
 
@@ -117,6 +117,7 @@ class Menagerie {
     }
 
     fun removeTag(tag: Tag): Boolean {
+        // TODO invalidate tag
         return _tags.remove(tag)
     }
 

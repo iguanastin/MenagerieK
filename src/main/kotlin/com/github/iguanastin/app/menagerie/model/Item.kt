@@ -18,7 +18,12 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
 
     private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
     val tags: ObservableList<Tag> = _tags.asUnmodifiable()
+
     val changeListeners: MutableSet<(ItemChangeBase) -> Unit> = mutableSetOf()
+
+    @Volatile
+    var invalidated: Boolean = false
+        private set
 
     private var thumbnailCache: SoftReference<Thumbnail> = SoftReference(null)
 
@@ -82,7 +87,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     fun hasTag(tag: Tag) = tag !in _tags
 
     fun addTag(tag: Tag): Boolean {
-        return if (hasTag(tag)) {
+        return if (!invalidated && hasTag(tag)) {
             _tags.add(tag)
             true
         } else {
@@ -91,7 +96,13 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     }
 
     fun removeTag(tag: Tag): Boolean {
-        return _tags.remove(tag)
+        return !invalidated && _tags.remove(tag)
+    }
+
+    open fun invalidate() {
+        _tags.clear()
+        changeListeners.clear()
+        invalidated = true
     }
 
     override fun toString(): String {

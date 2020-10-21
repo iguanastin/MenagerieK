@@ -127,12 +127,26 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             }
         })
 
+
+        val tagChangeListener = { change: TagChange ->
+            if (change.color != null) updateQueue.put(DatabaseSetTagColor(change.tag, change.color.new))
+        }
+        for (tag in menagerie.tags) {
+            tag.changeListeners.add(tagChangeListener)
+        }
         menagerie.tags.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { tag -> updateQueue.put(DatabaseDeleteTag(tag)) }
-                change.addedSubList.forEach { tag -> updateQueue.put(DatabaseCreateTag(tag)) }
+                change.removed.forEach { tag ->
+                    updateQueue.put(DatabaseDeleteTag(tag))
+                    tag.changeListeners.add(tagChangeListener)
+                }
+                change.addedSubList.forEach { tag ->
+                    updateQueue.put(DatabaseCreateTag(tag))
+                    tag.changeListeners.add(tagChangeListener)
+                }
             }
         })
+
 
         menagerie.knownNonDupes.addListener(ListChangeListener { change ->
             while (change.next()) {

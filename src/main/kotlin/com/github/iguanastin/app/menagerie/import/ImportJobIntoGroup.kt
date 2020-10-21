@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.import
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.menagerie.model.Tag
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 
@@ -23,10 +24,19 @@ class ImportJobIntoGroup private constructor(job: ImportJob, val group: ObjectPr
 
 
     override fun import(menagerie: Menagerie): FileItem {
-        var g = group.get()
+        var g: GroupItem? = group.get()
         if (g == null) {
             g = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, groupTitle)
+
+            var tagme = menagerie.getTag("tagme")
+            if (tagme == null) {
+                tagme = Tag(menagerie.reserveTagID(), "tagme")
+                menagerie.addTag(tagme)
+            }
+            g.addTag(tagme)
+
             menagerie.addItem(g)
+
             group.set(g)
         }
 

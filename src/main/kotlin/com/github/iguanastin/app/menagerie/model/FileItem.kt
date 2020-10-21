@@ -57,4 +57,10 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
         }
     }
 
+    override fun invalidate() {
+        elementOf?.removeItem(this)
+
+        super.invalidate()
+    }
+
 }
