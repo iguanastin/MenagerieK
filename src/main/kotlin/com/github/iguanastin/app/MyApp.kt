@@ -1,5 +1,6 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.menagerie.MenagerieCommunicator
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.CPUDuplicateFinder
@@ -30,14 +31,20 @@ import mu.KotlinLogging
 import tornadofx.*
 import java.io.File
 import java.io.IOException
+import java.rmi.registry.LocateRegistry
+import java.rmi.registry.Registry
+import java.rmi.server.ExportException
+import java.rmi.server.UnicastRemoteObject
 import java.util.prefs.Preferences
 import kotlin.concurrent.thread
+import kotlin.system.exitProcess
 
 private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
+        const val communicatorName = "communicator"
         const val defaultConfidence = 0.95
         const val defaultDatabaseUrl = "~/menagerie"
         const val defaultDatabaseUser = "sa"
@@ -57,10 +64,15 @@ class MyApp : App(MainView::class, Styles::class) {
     private lateinit var menagerie: Menagerie
     private lateinit var importer: MenagerieImporter
 
+    private lateinit var registry: Registry
+    private lateinit var communicator: MenagerieCommunicator
+
     private lateinit var root: MainView
 
 
     override fun start(stage: Stage) {
+        initInterProcessCommunicator()
+
         super.start(stage)
         root = find(primaryView) as MainView
 
@@ -83,10 +95,30 @@ class MyApp : App(MainView::class, Styles::class) {
                 root.navigateForward(MenagerieView(menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
             }
 
-            var count = 0
-            menagerie.items.forEach { if (it is ImageItem && it.noSimilar) count++ }
-
             initViewControls()
+        }
+    }
+
+    private fun initInterProcessCommunicator() {
+        try {
+            registry = LocateRegistry.createRegistry(1099)
+            communicator = object : MenagerieCommunicator {
+                override fun importUrl(url: String) {
+                    runOnUIThread { downloadDragDropUtility(url) }
+                }
+            }
+            registry.bind(communicatorName, UnicastRemoteObject.exportObject(communicator, 0))
+        } catch (e: ExportException) {
+            try {
+                registry = LocateRegistry.getRegistry(1099)
+
+                val url = parameters.named["import"]!!
+                (registry.lookup(communicatorName) as MenagerieCommunicator).importUrl(url)
+            } catch (e: Exception) {
+                log.error("Failed to communicate", e)
+            } finally {
+                exitProcess(0)
+            }
         }
     }
 
@@ -98,7 +130,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         dbURL = contextPrefs.get("db_url", defaultDatabaseUrl)
         dbUser = contextPrefs.get("db_user", defaultDatabaseUser)
-        dbPass = contextPrefs.get("db_pass",  defaultDatabasePassword)
+        dbPass = contextPrefs.get("db_pass", defaultDatabasePassword)
 
         if (parameters.named.containsKey("db")) dbURL = parameters.named["db"] ?: defaultDatabaseUrl
         if (parameters.named.containsKey("db-url")) dbURL = parameters.named["db-url"] ?: defaultDatabaseUrl
@@ -448,6 +480,10 @@ class MyApp : App(MainView::class, Styles::class) {
 
         log.info("Stopping app")
 
+        // Close RMI communicator
+        UnicastRemoteObject.unexportObject(communicator, true)
+        registry.unbind(communicatorName)
+
         try {
             importer.close()
         } catch (e: Exception) {
@@ -556,4 +592,8 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
+}
+
+fun main(vararg args: String) {
+    launch<MyApp>(*args)
 }
