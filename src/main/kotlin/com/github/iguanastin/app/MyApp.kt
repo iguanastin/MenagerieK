@@ -139,14 +139,20 @@ class MyApp : App(MainView::class, Styles::class) {
             uiPrefs.clear()
         }
 
-        if (parameters.named.containsKey("db")) contextPrefs.put(prefsKeyDBURL, parameters.named["db"] ?: defaultDatabaseUrl)
-        if (parameters.named.containsKey("db-url")) contextPrefs.put(prefsKeyDBURL, parameters.named["db-url"] ?: defaultDatabaseUrl)
+        if (parameters.named.containsKey("db")) contextPrefs.put(prefsKeyDBURL, parameters.named["db"]
+                ?: defaultDatabaseUrl)
+        if (parameters.named.containsKey("db-url")) contextPrefs.put(prefsKeyDBURL, parameters.named["db-url"]
+                ?: defaultDatabaseUrl)
 
-        if (parameters.named.containsKey("dbu")) contextPrefs.put(prefsKeyDBUser, parameters.named["dbu"] ?: defaultDatabaseUser)
-        if (parameters.named.containsKey("db-user")) contextPrefs.put(prefsKeyDBUser, parameters.named["db-user"] ?: defaultDatabaseUser)
+        if (parameters.named.containsKey("dbu")) contextPrefs.put(prefsKeyDBUser, parameters.named["dbu"]
+                ?: defaultDatabaseUser)
+        if (parameters.named.containsKey("db-user")) contextPrefs.put(prefsKeyDBUser, parameters.named["db-user"]
+                ?: defaultDatabaseUser)
 
-        if (parameters.named.containsKey("dbp")) contextPrefs.put(prefsKeyDBPass, parameters.named["dbp"] ?: defaultDatabasePassword)
-        if (parameters.named.containsKey("db-pass")) contextPrefs.put(prefsKeyDBPass, parameters.named["db-pass"] ?: defaultDatabasePassword)
+        if (parameters.named.containsKey("dbp")) contextPrefs.put(prefsKeyDBPass, parameters.named["dbp"]
+                ?: defaultDatabasePassword)
+        if (parameters.named.containsKey("db-pass")) contextPrefs.put(prefsKeyDBPass, parameters.named["db-pass"]
+                ?: defaultDatabasePassword)
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
@@ -327,18 +333,33 @@ class MyApp : App(MainView::class, Styles::class) {
 
         root.root.add(TextInputDialog("Create group", prompt = "Title", onAccept = { title ->
             val group = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, title)
+            val tags = mutableSetOf<Tag>()
 
             for (item in ArrayList(root.itemGrid.selected)) {
+                tags.addAll(item.tags)
+
                 when (item) {
                     is FileItem -> {
                         group.addItem(item)
                     }
                     is GroupItem -> {
                         menagerie.removeItem(item)
-                        item.items.forEach { group.addItem(it) }
+                        item.items.forEach {
+                            group.addItem(it)
+                            tags.addAll(it.tags)
+                        }
                     }
                 }
             }
+
+            tags.forEach { group.addTag(it) }
+
+            var tagme = menagerie.getTag("tagme")
+            if (tagme == null) {
+                tagme = Tag(menagerie.reserveTagID(), "tagme")
+                menagerie.addTag(tagme)
+            }
+            group.addTag(tagme)
 
             menagerie.addItem(group)
 
