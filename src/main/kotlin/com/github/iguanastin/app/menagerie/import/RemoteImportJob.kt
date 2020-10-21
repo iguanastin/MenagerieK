@@ -19,7 +19,7 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
         }
 
         fun intoDirectory(url: String, downloadsDir: File, incrementIfExists: Boolean = true): RemoteImportJob {
-            val filename = URL(url).path.substringAfterLast('/')
+            val filename = getFilename(url)
             var file: File = downloadsDir.resolve(filename)
 
             var i = 1
@@ -31,6 +31,19 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
             }
 
             return RemoteImportJob(url, file)
+        }
+
+        private fun getFilename(url: String): String {
+            val urlObj = URL(url)
+            var filename = urlObj.path.substringAfterLast('/')
+
+            if (url.startsWith("https://pbs.twimg.com/media/", true) && '.' !in filename) {
+                val query = mutableMapOf<String, String>()
+                urlObj.query.toLowerCase().split('&').forEach { query[it.substringBefore('=')] = it.substringAfter('=') }
+                filename += query["format"] ?: ".jpg"
+            }
+
+            return filename
         }
     }
 

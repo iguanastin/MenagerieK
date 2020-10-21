@@ -45,6 +45,11 @@ class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
         const val communicatorName = "communicator"
+
+        const val prefsKeyDBURL = "db_url"
+        const val prefsKeyDBUser = "db_user"
+        const val prefsKeyDBPass = "db_pass"
+
         const val defaultConfidence = 0.95
         const val defaultDatabaseUrl = "~/menagerie"
         const val defaultDatabaseUser = "sa"
@@ -56,13 +61,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
     private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
 
-    private lateinit var dbURL: String
-    private lateinit var dbUser: String
-    private lateinit var dbPass: String
-
-    private lateinit var manager: MenagerieDatabase
-    private lateinit var menagerie: Menagerie
-    private lateinit var importer: MenagerieImporter
+    private var context: MenagerieContext? = null
 
     private lateinit var registry: Registry
     private lateinit var communicator: MenagerieCommunicator
@@ -77,24 +76,24 @@ class MyApp : App(MainView::class, Styles::class) {
         super.start(stage)
         root = find(primaryView) as MainView
 
-        log.info("Starting app")
-
+        log.info("Starting Menagerie")
         initMainStageProperties(stage)
+        initViewControls()
 
-        loadMenagerie(stage) { manager, menagerie, importer ->
-            manager.updateErrorHandlers.add { e ->
+        loadMenagerie(stage, contextPrefs.get(prefsKeyDBURL, defaultDatabaseUrl), contextPrefs.get(prefsKeyDBUser, defaultDatabaseUser), contextPrefs.get(prefsKeyDBPass, defaultDatabasePassword)) { context ->
+            this.context = context
+
+            context.database.updateErrorHandlers.add { e ->
                 // TODO show error to user
                 log.error("Error occurred while updating database", e)
             }
 
-            purgeZombieTags(menagerie)
-            initImporterListeners(importer, menagerie)
+            purgeZombieTags(context.menagerie)
+            initImporterListeners(context.importer, context.menagerie)
 
             runOnUIThread {
-                root.navigateForward(MenagerieView(menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
+                root.navigateForward(MenagerieView(context.menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
             }
-
-            initViewControls()
         }
     }
 
@@ -129,18 +128,14 @@ class MyApp : App(MainView::class, Styles::class) {
             uiPrefs.clear()
         }
 
-        dbURL = contextPrefs.get("db_url", defaultDatabaseUrl)
-        dbUser = contextPrefs.get("db_user", defaultDatabaseUser)
-        dbPass = contextPrefs.get("db_pass", defaultDatabasePassword)
+        if (parameters.named.containsKey("db")) contextPrefs.put(prefsKeyDBURL, parameters.named["db"] ?: defaultDatabaseUrl)
+        if (parameters.named.containsKey("db-url")) contextPrefs.put(prefsKeyDBURL, parameters.named["db-url"] ?: defaultDatabaseUrl)
 
-        if (parameters.named.containsKey("db")) dbURL = parameters.named["db"] ?: defaultDatabaseUrl
-        if (parameters.named.containsKey("db-url")) dbURL = parameters.named["db-url"] ?: defaultDatabaseUrl
+        if (parameters.named.containsKey("dbu")) contextPrefs.put(prefsKeyDBUser, parameters.named["dbu"] ?: defaultDatabaseUser)
+        if (parameters.named.containsKey("db-user")) contextPrefs.put(prefsKeyDBUser, parameters.named["db-user"] ?: defaultDatabaseUser)
 
-        if (parameters.named.containsKey("dbu")) dbUser = parameters.named["dbu"] ?: defaultDatabaseUser
-        if (parameters.named.containsKey("db-user")) dbUser = parameters.named["db-user"] ?: defaultDatabaseUser
-
-        if (parameters.named.containsKey("dbp")) dbPass = parameters.named["dbp"] ?: defaultDatabasePassword
-        if (parameters.named.containsKey("db-pass")) dbPass = parameters.named["db-pass"] ?: defaultDatabasePassword
+        if (parameters.named.containsKey("dbp")) contextPrefs.put(prefsKeyDBPass, parameters.named["dbp"] ?: defaultDatabasePassword)
+        if (parameters.named.containsKey("db-pass")) contextPrefs.put(prefsKeyDBPass, parameters.named["db-pass"] ?: defaultDatabasePassword)
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
@@ -187,7 +182,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initViewControls() {
         root.root.onDragOver = EventHandler { event ->
-            if (event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
+            if (context != null && event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
                 root.dragOverlay.show()
                 event.apply {
                     acceptTransferModes(*TransferMode.ANY)
@@ -196,7 +191,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
         root.root.onDragDropped = EventHandler { event ->
-            if (event.isAccepted) {
+            if (context != null && event.isAccepted) {
                 if (event.dragboard.url?.startsWith("http") == true) {
                     downloadDragDropUtility(event.dragboard.url)
                 }
@@ -254,6 +249,7 @@ class MyApp : App(MainView::class, Styles::class) {
         if (root.itemGrid.selected.size != 1) return
         val group = root.itemGrid.selected.first()
         if (group !is GroupItem) return
+        val menagerie = context?.menagerie ?: return
 
         root.root.confirm("Ungroup", "Ungroup \"${group.title}\"?") {
             onConfirm = {
@@ -265,6 +261,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun groupShortcut() {
         if (root.itemGrid.selected.isEmpty()) return
+        val menagerie = context?.menagerie ?: return
 
         root.root.add(TextInputDialog("Create group", prompt = "Title", onAccept = { title ->
             val group = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, title)
@@ -290,6 +287,8 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun duplicatesShortcut(event: KeyEvent) {
+        val menagerie = context?.menagerie ?: return
+
         val first = expandGroups(root.itemGrid.selected)
         val second = if (event.isAltDown) expandGroups(menagerie.items) else first
 
@@ -303,6 +302,8 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun downloadDragDropUtility(url: String) {
+        val importer = context?.importer ?: return
+
         val download = { folder: File? ->
             if (folder != null && folder.exists() && folder.isDirectory) {
                 importer.enqueue(RemoteImportJob.intoDirectory(url, folder))
@@ -383,6 +384,9 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun importFilesDialog(files: List<File>) {
+        val menagerie = context?.menagerie ?: return
+        val importer = context?.importer ?: return
+
         root.root.importdialog(files) {
             individually = {
                 files.forEach { file ->
@@ -442,6 +446,8 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun deleteItems(del: List<Item>) {
+        val menagerie = context?.menagerie ?: return
+
         del.forEach { item ->
             log.info("Removing item: $item")
             menagerie.removeItem(item)
@@ -487,20 +493,12 @@ class MyApp : App(MainView::class, Styles::class) {
         UnicastRemoteObject.unexportObject(communicator, true)
         registry.unbind(communicatorName)
 
-        try {
-            importer.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        thread(start = true, name = "Database Shutdown") {
-            manager.closeAndCompress()
-        }
+        context?.close()
     }
 
-    private fun loadMenagerie(stage: Stage, after: ((manager: MenagerieDatabase, menagerie: Menagerie, importer: MenagerieImporter) -> Unit)? = null) {
+    private fun loadMenagerie(stage: Stage, dbURL: String, dbUser: String, dbPass: String, after: ((MenagerieContext) -> Unit)? = null) {
         try {
-            manager = MenagerieDatabase(dbURL, dbUser, dbPass)
+            val database = MenagerieDatabase(dbURL, dbUser, dbPass)
 
             val load: () -> Unit = {
                 runOnUIThread {
@@ -509,11 +507,11 @@ class MyApp : App(MainView::class, Styles::class) {
 
                     thread(name = "Menagerie Loader", start = true) {
                         try {
-                            menagerie = manager.loadMenagerie()
-                            importer = MenagerieImporter(menagerie)
+                            val menagerie = database.loadMenagerie()
+                            val importer = MenagerieImporter(menagerie)
                             runOnUIThread { progress.close() }
 
-                            after?.invoke(manager, menagerie, importer)
+                            after?.invoke(MenagerieContext(menagerie, importer, database))
                         } catch (e: MenagerieDatabaseException) {
                             e.printStackTrace()
                             runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
@@ -528,7 +526,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
                     thread(name = "Database migrator thread", start = true) {
                         try {
-                            manager.migrateDatabase()
+                            database.migrateDatabase()
                             runOnUIThread { progress.close() }
 
                             load()
@@ -540,19 +538,19 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             }
 
-            if (manager.needsMigration()) {
-                if (manager.canMigrate()) {
-                    if (manager.version == -1) {
+            if (database.needsMigration()) {
+                if (database.canMigrate()) {
+                    if (database.version == -1) {
                         confirm(title = "Database initialization", header = "Database needs to be initialized: $dbURL", owner = stage, actionFn = {
                             migrate()
                         })
                     } else {
-                        confirm(title = "Database migration", header = "Database ($dbURL) needs to update (v${manager.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = stage, actionFn = {
+                        confirm(title = "Database migration", header = "Database ($dbURL) needs to update (v${database.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = stage, actionFn = {
                             migrate()
                         })
                     }
                 } else {
-                    error(title = "Incompatible database", header = "Database v${manager.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = stage)
+                    error(title = "Incompatible database", header = "Database v${database.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = stage)
                 }
             } else {
                 load()
