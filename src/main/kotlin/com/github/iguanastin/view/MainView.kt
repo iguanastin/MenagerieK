@@ -473,6 +473,25 @@ class MainView : View("Menagerie") {
                 item.getThumbnail().want(db) { db.dragView = it.image }
                 db.putFiles(expandGroups(itemGrid.selected).filter { it is FileItem }.map { (it as FileItem).file }.toMutableList())
             }
+
+            contextmenu {
+                val syncGroupTags = item("Sync tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        val i = itemGrid.selected.firstOrNull()
+                        if (itemGrid.selected.size == 1 && i is GroupItem) {
+                            i.items.forEach { e ->
+                                e.tags.forEach { i.addTag(it) }
+                            }
+                        }
+                    }
+                }
+
+                onShown = EventHandler { event ->
+                    event.consume()
+                    syncGroupTags.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is GroupItem
+                }
+            }
         }
         itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.code == KeyCode.ENTER && !event.isShortcutDown && !event.isShiftDown) {

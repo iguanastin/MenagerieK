@@ -66,7 +66,6 @@ class MultiSelectGridView<T> : GridView<T> {
 
             var current: Int = items.indexOf(selected.lastOrNull())
             if (current == -1) current = items.indexOf(items.firstOrNull())
-            val row = current / getItemsInRow()
 
             if (items.isEmpty()) return@addEventHandler
             when (event.code) {
@@ -137,7 +136,7 @@ class MultiSelectGridView<T> : GridView<T> {
         })
 
         cell.setOnMouseClicked { event ->
-            if (cell.item != null && event.button == MouseButton.PRIMARY && event.clickCount == 1) {
+            if (cell.item != null && event.clickCount == 1 && (event.button == MouseButton.PRIMARY || (event.button == MouseButton.SECONDARY && cell.item !in selected))) {
                 selectUtility(cell.item, event)
                 event.consume()
             }
