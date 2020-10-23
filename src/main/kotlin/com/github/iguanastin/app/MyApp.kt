@@ -2,7 +2,6 @@ package com.github.iguanastin.app
 
 import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.context.TagEdit
-import com.github.iguanastin.app.menagerie.MenagerieCommunicator
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.CPUDuplicateFinder

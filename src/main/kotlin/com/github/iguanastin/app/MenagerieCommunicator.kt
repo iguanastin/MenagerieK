@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie
+package com.github.iguanastin.app
 
 import java.rmi.Remote
 import java.rmi.RemoteException
