@@ -10,18 +10,18 @@ import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.event.EventTarget
-import javafx.scene.layout.StackPane
+import javafx.scene.layout.BorderPane
 import mu.KotlinLogging
 import tornadofx.*
 
 private val log = KotlinLogging.logger {}
 
-class ItemDisplay : StackPane() {
+class ItemDisplay : BorderPane() {
 
-    private val imageDisplay: PanZoomImageView = panzoomimageview() {
+    private val imageDisplay: PanZoomImageView = panzoomimageview {
         applyScaleAsync = true
     }
-    private val groupDisplay: GroupPreview = grouppreview()
+    private val groupDisplay: GroupPreview = GroupPreview()
 
 
     val itemProperty: ObjectProperty<Item?> = SimpleObjectProperty(null)
@@ -40,14 +40,6 @@ class ItemDisplay : StackPane() {
                 display(newValue)
             }
         })
-
-        imageDisplay.imageProperty().addListener(ChangeListener { _, _, newValue ->
-            imageDisplay.isVisible = newValue != null
-        })
-
-        groupDisplay.groupProperty.addListener(ChangeListener { _, _, newValue ->
-            groupDisplay.isVisible = newValue != null
-        })
     }
 
 
@@ -55,13 +47,15 @@ class ItemDisplay : StackPane() {
         imageDisplay.trueImage = null
         groupDisplay.group = null
 
+        center = null
         when (item) {
             is GroupItem -> {
                 groupDisplay.group = item
+                center = groupDisplay
             }
             is ImageItem -> {
                 imageDisplay.trueImage = image(item.file, true)
-                imageDisplay.fitImageToView()
+                center = imageDisplay
             }
             null -> {
                 // Do nothing
