@@ -27,12 +27,17 @@ class MultiSelectGridView<T> : GridView<T> {
         FROM_TO
     }
 
+    private val oldItems = mutableListOf<T>()
+    private var lastSelectedIndex = -1
+
     val selected: ObservableList<T> = observableListOf()
 
     init {
         items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 selected.removeAll(change.removed)
+
+                updateLastSelectedIndex(change)
             }
         })
 
@@ -64,27 +69,24 @@ class MultiSelectGridView<T> : GridView<T> {
                 }
             }
 
-            var current: Int = items.indexOf(selected.lastOrNull())
-            if (current == -1) current = items.indexOf(items.firstOrNull())
-
             if (items.isEmpty()) return@addEventHandler
             when (event.code) {
                 KeyCode.LEFT -> {
-                    if (current <= 0) selectUtility(items[0], event)
-                    else selectUtility(items[current - 1], event)
+                    if (lastSelectedIndex <= 0) selectUtility(items[0], event)
+                    else selectUtility(items[lastSelectedIndex - 1], event)
                     event.consume()
                 }
                 KeyCode.RIGHT -> {
-                    if (current >= items.lastIndex) selectUtility(items.last(), event)
-                    else selectUtility(items[current + 1], event)
+                    if (lastSelectedIndex >= items.lastIndex) selectUtility(items.last(), event)
+                    else selectUtility(items[lastSelectedIndex + 1], event)
                     event.consume()
                 }
                 KeyCode.UP -> {
-                    selectUtility(items[(current - getItemsInRow()).coerceAtLeast(0)], event)
+                    selectUtility(items[(lastSelectedIndex - getItemsInRow()).coerceAtLeast(0)], event)
                     event.consume()
                 }
                 KeyCode.DOWN -> {
-                    selectUtility(items[(current + getItemsInRow()).coerceAtMost(items.lastIndex)], event)
+                    selectUtility(items[(lastSelectedIndex + getItemsInRow()).coerceAtMost(items.lastIndex)], event)
                     event.consume()
                 }
                 KeyCode.HOME -> {
@@ -95,18 +97,49 @@ class MultiSelectGridView<T> : GridView<T> {
                 }
                 KeyCode.PAGE_DOWN -> {
                     val visibleRows = (height / (cellHeight + verticalCellSpacing)).toInt()
-                    val next = (current + visibleRows * getItemsInRow()).coerceAtMost(items.lastIndex)
+                    val next = (lastSelectedIndex + visibleRows * getItemsInRow()).coerceAtMost(items.lastIndex)
                     selectUtility(items[next], event)
                 }
                 KeyCode.PAGE_UP -> {
                     val visibleRows = (height / (cellHeight + verticalCellSpacing)).toInt()
-                    val next = (current - visibleRows * getItemsInRow()).coerceAtLeast(0)
+                    val next = (lastSelectedIndex - visibleRows * getItemsInRow()).coerceAtLeast(0)
                     selectUtility(items[next], event)
                 }
                 else -> {
                     // Do nothing
                 }
             }
+        }
+    }
+
+    private fun updateLastSelectedIndex(change: ListChangeListener.Change<out T>) {
+        if (lastSelectedIndex in IntRange(0, oldItems.lastIndex)) {
+            var item: T? = null
+            for (i in lastSelectedIndex until oldItems.size) {
+                if (oldItems[i] !in change.removed) {
+                    item = oldItems[i]
+                    break
+                }
+            }
+            if (item == null) {
+                for (i in lastSelectedIndex downTo 0) {
+                    if (oldItems[i] !in change.removed) {
+                        item = oldItems[i]
+                        break
+                    }
+                }
+            }
+
+            lastSelectedIndex = if (item != null) {
+                change.list.indexOf(item)
+            } else {
+                -1
+            }
+        }
+
+        oldItems.apply {
+            clear()
+            addAll(change.list)
         }
     }
 
@@ -145,7 +178,7 @@ class MultiSelectGridView<T> : GridView<T> {
 
     fun select(item: T) {
         selected.clear()
-        selected.add(item)
+        selectUtility(item, SelectionType.ONLY)
     }
 
     private fun selectUtility(item: T, event: KeyEvent) {
@@ -212,6 +245,7 @@ class MultiSelectGridView<T> : GridView<T> {
             }
         }
 
+        lastSelectedIndex = items.indexOf(item)
         ensureVisible(item)
     }
 
