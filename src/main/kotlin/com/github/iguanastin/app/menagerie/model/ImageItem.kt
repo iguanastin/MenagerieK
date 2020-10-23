@@ -40,7 +40,7 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
     }
 
     override fun loadThumbnail(): Image {
-        return Image(file.toURI().toString(), thumbnailSize, thumbnailSize, true, true, true)
+        return Image(file.toURI().toString(), thumbnailSize, thumbnailSize, true, true)
     }
 
     override fun similarityTo(other: Item): Double {
