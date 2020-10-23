@@ -135,7 +135,7 @@ class MultiSelectGridView<T> : GridView<T> {
             }
         })
 
-        cell.setOnMouseClicked { event ->
+        cell.addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
             if (cell.item != null && event.clickCount == 1 && (event.button == MouseButton.PRIMARY || (event.button == MouseButton.SECONDARY && cell.item !in selected))) {
                 selectUtility(cell.item, event)
                 event.consume()

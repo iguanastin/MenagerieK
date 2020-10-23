@@ -41,15 +41,13 @@ class ItemDisplay : StackPane() {
             }
         })
 
-        imageDisplay.trueImageProperty.addListener(ChangeListener { _, _, newValue ->
+        imageDisplay.imageProperty().addListener(ChangeListener { _, _, newValue ->
             imageDisplay.isVisible = newValue != null
         })
-        imageDisplay.disableWhen(imageDisplay.visibleProperty().not())
 
         groupDisplay.groupProperty.addListener(ChangeListener { _, _, newValue ->
             groupDisplay.isVisible = newValue != null
         })
-        groupDisplay.disableWhen(groupDisplay.visibleProperty().not())
     }
 
 

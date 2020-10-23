@@ -1,6 +1,5 @@
 package com.github.iguanastin.view.nodes
 
-import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.ItemCellFactory
@@ -9,7 +8,6 @@ import javafx.beans.InvalidationListener
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ChangeListener
-import javafx.collections.ListChangeListener
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
@@ -45,7 +43,7 @@ class GroupPreview : BorderPane() {
     }
 
     init {
-        isMouseTransparent = true
+        isPickOnBounds = false
         padding = insets(100)
 
         grid.cellFactory = ItemCellFactory.factory()
