@@ -4,6 +4,8 @@ import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.image
+import com.github.iguanastin.view.nodes.image.PanZoomImageView
+import com.github.iguanastin.view.nodes.image.panzoomimageview
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
@@ -16,7 +18,9 @@ private val log = KotlinLogging.logger {}
 
 class ItemDisplay : StackPane() {
 
-    private val imageDisplay: PanZoomImageView = panzoomimageview()
+    private val imageDisplay: PanZoomImageView = panzoomimageview() {
+        applyScaleAsync = true
+    }
     private val groupDisplay: GroupPreview = grouppreview()
 
 
@@ -37,7 +41,7 @@ class ItemDisplay : StackPane() {
             }
         })
 
-        imageDisplay.imageProperty().addListener(ChangeListener { _, _, newValue ->
+        imageDisplay.trueImageProperty.addListener(ChangeListener { _, _, newValue ->
             imageDisplay.isVisible = newValue != null
         })
         imageDisplay.disableWhen(imageDisplay.visibleProperty().not())
@@ -50,7 +54,7 @@ class ItemDisplay : StackPane() {
 
 
     private fun display(item: Item?) {
-        imageDisplay.image = null
+        imageDisplay.trueImage = null
         groupDisplay.group = null
 
         when (item) {
@@ -58,7 +62,7 @@ class ItemDisplay : StackPane() {
                 groupDisplay.group = item
             }
             is ImageItem -> {
-                imageDisplay.image = image(item.file, true)
+                imageDisplay.trueImage = image(item.file, true)
                 imageDisplay.fitImageToView()
             }
             null -> {
