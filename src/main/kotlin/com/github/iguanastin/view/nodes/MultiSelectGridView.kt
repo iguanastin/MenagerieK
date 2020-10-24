@@ -28,7 +28,7 @@ class MultiSelectGridView<T> : GridView<T> {
     }
 
     private val oldItems = mutableListOf<T>()
-    private var lastSelectedIndex = -1
+    var lastSelectedIndex = -1
 
     val selected: ObservableList<T> = observableListOf()
 

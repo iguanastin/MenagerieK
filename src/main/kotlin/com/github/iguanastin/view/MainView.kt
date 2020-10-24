@@ -435,24 +435,29 @@ class MainView : View("Menagerie") {
             clear()
             addAll(back.selected)
         }
+        itemGrid.lastSelectedIndex = if (back.lastSelected == null) {
+            -1
+        } else {
+            itemGrid.items.indexOf(back.lastSelected)
+        }
     }
 
     fun navigateForward(view: MenagerieView) {
         val old = _viewProperty.get()
-        if (old != null) history.add(ViewHistory(old, itemGrid.selected.toList()))
+        if (old != null) history.add(ViewHistory(old, itemGrid.selected.toList(), itemGrid.items.getOrNull(itemGrid.lastSelectedIndex)))
         _viewProperty.set(view)
     }
 
     private fun onItemAction(item: Item) {
         if (item is GroupItem) {
             val filter = ElementOfFilter(item, false)
-            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter), {
+            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter)) {
                 if (it is FileItem) {
                     it.elementOf?.items?.indexOf(it)
                 } else {
                     it.id
                 }
-            }))
+            })
         } else if (item is FileItem) {
             Desktop.getDesktop().open(item.file)
         }
