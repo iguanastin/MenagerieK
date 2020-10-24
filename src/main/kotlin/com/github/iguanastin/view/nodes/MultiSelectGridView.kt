@@ -113,28 +113,32 @@ class MultiSelectGridView<T> : GridView<T> {
     }
 
     private fun updateLastSelectedIndex(change: ListChangeListener.Change<out T>) {
-        if (lastSelectedIndex in IntRange(0, oldItems.lastIndex)) {
-            var item: T? = null
-            for (i in lastSelectedIndex until oldItems.size) {
-                if (oldItems[i] !in change.removed) {
-                    item = oldItems[i]
-                    break
-                }
-            }
-            if (item == null) {
-                for (i in lastSelectedIndex downTo 0) {
+        if (change.list.isNotEmpty()) {
+            if (lastSelectedIndex in IntRange(0, oldItems.lastIndex)) {
+                var item: T? = null
+                for (i in lastSelectedIndex until oldItems.size) {
                     if (oldItems[i] !in change.removed) {
                         item = oldItems[i]
                         break
                     }
                 }
-            }
+                if (item == null) {
+                    for (i in lastSelectedIndex downTo 0) {
+                        if (oldItems[i] !in change.removed) {
+                            item = oldItems[i]
+                            break
+                        }
+                    }
+                }
 
-            lastSelectedIndex = if (item != null) {
-                change.list.indexOf(item)
-            } else {
-                -1
+                lastSelectedIndex = if (item != null) {
+                    change.list.indexOf(item)
+                } else {
+                    -1
+                }
             }
+        } else {
+            lastSelectedIndex = -1
         }
 
         oldItems.apply {
