@@ -71,6 +71,10 @@ object ItemCellFactory {
                         grid.initSelectableCell(this)
                     }
 
+                    parentProperty().addListener { _, _, new ->
+                        if (new == null) item?.getThumbnail()?.unWant(this)
+                    }
+
                     afterInitCell()
                 }
 
