@@ -124,8 +124,6 @@ class Histogram private constructor(
     }
 
     fun similarityTo(other: Histogram): Double {
-        val bwMult = if (isColorful || other.isColorful) 1.0 else 8.0
-
         var da = 0.0
         var dr = 0.0
         var dg = 0.0
@@ -136,7 +134,13 @@ class Histogram private constructor(
             dg += abs(green[i] - other.green[i])
             db += abs(blue[i] - other.blue[i])
         }
-        return 1 - (da + dr + dg + db) * bwMult / 8
+
+        var error = (da + dr + dg + db) / 8
+        if (!isColorful && !other.isColorful) {
+            error *= error
+        }
+
+        return 1 - error
     }
 
 
