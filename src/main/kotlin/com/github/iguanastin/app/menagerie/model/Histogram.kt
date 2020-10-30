@@ -136,7 +136,7 @@ class Histogram private constructor(
         }
 
         var error = (da + dr + dg + db) / 8
-        if (!isColorful && !other.isColorful) {
+        if (!isColorful || !other.isColorful) {
             error *= error
         }
 
