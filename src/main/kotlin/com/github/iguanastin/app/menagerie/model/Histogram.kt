@@ -9,6 +9,7 @@ import java.nio.ByteBuffer
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
 
 class Histogram private constructor(
@@ -136,8 +137,9 @@ class Histogram private constructor(
         }
 
         var error = (da + dr + dg + db) / 8
+
         if (!isColorful || !other.isColorful) {
-            error *= error
+            error = sqrt(error)
         }
 
         return 1 - error
