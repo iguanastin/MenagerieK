@@ -8,4 +8,7 @@ interface MenagerieCommunicator: Remote {
     @Throws(RemoteException::class)
     fun importUrl(url: String)
 
+    @Throws(RemoteException::class)
+    fun bringToFront()
+
 }

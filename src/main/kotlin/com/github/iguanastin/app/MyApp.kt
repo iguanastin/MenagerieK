@@ -114,15 +114,24 @@ class MyApp : App(MainView::class, Styles::class) {
                 override fun importUrl(url: String) {
                     runOnUIThread { downloadDragDropUtility(url) }
                 }
+
+                override fun bringToFront() {
+                    root.currentStage?.toFront()
+                }
             }
             registry.bind(communicatorName, UnicastRemoteObject.exportObject(communicator, 0))
         } catch (e: ExportException) {
             try {
                 registry = LocateRegistry.getRegistry(1099)
+                val communicator = (registry.lookup(communicatorName) as MenagerieCommunicator)
 
-                var url = parameters.named["import"]!!
-                if (url.startsWith("menagerie:")) url = url.substringAfter(':')
-                (registry.lookup(communicatorName) as MenagerieCommunicator).importUrl(url)
+                var url = parameters.named["import"]
+                if (url != null) {
+                    if (url.startsWith("menagerie:")) url = url.substringAfter(':')
+                    communicator.importUrl(url)
+                } else {
+                    communicator.bringToFront()
+                }
             } catch (e: Exception) {
                 log.error("Failed to communicate", e)
                 exitProcess(1)
@@ -209,8 +218,11 @@ class MyApp : App(MainView::class, Styles::class) {
             val remove = mutableListOf<Tag>()
 
             for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
+                if (name.isBlank()) continue // Ignore empty and blank additions
+
                 val menagerie = root.itemGrid.selected[0].menagerie
                 if (name.startsWith('-')) {
+                    if (name.length == 1) continue
                     val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
                     remove.add(tag)
                 } else {

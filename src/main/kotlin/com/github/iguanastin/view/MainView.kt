@@ -475,7 +475,11 @@ class MainView : View("Menagerie") {
             addEventHandler(MouseEvent.DRAG_DETECTED) { event ->
                 event.consume()
                 val db = startDragAndDrop(*TransferMode.ANY)
-                item.getThumbnail().want(db) { db.dragView = it.image }
+                if (item is ImageItem && (item as ImageItem).file.extension == "gif") { // TODO: Temporary solution, GIF thumbnails should be made compatible instead of dealing with this case like this
+                    db.dragView = Item.defaultThumbnail
+                } else {
+                    item.getThumbnail().want(db) { db.dragView = it.image }
+                }
                 db.putFiles(expandGroups(itemGrid.selected).filter { it is FileItem }.map { (it as FileItem).file }.toMutableList())
             }
 
