@@ -3,9 +3,9 @@ package com.github.iguanastin.view.dialog
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.duplicates.OnlineMatch
 import com.github.iguanastin.app.menagerie.model.Item
-import com.github.iguanastin.view.nodes.ItemDisplay
+import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.image.panzoomimageview
-import com.github.iguanastin.view.nodes.itemdisplay
+import com.github.iguanastin.view.nodes.multitypeitemdisplay
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.image.Image
@@ -15,7 +15,7 @@ import java.net.URI
 
 class CompareSimilarOnlineDialog(item: Item, match: OnlineMatch) : StackDialog() {
 
-    private lateinit var itemDisplay: ItemDisplay
+    private lateinit var itemDisplay: MultiTypeItemDisplay
 
     init {
         addClass(Styles.dialogPane)
@@ -26,7 +26,7 @@ class CompareSimilarOnlineDialog(item: Item, match: OnlineMatch) : StackDialog()
 
                 borderpane {
                     center {
-                        itemDisplay = itemdisplay {
+                        itemDisplay = multitypeitemdisplay {
                             this.item = item
                         }
                     }

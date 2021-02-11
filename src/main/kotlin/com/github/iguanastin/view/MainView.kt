@@ -34,7 +34,7 @@ private val log = KotlinLogging.logger {}
 
 class MainView : View("Menagerie") {
 
-    lateinit var itemDisplay: ItemDisplay
+    lateinit var itemDisplay: MultiTypeItemDisplay
     lateinit var itemGrid: MultiSelectGridView<Item>
     lateinit var tagView: ListView<Tag>
     lateinit var dragOverlay: BorderPane
@@ -81,7 +81,7 @@ class MainView : View("Menagerie") {
         focusingstackpane {
             borderpane {
                 center {
-                    itemDisplay = itemdisplay {
+                    itemDisplay = multitypeitemdisplay {
                         paddingLeft = 5
                         paddingTop = 5
                         paddingBottom = 5
@@ -384,7 +384,7 @@ class MainView : View("Menagerie") {
                         "is:image" -> IsTypeFilter.Type.Image
                         "is:video" -> IsTypeFilter.Type.Video
                         "is:file" -> IsTypeFilter.Type.File
-                        else -> throw IllegalArgumentException("No such type: \"$word\"")
+                        else -> throw IllegalArgumentException("Accepts type, but doesn't know how to handle it: \"$word\"")
                     }, exclude))
                 } else {
                     val tag = view.menagerie.getTag(word)

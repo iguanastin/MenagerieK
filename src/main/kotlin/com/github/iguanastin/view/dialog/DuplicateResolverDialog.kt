@@ -6,8 +6,8 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.SimilarPair
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.TagCellFactory
-import com.github.iguanastin.view.nodes.ItemDisplay
-import com.github.iguanastin.view.nodes.itemdisplay
+import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
+import com.github.iguanastin.view.nodes.multitypeitemdisplay
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
@@ -33,8 +33,8 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
     private lateinit var notDuplicateButton: ToggleButton
     private lateinit var nextButton: Button
     private lateinit var countSimilarityLabel: Label
-    private lateinit var leftDisplay: ItemDisplay
-    private lateinit var rightDisplay: ItemDisplay
+    private lateinit var leftDisplay: MultiTypeItemDisplay
+    private lateinit var rightDisplay: MultiTypeItemDisplay
     private lateinit var leftTags: ListView<Tag>
     private lateinit var rightTags: ListView<Tag>
     private lateinit var topPane: SplitPane
@@ -45,7 +45,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
         center {
             topPane = splitpane {
                 stackpane {
-                    leftDisplay = itemdisplay()
+                    leftDisplay = multitypeitemdisplay()
                     borderpane {
                         isPickOnBounds = false
                         right {
@@ -60,7 +60,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                     }
                 }
                 stackpane {
-                    rightDisplay = itemdisplay()
+                    rightDisplay = multitypeitemdisplay()
                     borderpane {
                         isPickOnBounds = false
                         left {

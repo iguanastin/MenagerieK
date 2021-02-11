@@ -5,27 +5,14 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.InvalidationListener
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ChangeListener
-import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.effect.DropShadow
-import javafx.scene.layout.BorderPane
 import org.controlsfx.control.GridView
 import tornadofx.*
 
-class GroupPreview : BorderPane() {
-
-    val groupProperty: ObjectProperty<GroupItem?> = SimpleObjectProperty(null)
-    var group: GroupItem?
-        get() {
-            return groupProperty.get()
-        }
-        set(value) {
-            groupProperty.set(value)
-        }
+class GroupDisplay : ItemDisplay() {
 
     private val grid: GridView<Item> = GridView<Item>()
     private val title: Label = Label()
@@ -37,7 +24,8 @@ class GroupPreview : BorderPane() {
         runOnUIThread {
             grid.items.apply {
                 clear()
-                addAll(group?.items ?: return@apply)
+                val group = item
+                if (group is GroupItem) addAll(group.items)
             }
         }
     }
@@ -65,21 +53,28 @@ class GroupPreview : BorderPane() {
             }
         }
 
-        groupProperty.addListener { _, oldValue, newValue ->
-            oldValue?.titleProperty?.removeListener(groupTitleListener)
-            oldValue?.items?.removeListener(groupItemsListener)
-            newValue?.titleProperty?.addListener(groupTitleListener)
-            newValue?.items?.addListener(groupItemsListener)
+        itemProperty.addListener { _, oldValue, newValue ->
+            if (oldValue is GroupItem) {
+                oldValue.titleProperty.removeListener(groupTitleListener)
+                oldValue.items.removeListener(groupItemsListener)
+            }
+            if (newValue is GroupItem) {
+                newValue.titleProperty.addListener(groupTitleListener)
+                newValue.items.addListener(groupItemsListener)
+            }
 
             runOnUIThread {
-                title.text = newValue?.title
+                title.text = if (newValue is GroupItem) newValue.title else null
                 grid.items.apply {
                     clear()
-                    if (newValue != null) addAll(newValue.items)
+                    if (newValue is GroupItem) addAll(newValue.items)
                 }
             }
         }
     }
-}
 
-fun EventTarget.grouppreview(op: GroupPreview.() -> Unit = {}) = GroupPreview().attachTo(this, op)
+    override fun canDisplay(item: Item): Boolean {
+        return item is GroupItem
+    }
+
+}
