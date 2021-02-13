@@ -12,12 +12,14 @@ class IsTypeFilter(val type: Type, exclude: Boolean): ViewFilter(exclude) {
     }
 
     override fun accepts(item: Item): Boolean {
-        return when (type) {
+        val result: Boolean = when (type) {
             Type.Image -> item is ImageItem
             Type.Video -> item is VideoItem
             Type.Group -> item is GroupItem
             Type.File -> item is FileItem
         }
+
+        return if (exclude) !result else result
     }
 
 }
