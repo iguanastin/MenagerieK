@@ -386,13 +386,27 @@ class MyApp : App(MainView::class, Styles::class) {
         val first = expandGroups(root.itemGrid.selected)
         val second = if (event.isAltDown) expandGroups(menagerie.items) else first
 
-        val pairs = if (contextPrefs.getBoolean("cuda", defaultCUDAEnabled)) {
-            CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence).toFloat(), 100000)
-        } else {
-            CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence))
+        val progress = ProgressDialog(header = "Finding duplicates", message = "${first.size} against ${second.size} items")
+        root.root.add(progress)
+
+        thread(start = true, isDaemon = true, name = "DuplicateFinder") {
+            try {
+                val pairs = if (contextPrefs.getBoolean("cuda", defaultCUDAEnabled)) {
+                    CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence).toFloat(), 100000)
+                } else {
+                    CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence))
+                }
+                if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
+
+                runOnUIThread {
+                    progress.close()
+                    root.root.add(DuplicateResolverDialog(pairs.asObservable()))
+                }
+            } catch (e: Exception) {
+                log.error("Error while finding duplicates", e)
+                runOnUIThread { progress.close() }
+            }
         }
-        if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
-        root.root.add(DuplicateResolverDialog(pairs.asObservable()))
     }
 
     private fun downloadDragDropUtility(url: String) {
