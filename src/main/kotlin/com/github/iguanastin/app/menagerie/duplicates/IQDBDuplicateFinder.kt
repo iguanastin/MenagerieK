@@ -25,6 +25,7 @@ import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
 import java.util.stream.Collectors
 import javax.imageio.ImageIO
+import javax.json.Json
 
 
 class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicateFinder() {
@@ -86,6 +87,26 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
     }
 
     private fun getSourceImageUrl(source: String): String? {
+        if (source.contains("danbooru", true)) {
+            val get = HttpGet("$source.json")
+            client!!.execute(get).use { response ->
+                if (response.statusLine.statusCode == 200) {
+                    response.entity.content.use { content ->
+                        Json.createReader(InputStreamReader(content)).use {
+                            val json = it.readObject()
+                            if (json.getBoolean("success", true)) {
+                                return json.getString("file_url")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return scrapeSourceImageUrl(source)
+    }
+
+    private fun scrapeSourceImageUrl(source: String): String? {
         val get = HttpGet(source)
         client!!.execute(get).use { response ->
             if (response.statusLine.statusCode == 200) {
