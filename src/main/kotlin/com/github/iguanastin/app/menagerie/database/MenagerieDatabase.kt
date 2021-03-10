@@ -11,6 +11,7 @@ import java.io.File
 import java.sql.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -24,7 +25,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val migrations: List<DatabaseMigration> = listOf(InitializeDatabaseV8(), MigrateDatabase8To9())
     }
 
-    val db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
+    var db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
     private val preparedCache: MutableMap<String, PreparedStatement> = mutableMapOf()
     var genericStatement: Statement = db.createStatement()
         get() {
@@ -35,6 +36,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     var version: Int = retrieveVersion()
 
     private val updateQueue: BlockingQueue<DatabaseUpdate> = LinkedBlockingQueue()
+    private val updaterLock: Semaphore = Semaphore(1, true)
 
     @Volatile
     private var updateThreadRunning: Boolean = false
@@ -47,7 +49,8 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         thread(start = true, name = "Menagerie Database Updater") {
             updateThreadRunning = true
             while (updateThreadRunning) {
-                val update = updateQueue.poll(3, TimeUnit.SECONDS)
+                updaterLock.acquireUninterruptibly()
+                val update = updateQueue.poll(1, TimeUnit.SECONDS)
                 if (!updateThreadRunning) break
                 if (update == null) continue
 
@@ -58,6 +61,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 } catch (e: Exception) {
                     updateErrorHandlers.forEach { it(e) }
                 }
+                updaterLock.release()
             }
 
             log.info("Database updater thread stopped ($url)")
@@ -383,23 +387,48 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         return ps
     }
 
-    /**
-     * NOTE: Long blocking call
-     */
-    fun closeAndCompress() {
+    fun backupDatabase() {
+        log.info("Shutting down database for backup...")
+        updaterLock.acquireUninterruptibly()
+
+        closeAndCompress(false)
+
+        // TODO: Backup the database file
+
+        log.info("Restarting database connection...")
+        db = DriverManager.getConnection("jdbc:h2:$url", user, password)
+        genericStatement = db.createStatement()
+
+        updaterLock.release()
+        log.info("Finished backing up database")
+    }
+
+    private fun closeAndCompress(stopUpdater: Boolean) {
         log.info("Shutting down database with defrag...")
         val t = System.currentTimeMillis()
         genericStatement.execute("SHUTDOWN DEFRAG;")
         log.info("Finished defragging database in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
-        close()
+        close(stopUpdater)
+    }
+
+    /**
+     * NOTE: Long blocking call
+     */
+    fun closeAndCompress() {
+        closeAndCompress(true)
+    }
+
+    private fun close(stopUpdater: Boolean) {
+        preparedCache.values.forEach { ps -> ps.close() }
+        preparedCache.clear()
+        genericStatement.close()
+        db.close()
+        updateThreadRunning = !stopUpdater
+        log.info("Closed database manager ($url)")
     }
 
     override fun close() {
-        preparedCache.values.forEach { ps -> ps.close() }
-        genericStatement.close()
-        db.close()
-        updateThreadRunning = false
-        log.info("Closed database manager ($url)")
+        close(true)
     }
 
 }
