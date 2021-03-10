@@ -52,12 +52,24 @@ class MyApp : App(MainView::class, Styles::class) {
         const val prefsKeyDBURL = "db_url"
         const val prefsKeyDBUser = "db_user"
         const val prefsKeyDBPass = "db_pass"
+        const val prefsConfidenceKey = "confidence"
+        const val prefsEnableCudaKey = "cuda"
+        const val prefsAPIKey = "api"
+        const val prefsAPIPortKey = "api_port"
+        const val prefsDownloadsKey = "downloads"
+        const val prefsMaximizedKey = "maximized"
+        const val prefsWidthKey = "width"
+        const val prefsHeightKey = "height"
+        const val prefsXKey = "x"
+        const val prefsYKey = "y"
 
+        const val defaultAPIPort = 54321
         const val defaultConfidence = 0.95
         const val defaultDatabaseUrl = "~/menagerie"
         const val defaultDatabaseUser = "sa"
         const val defaultDatabasePassword = ""
         const val defaultCUDAEnabled = false
+        const val defaultAPIEnabled = true
         val defaultDownloadsPath: String? = null
     }
 
@@ -74,6 +86,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     override fun start(stage: Stage) {
         initInterProcessCommunicator()
+
         handleParameters()
 
         super.start(stage)
@@ -82,13 +95,16 @@ class MyApp : App(MainView::class, Styles::class) {
         log.info("Starting Menagerie")
         initMainStageProperties(stage)
         initViewControls()
-
         loadMenagerie(stage, contextPrefs.get(prefsKeyDBURL, defaultDatabaseUrl), contextPrefs.get(prefsKeyDBUser, defaultDatabaseUser), contextPrefs.get(prefsKeyDBPass, defaultDatabasePassword)) { context ->
             this.context = context
 
             context.database.updateErrorHandlers.add { e ->
                 // TODO show error to user
                 log.error("Error occurred while updating database", e)
+            }
+
+            if (contextPrefs.getBoolean(prefsAPIKey, defaultAPIEnabled)) {
+                context.api.start(contextPrefs.getInt(prefsAPIPortKey, defaultAPIPort))
             }
 
             purgeZombieTags(context.menagerie)
@@ -143,7 +159,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun handleParameters() {
         if ("--reset" in parameters.unnamed) {
-            contextPrefs.clear()
+            context?.prefs?.clear()
             uiPrefs.clear()
         }
 
@@ -178,7 +194,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
         context.importer.afterEach.add { job ->
             val item = job.item ?: return@add
-            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), context.menagerie.items, contextPrefs.getDouble("confidence", defaultConfidence), false)
+            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), context.menagerie.items, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence), false)
 
             runOnUIThread { root.similar.addAll(0, similar.filter { it !in root.similar }) }
         }
@@ -391,10 +407,10 @@ class MyApp : App(MainView::class, Styles::class) {
 
         thread(start = true, isDaemon = true, name = "DuplicateFinder") {
             try {
-                val pairs = if (contextPrefs.getBoolean("cuda", defaultCUDAEnabled)) {
-                    CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence).toFloat(), 100000)
+                val pairs = if (contextPrefs.getBoolean(prefsEnableCudaKey, defaultCUDAEnabled)) {
+                    CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence).toFloat(), 100000)
                 } else {
-                    CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble("confidence", defaultConfidence))
+                    CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence))
                 }
                 if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
 
@@ -418,7 +434,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
 
-        val folderPath = contextPrefs.get("downloads", defaultDownloadsPath)
+        val folderPath = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
 
         if (folderPath.isNullOrBlank()) {
             val dc = DirectoryChooser()
@@ -469,22 +485,22 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             if (shiftDown) {
                 val dc = DirectoryChooser()
-                val dir = contextPrefs.get("downloads", defaultDownloadsPath)
+                val dir = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
                 if (dir != null) dc.initialDirectory = File(dir)
                 dc.title = "Import directory"
                 val folder = dc.showDialog(root.currentWindow)
                 if (folder != null) {
-                    contextPrefs.put("downloads", folder.parent)
+                    contextPrefs.put(prefsDownloadsKey, folder.parent)
                     importFilesDialog(listOf(folder))
                 }
             } else {
                 val fc = FileChooser()
-                val dir = contextPrefs.get("downloads", defaultDownloadsPath)
+                val dir = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
                 if (dir != null) fc.initialDirectory = File(dir)
                 fc.title = "Import files"
                 val files = fc.showOpenMultipleDialog(root.currentWindow)
                 if (!files.isNullOrEmpty()) {
-                    contextPrefs.put("downloads", files.first().parent)
+                    contextPrefs.put(prefsDownloadsKey, files.first().parent)
                     importFilesDialog(files)
                 }
             }
@@ -621,7 +637,7 @@ class MyApp : App(MainView::class, Styles::class) {
                             val importer = MenagerieImporter(menagerie)
                             runOnUIThread { progress.close() }
 
-                            after?.invoke(MenagerieContext(menagerie, importer, database))
+                            after?.invoke(MenagerieContext(menagerie, importer, database, contextPrefs))
                         } catch (e: MenagerieDatabaseException) {
                             e.printStackTrace()
                             runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
@@ -672,34 +688,34 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initMainStageProperties(stage: Stage) {
         // Maximized
-        stage.isMaximized = uiPrefs.getBoolean("maximized", false)
+        stage.isMaximized = uiPrefs.getBoolean(prefsMaximizedKey, false)
         stage.maximizedProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putBoolean("maximized", newValue)
+            uiPrefs.putBoolean(prefsMaximizedKey, newValue)
         }
 
         // Width
-        stage.width = uiPrefs.getDouble("width", 600.0)
+        stage.width = uiPrefs.getDouble(prefsWidthKey, 600.0)
         stage.widthProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble("width", newValue.toDouble())
+            uiPrefs.putDouble(prefsWidthKey, newValue.toDouble())
         }
 
         // Height
-        stage.height = uiPrefs.getDouble("height", 400.0)
+        stage.height = uiPrefs.getDouble(prefsHeightKey, 400.0)
         stage.heightProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble("height", newValue.toDouble())
+            uiPrefs.putDouble(prefsHeightKey, newValue.toDouble())
         }
 
         // Screen position
         val screen = Screen.getPrimary().visualBounds
         // X
-        stage.x = uiPrefs.getDouble("x", (screen.maxX + screen.minX) / 2)
+        stage.x = uiPrefs.getDouble(prefsXKey, (screen.maxX + screen.minX) / 2)
         stage.xProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble("x", newValue.toDouble())
+            uiPrefs.putDouble(prefsXKey, newValue.toDouble())
         }
         // Y
-        stage.y = uiPrefs.getDouble("y", (screen.maxY + screen.minY) / 2)
+        stage.y = uiPrefs.getDouble(prefsYKey, (screen.maxY + screen.minY) / 2)
         stage.yProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble("y", newValue.toDouble())
+            uiPrefs.putDouble(prefsYKey, newValue.toDouble())
         }
     }
 
