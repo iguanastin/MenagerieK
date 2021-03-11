@@ -51,16 +51,22 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             while (updateThreadRunning) {
                 updaterLock.acquireUninterruptibly()
                 val update = updateQueue.poll(1, TimeUnit.SECONDS)
-                if (!updateThreadRunning) break
-                if (update == null) continue
 
-                log.debug { "Database update: $update" }
-
-                try {
-                    update.sync(this)
-                } catch (e: Exception) {
-                    updateErrorHandlers.forEach { it(e) }
+                if (!updateThreadRunning) {
+                    updaterLock.release()
+                    break
                 }
+
+                if (update != null) {
+                    log.debug { "Database update: $update" }
+
+                    try {
+                        update.sync(this)
+                    } catch (e: Exception) {
+                        updateErrorHandlers.forEach { it(e) }
+                    }
+                }
+
                 updaterLock.release()
             }
 

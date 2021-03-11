@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
-class ImageScalerThread : Thread() {
+class ImageScalerThread : Thread("Image Scaler") {
 
     @Volatile
     private var running = false
