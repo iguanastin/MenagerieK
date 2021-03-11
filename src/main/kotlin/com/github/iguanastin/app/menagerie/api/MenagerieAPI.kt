@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit
 import javax.activation.MimetypesFileTypeMap
 import javax.imageio.ImageIO
 import kotlin.collections.HashMap
+import kotlin.concurrent.thread
 import kotlin.math.ceil
 
 private val log = KotlinLogging.logger {}
@@ -58,7 +59,9 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         log.info("Starting API server on port: $port")
         this.port = port
         server = HttpServer.create(InetSocketAddress(port), 0).apply {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()) {
+                thread(isDaemon = true, name = "API executor") { it.run() }
+            }
             createContext("/").handler = HttpHandler { exchange: HttpExchange -> handleRequest(exchange) }
             start()
         }
