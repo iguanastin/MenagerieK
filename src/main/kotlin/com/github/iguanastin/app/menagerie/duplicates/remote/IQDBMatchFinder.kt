@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.duplicates
+package com.github.iguanastin.app.menagerie.duplicates.remote
 
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.ImageItem
@@ -6,7 +6,6 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Thumbnail
 import javafx.embed.swing.SwingFXUtils
 import org.apache.http.client.HttpResponseException
-import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.mime.FormBodyPartBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
@@ -25,10 +24,9 @@ import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
 import java.util.stream.Collectors
 import javax.imageio.ImageIO
-import javax.json.Json
 
 
-class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicateFinder() {
+class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
 
     private val url = "https://iqdb.org"
 
@@ -37,9 +35,6 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
             if (field == null) field = HttpClientBuilder.create().build()
             return field
         }
-
-    @Volatile
-    var isClosed: Boolean = false
 
 
     override fun findMatches(set: OnlineMatchSet) {
@@ -72,68 +67,18 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
             val sources = element.select("a").map { fixLink(it.attr("href")) }
             val thumbUrl = url + element.selectFirst("img")?.attr("src")
 
-            val res = rows[rows.lastIndex - 1].selectFirst("td").ownText().substringBefore(' ')
+            val res = rows[rows.lastIndex - 1].selectFirst("td").ownText().substringBefore(' ').replace('×', 'x')
             val sim = rows[rows.lastIndex].selectFirst("td").ownText().substringBefore(' ')
             val details = "$res - $sim"
 
             for (source in sources) {
                 val sourceName = source.substring(8).substringBefore('/')
 
-                matches.add(OnlineMatch(source, getSourceImageUrl(source), sourceName, thumbUrl, details))
+                matches.add(OnlineMatch(source, thumbUrl, sourceName, details))
             }
         }
 
         return matches
-    }
-
-    private fun getSourceImageUrl(source: String): String? {
-        if (source.contains("danbooru", true)) {
-            val get = HttpGet("$source.json")
-            client!!.execute(get).use { response ->
-                if (response.statusLine.statusCode == 200) {
-                    response.entity.content.use { content ->
-                        Json.createReader(InputStreamReader(content)).use {
-                            val json = it.readObject()
-                            if (json.getBoolean("success", true)) {
-                                return json.getString("file_url")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return scrapeSourceImageUrl(source)
-    }
-
-    private fun scrapeSourceImageUrl(source: String): String? {
-        val get = HttpGet(source)
-        client!!.execute(get).use { response ->
-            if (response.statusLine.statusCode == 200) {
-                response.entity.content.use { content ->
-                    val result = BufferedReader(InputStreamReader(content)).lines().collect(Collectors.joining("\n"))
-                    val doc = Jsoup.parse(result)
-
-                    if (source.contains("danbooru", true)) {
-                        val e = doc.selectFirst("section#post-information")?.selectFirst("li:contains(Size:)")
-                        if (e == null || e.children().isEmpty()) return null
-                        return e.child(0)?.attr("href")
-                    } else if (source.contains("gelbooru", true) || source.contains("yande.re", true)) {
-                        return doc.selectFirst("meta[property=og:image]")?.attr("content")
-                    } else if (source.contains("e-shuushuu", true)) {
-                        val e = doc.selectFirst("a.thumb_image") ?: return null
-                        return "https://e-shuushuu.net" + e.attr("href")
-                    } else if (source.contains("sankakucomplex", true)) {
-                        val e = doc.selectFirst("meta[property=og:image]") ?: return null
-                        return "http:" + e.attr("content")
-                    } else {
-                        return null
-                    }
-                }
-            } else {
-                return null
-            }
-        }
     }
 
     private fun fixLink(url: String): String {
@@ -206,9 +151,9 @@ class IQDBDuplicateFinder(client: CloseableHttpClient? = null) : OnlineDuplicate
         }
     }
 
-    fun close() {
+    override fun close() {
         client?.close()
-        isClosed = true
+        super.close()
     }
 
 }

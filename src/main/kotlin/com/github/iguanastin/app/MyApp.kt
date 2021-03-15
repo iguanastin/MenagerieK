@@ -4,9 +4,9 @@ import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
-import com.github.iguanastin.app.menagerie.duplicates.CPUDuplicateFinder
-import com.github.iguanastin.app.menagerie.duplicates.CUDADuplicateFinder
-import com.github.iguanastin.app.menagerie.duplicates.OnlineMatchSet
+import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
+import com.github.iguanastin.app.menagerie.duplicates.local.CUDADuplicateFinder
+import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter

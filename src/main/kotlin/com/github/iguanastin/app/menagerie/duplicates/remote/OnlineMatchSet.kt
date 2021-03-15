@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.duplicates
+package com.github.iguanastin.app.menagerie.duplicates.remote
 
 import com.github.iguanastin.app.menagerie.model.Item
 import javafx.beans.property.BooleanProperty

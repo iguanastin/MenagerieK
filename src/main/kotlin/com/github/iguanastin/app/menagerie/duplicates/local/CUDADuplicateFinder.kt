@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.duplicates
+package com.github.iguanastin.app.menagerie.duplicates.local
 
 import com.github.iguanastin.app.menagerie.model.*
 import jcuda.Pointer

@@ -1,9 +1,10 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.duplicates.IQDBDuplicateFinder
-import com.github.iguanastin.app.menagerie.duplicates.OnlineMatch
-import com.github.iguanastin.app.menagerie.duplicates.OnlineMatchSet
+import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatch
+import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchFinder
+import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
+import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNaoMatchFinder
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.utils.bytesToPrettyString
@@ -42,14 +43,14 @@ import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
 
-class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
+class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val matcher: OnlineMatchFinder = SauceNaoMatchFinder()) : StackDialog() {
 
     private val factory = Callback<GridView<OnlineMatch>, GridCell<OnlineMatch>> {
         object : GridCell<OnlineMatch>() {
 
             private lateinit var thumbView: ImageView
-            private lateinit var detailsLabel: Label
-            private lateinit var sourceLabel: Label
+            private lateinit var bottomLabel: Label
+            private lateinit var topLabel: Label
 
             init {
                 graphic = stackpane {
@@ -65,12 +66,12 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                             }
                         }
                     }
-                    sourceLabel = label {
+                    topLabel = label {
                         padding = insets(5.0)
                         stackpaneConstraints { alignment = Pos.TOP_LEFT }
                         effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
                     }
-                    detailsLabel = label {
+                    bottomLabel = label {
                         padding = insets(5.0)
                         stackpaneConstraints { alignment = Pos.BOTTOM_RIGHT }
                         effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
@@ -78,15 +79,12 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                 }
 
                 addEventHandler(MouseEvent.MOUSE_PRESSED) { event ->
-                    if (event.button == MouseButton.SECONDARY) {
-                        event.consume()
-                        if (item != null) Desktop.getDesktop().browse(URI(item.sourceUrl))
-                    } else if (event.button == MouseButton.PRIMARY) {
-                        event.consume()
-                        if (item != null) {
-                            this@SimilarOnlineDialog.parent.add(CompareSimilarOnlineDialog(viewing!!.item, item))
-                        }
+                    if (event.button == MouseButton.PRIMARY) {
+                        // TODO open in WebView
+                    } else {
+                        if (item != null) Desktop.getDesktop().browse(URI(item!!.sourceUrl))
                     }
+                    event.consume()
                 }
             }
 
@@ -94,16 +92,15 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                 super.updateItem(item, empty)
 
                 thumbView.image = if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true, true)
-                detailsLabel.text = item?.shortDetails
-                sourceLabel.text = item?.sourceName
+                bottomLabel.text = item?.bottomText
+                topLabel.text = item?.topText
             }
 
         }
     }
 
 
-    private val duper = IQDBDuplicateFinder()
-    private val duperQueue: BlockingQueue<OnlineMatchSet> = LinkedBlockingQueue()
+    private val matchQueue: BlockingQueue<OnlineMatchSet> = LinkedBlockingQueue()
 
     private val viewingProperty: ObjectProperty<OnlineMatchSet?> = SimpleObjectProperty(null)
     private var viewing: OnlineMatchSet?
@@ -117,6 +114,8 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
     private lateinit var loadingIndicator: ProgressIndicator
     private lateinit var indexLabel: Label
     private lateinit var refreshButton: Button
+    private lateinit var leftButton: Button
+    private lateinit var rightButton: Button
 
 
     init {
@@ -155,7 +154,7 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
 
                         if (viewing != null && viewing.isFinished) {
                             viewing.reset()
-                            duperQueue.put(viewing)
+                            matchQueue.put(viewing)
                         }
                     }
                 }
@@ -185,14 +184,16 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                 alignment = Pos.CENTER
                 prefWidth = 0.0
 
-                button("<") {
+                leftButton = button("<") {
+                    isDisable = true
                     onAction = EventHandler { event ->
                         event.consume()
                         previous()
                     }
                 }
                 indexLabel = label("N/A")
-                button(">") {
+                rightButton = button(">") {
+                    isDisable = true
                     onAction = EventHandler { event ->
                         event.consume()
                         next()
@@ -220,7 +221,7 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
             }
         }
 
-        Platform.runLater { initDuperThread() }
+        Platform.runLater { initMatcherThread() }
     }
 
     private fun initViewingListener() {
@@ -255,7 +256,7 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                 thread(start = true, isDaemon = true) {
                     val img = image(item.file)
                     runOnUIThread {
-                        if (viewing == newValue) yourItemDetails.text = "${item.file.name}\n${img.width}x${img.height}\n${bytesToPrettyString(item.file.length())}"
+                        if (viewing == newValue) yourItemDetails.text = "${item.file.name}\n${img.width.toInt()}x${img.height.toInt()}\n${bytesToPrettyString(item.file.length())}"
                     }
                 }
 
@@ -285,6 +286,9 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
                     addAll(newValue.matches)
                 }
             }
+
+            leftButton.isDisable = matches.indexOf(newValue) <= 0
+            rightButton.isDisable = matches.indexOf(newValue) >= matches.size - 1
         }
     }
 
@@ -296,17 +300,17 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
         viewing = matches[(matches.indexOf(viewing) - 1).coerceAtLeast(0)]
     }
 
-    private fun initDuperThread() {
-        matches.forEach { duperQueue.put(it) }
+    private fun initMatcherThread() {
+        matches.forEach { matchQueue.put(it) }
 
-        thread(start = true, isDaemon = true, name = "IQDB Duper") {
-            while (!duper.isClosed) {
-                val match = duperQueue.poll(3, TimeUnit.SECONDS)
-                if (duper.isClosed) break
+        thread(start = true, isDaemon = true, name = "Online Match Finder") {
+            while (!matcher.isClosed) {
+                val match = matchQueue.poll(3, TimeUnit.SECONDS)
+                if (matcher.isClosed) break
                 if (match == null) continue
 
                 try {
-                    duper.findMatches(match)
+                    matcher.findMatches(match)
                 } catch (e: Exception) {
                     log.error("Error while finding matches", e)
                 }
@@ -317,7 +321,7 @@ class SimilarOnlineDialog(val matches: List<OnlineMatchSet>) : StackDialog() {
     override fun close() {
         super.close()
 
-        duper.close()
+        matcher.close()
     }
 
 }
