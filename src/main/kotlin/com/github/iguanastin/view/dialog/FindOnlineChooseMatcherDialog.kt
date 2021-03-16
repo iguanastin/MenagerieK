@@ -5,10 +5,17 @@ import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNAOMatchFinder
 import javafx.event.EventHandler
 import javafx.geometry.Pos
+import javafx.scene.control.Button
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import tornadofx.*
 
 class FindOnlineChooseMatcherDialog(private val matches: List<OnlineMatchSet>, var onCancel: () -> Unit = {}): StackDialog() {
+
+    private lateinit var sauceNAOButton: Button
+    private lateinit var iqdbButton: Button
+
 
     init {
         root.graphic = VBox(10.0).apply {
@@ -26,7 +33,7 @@ class FindOnlineChooseMatcherDialog(private val matches: List<OnlineMatchSet>, v
             }
 
             vbox(10.0) {
-                button("SauceNAO") {
+                sauceNAOButton = button("SauceNAO") {
                     maxWidth = Double.MAX_VALUE
                     style { padding = box(10.px) }
                     onAction = EventHandler { event ->
@@ -36,7 +43,7 @@ class FindOnlineChooseMatcherDialog(private val matches: List<OnlineMatchSet>, v
                         parent.add(SimilarOnlineDialog(matches, SauceNAOMatchFinder()))
                     }
                 }
-                button("IQDB") {
+                iqdbButton = button("IQDB") {
                     maxWidth = Double.MAX_VALUE
                     style { padding = box(10.px) }
                     onAction = EventHandler { event ->
@@ -57,6 +64,16 @@ class FindOnlineChooseMatcherDialog(private val matches: List<OnlineMatchSet>, v
                         onCancel()
                     }
                 }
+            }
+        }
+
+        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
+            if (event.code == KeyCode.DIGIT1) {
+                sauceNAOButton.fire()
+                event.consume()
+            } else if (event.code == KeyCode.DIGIT2) {
+                iqdbButton.fire()
+                event.consume()
             }
         }
     }
