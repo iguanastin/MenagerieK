@@ -294,7 +294,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
             if (event.code == KeyCode.F && event.isShortcutDown && event.isShiftDown && !event.isAltDown) {
                 event.consume()
-                root.root.add(SimilarOnlineDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
+                root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
             }
             if (event.code == KeyCode.Z && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
                 event.consume()

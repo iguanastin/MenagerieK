@@ -26,7 +26,7 @@ import java.util.stream.Collectors
 import javax.imageio.ImageIO
 
 
-class SauceNaoMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
+class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
 
     private val url = "https://saucenao.com"
 

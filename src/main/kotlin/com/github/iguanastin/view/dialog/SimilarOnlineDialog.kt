@@ -4,7 +4,7 @@ import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatch
 import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchFinder
 import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
-import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNaoMatchFinder
+import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNAOMatchFinder
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.utils.bytesToPrettyString
@@ -43,7 +43,7 @@ import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
 
-class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val matcher: OnlineMatchFinder = SauceNaoMatchFinder()) : StackDialog() {
+class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val matcher: OnlineMatchFinder = SauceNAOMatchFinder()) : StackDialog() {
 
     private val factory = Callback<GridView<OnlineMatch>, GridCell<OnlineMatch>> {
         object : GridCell<OnlineMatch>() {
