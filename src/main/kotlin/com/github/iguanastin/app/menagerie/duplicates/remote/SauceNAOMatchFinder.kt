@@ -75,7 +75,7 @@ class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFind
             }
 
             for (source in sources) {
-                val sourceName = source.substring(8).substringBefore('/')
+                val sourceName = if (source.matches(Regex("^https?://.*"))) source.substringAfter("://").substringBefore('/') else source.substringBefore('/')
 
                 var add = true
                 for (match in matches) {
