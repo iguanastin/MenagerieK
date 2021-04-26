@@ -38,7 +38,9 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.registry.Registry
 import java.rmi.server.ExportException
 import java.rmi.server.UnicastRemoteObject
+import java.util.*
 import java.util.prefs.Preferences
+import kotlin.collections.ArrayList
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -83,6 +85,8 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private lateinit var root: MainView
 
+    private val preLoadImportQueue: MutableList<String> = mutableListOf()
+
 
     override fun start(stage: Stage) {
         initInterProcessCommunicator()
@@ -113,12 +117,8 @@ class MyApp : App(MainView::class, Styles::class) {
             runOnUIThread {
                 root.navigateForward(MenagerieView(context.menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
 
-                // Import url if in parameter
-                if (parameters.named.containsKey("import")) downloadDragDropUtility(if (parameters.named["import"]!!.startsWith("menagerie:")) {
-                    parameters.named["import"]!!.substringAfter(':')
-                } else {
-                    parameters.named["import"]!!
-                })
+                log.info("Flushing ${preLoadImportQueue.size} urls to import queue")
+                preLoadImportQueue.forEach { downloadFromWebUtility(it) }
             }
         }
     }
@@ -128,7 +128,12 @@ class MyApp : App(MainView::class, Styles::class) {
             registry = LocateRegistry.createRegistry(1099)
             communicator = object : MenagerieCommunicator {
                 override fun importUrl(url: String) {
-                    runOnUIThread { downloadDragDropUtility(url) }
+                    if (context != null) {
+                        runOnUIThread { downloadFromWebUtility(url) }
+                    } else {
+                        log.info("Storing url for import once app is ready: $url")
+                        preLoadImportQueue.add(url)
+                    }
                 }
 
                 override fun bringToFront() {
@@ -136,14 +141,18 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             }
             registry.bind(communicatorName, UnicastRemoteObject.exportObject(communicator, 0))
+
+            // Import url if in parameter
+            if (parameters.named.containsKey("import")) {
+                communicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
+            }
         } catch (e: ExportException) {
             try {
                 registry = LocateRegistry.getRegistry(1099)
                 val communicator = (registry.lookup(communicatorName) as MenagerieCommunicator)
 
-                var url = parameters.named["import"]
+                val url = parameters.named["import"]?.removePrefix("menagerie:")
                 if (url != null) {
-                    if (url.startsWith("menagerie:")) url = url.substringAfter(':')
                     communicator.importUrl(url)
                 } else {
                     communicator.bringToFront()
@@ -323,7 +332,7 @@ class MyApp : App(MainView::class, Styles::class) {
         root.root.onDragDropped = EventHandler { event ->
             if (context != null && event.isAccepted) {
                 if (event.dragboard.url?.startsWith("http") == true) {
-                    downloadDragDropUtility(event.dragboard.url)
+                    downloadFromWebUtility(event.dragboard.url)
                 }
                 if (event.dragboard.files?.isNotEmpty() == true) {
                     importFilesDialog(event.dragboard.files)
@@ -425,7 +434,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun downloadDragDropUtility(url: String) {
+    private fun downloadFromWebUtility(url: String) {
         val importer = context?.importer ?: return
 
         val download = { folder: File? ->
