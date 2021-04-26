@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Thumbnail
 import javafx.embed.swing.SwingFXUtils
+import mu.KotlinLogging
 import org.apache.http.client.HttpResponseException
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.mime.FormBodyPartBuilder
@@ -25,6 +26,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.stream.Collectors
 import javax.imageio.ImageIO
 
+private val log = KotlinLogging.logger {}
 
 class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
 
@@ -38,17 +40,24 @@ class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder()
 
 
     override fun findMatches(set: OnlineMatchSet) {
-        if (set.isFinished) return
+        try {
+            set.reset()
+            set.state = OnlineMatchSet.State.LOADING
 
-        val doc = post(set.item as FileItem)
-        if (doc == null) {
-            set.isFinished = true
-            return
+            val doc = post(set.item as FileItem)
+            if (doc == null) {
+                set.state = OnlineMatchSet.State.FINISHED
+                return
+            }
+            val matches = findMatchesInDocument(doc)
+
+            set.matches = matches
+            set.state = OnlineMatchSet.State.FINISHED
+        } catch (t: Throwable) {
+            log.error("Exception while finding matches", t)
+            set.error = t
+            set.state = OnlineMatchSet.State.FAILED
         }
-        val matches = findMatchesInDocument(doc)
-
-        set.matches = matches
-        set.isFinished = true
     }
 
     private fun findMatchesInDocument(doc: Document): List<OnlineMatch> {

@@ -116,6 +116,7 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
     private lateinit var refreshButton: Button
     private lateinit var leftButton: Button
     private lateinit var rightButton: Button
+    private lateinit var errorText: Label
 
 
     init {
@@ -152,7 +153,7 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                         event.consume()
                         val viewing = viewing
 
-                        if (viewing != null && viewing.isFinished) {
+                        if (viewing != null) {
                             viewing.reset()
                             matchQueue.put(viewing)
                         }
@@ -176,6 +177,9 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                     maxWidth = 50.0
                     maxHeight = 50.0
                     progress = -1.0
+                }
+                errorText = label {
+                    isWrapText = true
                 }
             }
 
@@ -225,25 +229,25 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
     }
 
     private fun initViewingListener() {
-        val finishedListener = { _: Observable ->
+        val stateListener = { _: Observable? ->
             runOnUIThread {
-                if (viewing?.isFinished == true) {
-                    loadingIndicator.hide()
+                matchGrid.items.clear()
+
+                if (viewing?.state == OnlineMatchSet.State.FAILED) {
+                    errorText.show()
+                    errorText.text = " !!! --- FAILED --- !!!\n\n${viewing?.error?.localizedMessage}";
                 } else {
-                    loadingIndicator.show()
+                    errorText.hide()
                 }
-
-                refreshButton.isDisable = viewing == null || viewing?.isFinished == false
-
-                matchGrid.items.apply {
-                    clear()
-                    if (viewing != null) addAll(viewing!!.matches)
-                }
+                if (viewing?.state == OnlineMatchSet.State.FINISHED) matchGrid.items.addAll(viewing!!.matches)
+                if (viewing?.state in arrayOf(OnlineMatchSet.State.LOADING, OnlineMatchSet.State.WAITING)) loadingIndicator.show() else loadingIndicator.hide()
+                refreshButton.isDisable = viewing == null || viewing?.state in arrayOf(OnlineMatchSet.State.LOADING, OnlineMatchSet.State.WAITING)
             }
         }
 
         viewingProperty.addListener { _, oldValue, newValue ->
-            oldValue?.finishedProperty?.removeListener(finishedListener)
+            oldValue?.stateProperty?.removeListener(stateListener)
+            newValue?.stateProperty?.addListener(stateListener)
 
             val item = newValue?.item
 
@@ -271,24 +275,10 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                 "${matches.indexOf(viewing) + 1}/${matches.size}"
             }
 
-            if (newValue?.isFinished == true) {
-                loadingIndicator.hide()
-            } else {
-                newValue?.finishedProperty?.addListener(finishedListener)
-                loadingIndicator.show()
-            }
-
-            refreshButton.isDisable = newValue == null || !newValue.isFinished
-
-            matchGrid.items.apply {
-                clear()
-                if (newValue != null) {
-                    addAll(newValue.matches)
-                }
-            }
-
             leftButton.isDisable = matches.indexOf(newValue) <= 0
             rightButton.isDisable = matches.indexOf(newValue) >= matches.size - 1
+
+            stateListener(null)
         }
     }
 
@@ -311,8 +301,10 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
 
                 try {
                     matcher.findMatches(match)
-                } catch (e: Exception) {
-                    log.error("Error while finding matches", e)
+                } catch (t: Throwable) {
+                    log.error("Error while finding matches", t)
+                    match.error = t
+                    match.state = OnlineMatchSet.State.FAILED
                 }
             }
         }
