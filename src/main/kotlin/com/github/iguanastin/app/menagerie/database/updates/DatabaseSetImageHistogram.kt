@@ -1,8 +1,8 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
+import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.model.Histogram
 import com.github.iguanastin.app.menagerie.model.ImageItem
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetImageHistogram(private val itemID: Int, private val histogram: Histogram?): DatabaseUpdate() {
 
@@ -10,7 +10,7 @@ class DatabaseSetImageHistogram(private val itemID: Int, private val histogram: 
 
 
     override fun sync(db: MenagerieDatabase): Int {
-        val ps = db.getPrepared("DatabaseSetImageHistogram", "UPDATE images SET hist_a=? hist_r=? hist_g=? hist_b=? WHERE id=?;")
+        val ps = db.getPrepared("DatabaseSetImageHistogram", "UPDATE images SET hist_a=?, hist_r=?, hist_g=?, hist_b=? WHERE id=?;")
 
         ps.setBinaryStream(1, histogram?.alphaToInputStream())
         ps.setBinaryStream(2, histogram?.redToInputStream())

@@ -71,4 +71,8 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         super.invalidate()
     }
 
+    override fun replace(with: Item, replaceTags: Boolean): Boolean {
+        return false
+    }
+
 }

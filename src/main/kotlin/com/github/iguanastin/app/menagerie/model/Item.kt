@@ -58,6 +58,10 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
         return img
     }
 
+    fun invalidateThumbnail() {
+        thumbnailCache.clear()
+    }
+
     open fun loadThumbnail(): Image {
         return defaultThumbnail
     }
@@ -83,10 +87,10 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
         }
     }
 
-    fun hasTag(tag: Tag) = tag !in _tags
+    fun hasTag(tag: Tag) = tag in _tags
 
     fun addTag(tag: Tag): Boolean {
-        return if (!invalidated && hasTag(tag)) {
+        return if (!invalidated && !hasTag(tag)) {
             _tags.add(tag)
             true
         } else {
@@ -106,6 +110,21 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
 
     override fun toString(): String {
         return id.toString()
+    }
+
+    open fun replace(with: Item, replaceTags: Boolean): Boolean {
+        if (invalidated || with == this) return false
+
+        if (replaceTags) {
+            _tags.clear()
+            _tags.addAll(with.tags)
+        }
+
+        with.menagerie.removeItem(with)
+
+        invalidateThumbnail()
+
+        return true
     }
 
 }

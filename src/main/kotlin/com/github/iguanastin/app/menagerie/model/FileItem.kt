@@ -63,4 +63,18 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
         super.invalidate()
     }
 
+    override fun replace(with: Item, replaceTags: Boolean): Boolean {
+        if (with !is FileItem) return false
+        if (!super.replace(with, replaceTags)) return false
+
+        val oldFile = file
+
+        md5 = with.md5
+        file = with.file
+
+        oldFile.delete()
+
+        return true
+    }
+
 }

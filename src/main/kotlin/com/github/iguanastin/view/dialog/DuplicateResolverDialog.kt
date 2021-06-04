@@ -1,10 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.model.FileItem
-import com.github.iguanastin.app.menagerie.model.Item
-import com.github.iguanastin.app.menagerie.model.SimilarPair
-import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.view.TagCellFactory
 import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
@@ -18,6 +15,7 @@ import javafx.scene.control.*
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
+import javafx.util.Callback
 import tornadofx.*
 
 class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : StackDialog() {
@@ -29,6 +27,8 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
 
     private lateinit var deleteLeftButton: Button
     private lateinit var deleteRightButton: Button
+    private lateinit var replaceLeftButton: Button
+    private lateinit var replaceRightButton: Button
     private lateinit var prevButton: Button
     private lateinit var notDuplicateButton: ToggleButton
     private lateinit var nextButton: Button
@@ -38,6 +38,31 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
     private lateinit var leftTags: ListView<Tag>
     private lateinit var rightTags: ListView<Tag>
     private lateinit var topPane: SplitPane
+
+    private val leftTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
+        val cell = TagCellFactory.factory.call(it)
+        cell.contextmenu {
+            item("Remove") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj1?.removeTag(cell.item)
+                }
+            }
+        }
+        cell
+    }
+    private val rightTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
+        val cell = TagCellFactory.factory.call(it)
+        cell.contextmenu {
+            item("Remove") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj2?.removeTag(cell.item)
+                }
+            }
+        }
+        cell
+    }
 
     init {
         addClass(Styles.dialogPane)
@@ -52,7 +77,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                             leftTags = listview {
                                 opacity = 0.75
                                 isFocusTraversable = false
-                                cellFactory = TagCellFactory.factory
+                                cellFactory = leftTagCellFactory
                                 maxWidth = 200.0
                                 minWidth = 200.0
                             }
@@ -67,7 +92,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                             rightTags = listview {
                                 opacity = 0.75
                                 isFocusTraversable = false
-                                cellFactory = TagCellFactory.factory
+                                cellFactory = rightTagCellFactory
                                 maxWidth = 200.0
                                 minWidth = 200.0
                             }
@@ -80,11 +105,20 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             borderpane {
                 padding = insets(10.0)
                 left {
-                    deleteLeftButton = button("Delete") {
-                        onAction = EventHandler { event ->
-                            val pair = displaying ?: return@EventHandler
-                            event.consume()
-                            delete(pair, true)
+                    hbox(5) {
+                        deleteLeftButton = button("Delete") {
+                            onAction = EventHandler { event ->
+                                val pair = displaying ?: return@EventHandler
+                                event.consume()
+                                delete(pair, true)
+                            }
+                        }
+                        replaceLeftButton = button("Replace") {
+                            onAction = EventHandler { event ->
+                                val pair = displaying ?: return@EventHandler
+                                event.consume()
+                                pair.obj1.replace(pair.obj2, false)
+                            }
                         }
                     }
                 }
@@ -123,11 +157,20 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                     }
                 }
                 right {
-                    deleteRightButton = button("Delete") {
-                        onAction = EventHandler { event ->
-                            val pair = displaying ?: return@EventHandler
-                            event.consume()
-                            delete(pair, false)
+                    hbox(5) {
+                        replaceRightButton = button("Replace") {
+                            onAction = EventHandler { event ->
+                                val pair = displaying ?: return@EventHandler
+                                event.consume()
+                                pair.obj2.replace(pair.obj1, false)
+                            }
+                        }
+                        deleteRightButton = button("Delete") {
+                            onAction = EventHandler { event ->
+                                val pair = displaying ?: return@EventHandler
+                                event.consume()
+                                delete(pair, false)
+                            }
                         }
                     }
                 }

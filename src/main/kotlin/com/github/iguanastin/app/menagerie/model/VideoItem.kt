@@ -17,4 +17,9 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         return super.loadThumbnail() // TODO generate video thumbnail
     }
 
+    override fun replace(with: Item, replaceTags: Boolean): Boolean {
+        if (with !is VideoItem) return false
+        return super.replace(with, replaceTags)
+    }
+
 }

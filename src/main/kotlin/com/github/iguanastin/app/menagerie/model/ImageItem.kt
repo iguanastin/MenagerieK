@@ -50,4 +50,14 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         return histogram!!.similarityTo(other.histogram!!)
     }
 
+    override fun replace(with: Item, replaceTags: Boolean): Boolean {
+        if (with !is ImageItem) return false
+        if (!super.replace(with, replaceTags)) return false
+
+        histogram = with.histogram
+        noSimilar = with.noSimilar
+
+        return true
+    }
+
 }
