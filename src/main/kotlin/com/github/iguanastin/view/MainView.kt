@@ -77,6 +77,14 @@ class MainView : View("Menagerie") {
 
     val history: ObservableList<ViewHistory> = observableListOf()
 
+    val groupElementSorter: (Item) -> Int? = {
+        if (it is FileItem) {
+            it.elementOf?.items?.indexOf(it)
+        } else {
+            it.id
+        }
+    }
+
     override val root = topenabledstackpane {
         focusingstackpane {
             borderpane {
@@ -451,13 +459,7 @@ class MainView : View("Menagerie") {
     private fun onItemAction(item: Item) {
         if (item is GroupItem) {
             val filter = ElementOfFilter(item, false)
-            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter)) {
-                if (it is FileItem) {
-                    it.elementOf?.items?.indexOf(it)
-                } else {
-                    it.id
-                }
-            })
+            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter), groupElementSorter))
         } else if (item is FileItem) {
             Desktop.getDesktop().open(item.file)
         }
@@ -495,10 +497,51 @@ class MainView : View("Menagerie") {
                         }
                     }
                 }
+                val showInExplorer = item("Show in Explorer") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        val i = itemGrid.selected.firstOrNull()
+                        if (itemGrid.selected.size == 1 && i is FileItem) {
+                            Runtime.getRuntime().exec("explorer.exe /select,${i.file.absolutePath}")
+                        }
+                    }
+                }
+                val goToGroup = item("Go to Group") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        val i = itemGrid.selected.firstOrNull()
+                        if (itemGrid.selected.size == 1 && i is FileItem && i.elementOf != null) {
+                            openGroupsToggle.isSelected = false
+                            shuffleToggle.isSelected = false
+
+                            navigateForward(MenagerieView(i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(ElementOfFilter(null, true))))
+                            itemGrid.select(i.elementOf!!)
+                        }
+                    }
+                }
+                val removeFromGroup = item("Remove from Group") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        val i = itemGrid.selected.firstOrNull()
+                        if (itemGrid.selected.size == 1 && i is FileItem && i.elementOf != null) {
+                            i.elementOf!!.removeItem(i)
+                        }
+                    }
+                }
 
                 onShown = EventHandler { event ->
                     event.consume()
-                    syncGroupTags.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is GroupItem
+                    if (itemGrid.selected.size == 1) {
+                        val i = itemGrid.selected.first()
+
+                        syncGroupTags.isVisible = i is GroupItem
+
+                        if (i is FileItem) {
+                            showInExplorer.isVisible = true
+                            goToGroup.isVisible = i.elementOf != null
+                            removeFromGroup.isVisible = i.elementOf != null
+                        }
+                    }
                 }
             }
         }

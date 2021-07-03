@@ -1,7 +1,10 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.menagerie.model.FileItem
+import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.SimilarPair
+import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.TagCellFactory
 import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
@@ -42,6 +45,12 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
     private val leftTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
         val cell = TagCellFactory.factory.call(it)
         cell.contextmenu {
+            item("Clone to Other") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj2?.addTag(cell.item)
+                }
+            }
             item("Remove") {
                 onAction = EventHandler { event ->
                     event.consume()
@@ -54,6 +63,12 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
     private val rightTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
         val cell = TagCellFactory.factory.call(it)
         cell.contextmenu {
+            item("Clone to Other") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj1?.addTag(cell.item)
+                }
+            }
             item("Remove") {
                 onAction = EventHandler { event ->
                     event.consume()
@@ -273,6 +288,23 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             }
             leftDisplay.item = newValue?.obj1
             rightDisplay.item = newValue?.obj2
+        }
+
+        leftDisplay.contextmenu {
+            item("Clone Tags") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj2?.tags?.forEach { displaying?.obj1?.addTag(it) }
+                }
+            }
+        }
+        rightDisplay.contextmenu {
+            item("Clone Tags from Other") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj1?.tags?.forEach { displaying?.obj2?.addTag(it) }
+                }
+            }
         }
 
         addEventFilter(KeyEvent.KEY_PRESSED) { event ->
