@@ -33,7 +33,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.activation.MimetypesFileTypeMap
 import javax.imageio.ImageIO
-import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
@@ -58,12 +57,16 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
 
         log.info("Starting API server on port: $port")
         this.port = port
-        server = HttpServer.create(InetSocketAddress(port), 0).apply {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()) {
-                thread(isDaemon = true, name = "API executor") { it.run() }
+        try {
+            server = HttpServer.create(InetSocketAddress(port), 0).apply {
+                executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()) {
+                    thread(isDaemon = true, name = "API executor") { it.run() }
+                }
+                createContext("/").handler = HttpHandler { exchange: HttpExchange -> handleRequest(exchange) }
+                start()
             }
-            createContext("/").handler = HttpHandler { exchange: HttpExchange -> handleRequest(exchange) }
-            start()
+        } catch (e: Exception) {
+            log.error("Failed to start HTTP server on port: $port", e)
         }
         log.info("API server finished starting")
 
