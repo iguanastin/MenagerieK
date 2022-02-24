@@ -203,10 +203,17 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
         item.menagerie.removeItem(item)
         if (item is FileItem) item.file.delete()
 
+        displayNextForRemovingItem(pair, item)
+
+        pairs.removeIf { it.contains(item) }
+        updateCountSimilarityLabel(displaying)
+    }
+
+    private fun displayNextForRemovingItem(pair: SimilarPair<Item>, removing: Item) {
         var foundNext = false
         // Find forwards in list
-        for (i in pairs.indexOf(pair) + 1 until pairs.size) {
-            if (!pairs[i].contains(item)) {
+        for (i in (pairs.indexOf(pair) + 1) until pairs.size) {
+            if (!pairs[i].contains(removing)) {
                 displaying = pairs[i]
                 foundNext = true
                 break
@@ -214,8 +221,8 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
         }
         // Find backwards in list
         if (!foundNext) {
-            for (i in pairs.indexOf(pair) - 1 downTo 0) {
-                if (!pairs[i].contains(item)) {
+            for (i in (pairs.indexOf(pair) - 1) downTo 0) {
+                if (!pairs[i].contains(removing)) {
                     displaying = pairs[i]
                     foundNext = true
                     break
@@ -226,8 +233,17 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             displaying = null
             close()
         }
+    }
+
+    private fun markNoDuplicates(pair: SimilarPair<Item>, item: Item) {
+        displayNextForRemovingItem(pair, item)
+
+        pairs.forEach {
+            if (it.contains(item)) it.obj1.menagerie.addNonDupe(it)
+        }
 
         pairs.removeIf { it.contains(item) }
+        updateCountSimilarityLabel(displaying)
     }
 
     private fun initListeners() {
@@ -281,11 +297,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
 
             notDuplicateButton.isSelected = newValue?.obj1?.menagerie?.knownNonDupes?.contains(newValue) == true
 
-            countSimilarityLabel.text = if (newValue == null) {
-                "N/a"
-            } else {
-                "${pairs.indexOf(newValue) + 1}/${pairs.size}: %.2f%%".format(newValue.similarity * 100)
-            }
+            updateCountSimilarityLabel(newValue)
             leftDisplay.item = newValue?.obj1
             rightDisplay.item = newValue?.obj2
         }
@@ -297,12 +309,26 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                     displaying?.obj2?.tags?.forEach { displaying?.obj1?.addTag(it) }
                 }
             }
+            separator()
+            item("No Duplicates") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    markNoDuplicates(displaying!!, displaying!!.obj1)
+                }
+            }
         }
         rightDisplay.contextmenu {
             item("Clone Tags from Other") {
                 onAction = EventHandler { event ->
                     event.consume()
                     displaying?.obj1?.tags?.forEach { displaying?.obj2?.addTag(it) }
+                }
+            }
+            separator()
+            item("No Duplicates") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    markNoDuplicates(displaying!!, displaying!!.obj2)
                 }
             }
         }
@@ -328,6 +354,14 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                 else -> { /* Do nothing */
                 }
             }
+        }
+    }
+
+    private fun updateCountSimilarityLabel(pair: SimilarPair<Item>?) {
+        countSimilarityLabel.text = if (pair == null) {
+            "N/a"
+        } else {
+            "${pairs.indexOf(pair) + 1}/${pairs.size}: %.2f%%".format(pair.similarity * 100)
         }
     }
 
