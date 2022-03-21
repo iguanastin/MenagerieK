@@ -38,9 +38,7 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.registry.Registry
 import java.rmi.server.ExportException
 import java.rmi.server.UnicastRemoteObject
-import java.util.*
 import java.util.prefs.Preferences
-import kotlin.collections.ArrayList
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -642,7 +640,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
                     thread(name = "Menagerie Loader", start = true) {
                         try {
-                            val menagerie = database.loadMenagerie()
+                            val menagerie = database.loadMenagerie { msg -> runOnUIThread { progress.message = msg } }
                             val importer = MenagerieImporter(menagerie)
                             runOnUIThread { progress.close() }
 

@@ -74,15 +74,15 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         }
     }
 
-    fun loadMenagerie(): Menagerie {
+    fun loadMenagerie(statusCallback: ((message: String) -> Unit)? = null): Menagerie {
         log.info("Loading Menagerie from database ($url)")
 
         val menagerie = Menagerie()
 
-        loadTags(menagerie)
-        loadItems(menagerie)
-        loadTagged(menagerie)
-        loadNonDupes(menagerie)
+        loadTags(menagerie, statusCallback)
+        loadItems(menagerie, statusCallback)
+        loadTagged(menagerie, statusCallback)
+        loadNonDupes(menagerie, statusCallback)
 
         attachTo(menagerie)
 
@@ -215,21 +215,30 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         return migration
     }
 
-    private fun loadTags(menagerie: Menagerie) {
+    private fun loadTags(menagerie: Menagerie, statusCallback: ((message: String) -> Unit)? = null) {
         log.info("Loading tags from database")
+        statusCallback?.invoke("Fetching tag data...")
+        var timeSinceStatus: Long = 0
         val t = System.currentTimeMillis()
         var i = 0
         genericStatement.executeQuery("SELECT * FROM tags;").use { rs: ResultSet ->
             while (rs.next()) {
                 menagerie.addTag(Tag(rs.getInt("id"), rs.getNString("name"), color = rs.getNString("color")))
                 i++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $i tags...")
+                }
             }
         }
         log.info("Successfully loaded $i tags from database in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
-    private fun loadItems(menagerie: Menagerie) {
+    private fun loadItems(menagerie: Menagerie, statusCallback: ((message: String) -> Unit)? = null) {
         log.info("Loading items from database")
+        statusCallback?.invoke("Fetching item data (this may take a while)...")
+        var timeSinceStatus: Long = 0
         var millis = System.currentTimeMillis()
         var count = 0
         val images: MutableMap<Int, TempImageV9> = mutableMapOf()
@@ -244,6 +253,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
                 images[rs.getInt("id")] = TempImageV9(rs.getBoolean("no_similar"), histogram)
                 count++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $count images...")
+                }
             }
         }
         log.info("Finished loading $count image items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
@@ -255,6 +269,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             while (rs.next()) {
                 files[rs.getInt("id")] = TempFileV9(rs.getNString("md5"), File(rs.getNString("file")))
                 count++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $count files...")
+                }
             }
         }
         log.info("Finished loading $count file items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
@@ -267,6 +286,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 val id = rs.getInt("id")
                 items[id] = TempItemV9(id, rs.getLong("added"))
                 count++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $count items...")
+                }
             }
         }
         log.info("Finished loading $count items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
@@ -285,11 +309,17 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 }
                 groups[rs.getInt("id")] = TempGroupV9(rs.getNString("title"), ids)
                 count++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $count groups...")
+                }
             }
         }
         log.info("Finished loading $count group items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
 
 
+        statusCallback?.invoke("Mapping item data...")
         millis = System.currentTimeMillis()
         val generatedItems: MutableList<Item> = mutableListOf()
         val groupChildMap: MutableMap<Int, FileItem> = mutableMapOf()
@@ -328,8 +358,10 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Finished generating ${generatedItems.size} loaded items in %.2fs".format((System.currentTimeMillis() - millis) / 1000.0))
     }
 
-    private fun loadTagged(menagerie: Menagerie) {
+    private fun loadTagged(menagerie: Menagerie, statusCallback: ((message: String) -> Unit)? = null) {
         log.info("Loading tag relationships from database")
+        statusCallback?.invoke("Fetching tag-relationship data...")
+        var timeSinceStatus: Long = 0
         val t = System.currentTimeMillis()
         var i = 0
         genericStatement.executeQuery("SELECT * FROM tagged;").use { rs: ResultSet ->
@@ -339,13 +371,20 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 if (tag == null || item == null) continue
                 item.addTag(tag)
                 i++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $i tag relationships...")
+                }
             }
         }
         log.info("Finished loading $i tag relationships in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
-    private fun loadNonDupes(menagerie: Menagerie) {
+    private fun loadNonDupes(menagerie: Menagerie, statusCallback: ((message: String) -> Unit)? = null) {
         log.info("Loading non-dupes from database")
+        statusCallback?.invoke("Fetching non-dupe data...")
+        var timeSinceStatus: Long = 0
         val t = System.currentTimeMillis()
         var i = 0
         genericStatement.executeQuery("SELECT item_1, item_2 FROM non_dupes;").use { rs: ResultSet ->
@@ -355,6 +394,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 if (i1 == null || i2 == null) continue
                 menagerie.addNonDupe(SimilarPair(i1, i2, 1.0))
                 i++
+
+                if (System.currentTimeMillis() - timeSinceStatus > 100) {
+                    timeSinceStatus = System.currentTimeMillis()
+                    statusCallback?.invoke("Loaded $i non-dupes...")
+                }
             }
         }
         log.info("Finished loading $i non-dupes in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
