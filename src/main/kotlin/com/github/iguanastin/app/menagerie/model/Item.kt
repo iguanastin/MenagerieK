@@ -12,7 +12,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     companion object {
         private const val defaultThumbPath: String = "/imgs/default-thumb.png"
         const val thumbnailSize: Double = 150.0
-        val defaultThumbnail: Image by lazy { Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailSize, thumbnailSize, true, true, true) }
+        val defaultThumbnail: Image = Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailSize, thumbnailSize, true, true, true)
     }
 
     private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
