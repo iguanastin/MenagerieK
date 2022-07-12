@@ -546,7 +546,7 @@ class MainView : View("Menagerie") {
                         syncGroupTags.isVisible = i is GroupItem
 
                         if (i is FileItem) {
-                            showInExplorer.isVisible = true
+                            showInExplorer.isVisible = itemGrid.selected.size == 1 && itemGrid.selected[0] is FileItem
                             goToGroup.isVisible = i.elementOf != null
                             removeFromGroup.isVisible = i.elementOf != null
                         }

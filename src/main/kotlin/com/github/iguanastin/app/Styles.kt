@@ -17,6 +17,7 @@ class Styles : Stylesheet() {
         val transparentOverlay by cssclass()
         val dragDropDialog by cssclass()
         val multiSelectButton by cssclass()
+        val tagListCell by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -62,6 +63,11 @@ class Styles : Stylesheet() {
             }
             and(finished) {
                 backgroundColor += c("#242424")
+            }
+        }
+        tagListCell {
+            and(hover) {
+                backgroundColor += c("#194070")
             }
         }
         itemGridView {
