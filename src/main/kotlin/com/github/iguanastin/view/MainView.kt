@@ -3,7 +3,9 @@ package com.github.iguanastin.view
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.*
+import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.expandGroups
+import com.github.iguanastin.app.utils.pasteTagsFromClipboard
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
@@ -515,6 +517,18 @@ class MainView : View("Menagerie") {
                         }
                     }
                 }
+                val copyTagsToClipboard = item("Copy Tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        itemGrid.selected.firstOrNull()?.copyTagsToClipboard()
+                    }
+                }
+                val pasteTagsFromClipboard = item("Paste Tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard()
+                    }
+                }
                 val goToGroup = item("Go to Group") {
                     onAction = EventHandler { event ->
                         event.consume()
@@ -540,17 +554,10 @@ class MainView : View("Menagerie") {
 
                 onShown = EventHandler { event ->
                     event.consume()
-                    if (itemGrid.selected.size == 1) {
-                        val i = itemGrid.selected.first()
-
-                        syncGroupTags.isVisible = i is GroupItem
-
-                        if (i is FileItem) {
-                            showInExplorer.isVisible = itemGrid.selected.size == 1 && itemGrid.selected[0] is FileItem
-                            goToGroup.isVisible = i.elementOf != null
-                            removeFromGroup.isVisible = i.elementOf != null
-                        }
-                    }
+                    syncGroupTags.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is GroupItem
+                    showInExplorer.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem
+                    goToGroup.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem && (itemGrid.selected.first() as FileItem).elementOf != null
+                    removeFromGroup.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem && (itemGrid.selected.first() as FileItem).elementOf != null
                 }
             }
         }

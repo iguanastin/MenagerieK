@@ -5,6 +5,8 @@ import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.SimilarPair
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.utils.copyTagsToClipboard
+import com.github.iguanastin.app.utils.pasteTagsFromClipboard
 import com.github.iguanastin.view.TagCellFactory
 import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
@@ -303,10 +305,22 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
         }
 
         leftDisplay.contextmenu {
-            item("Clone Tags") {
+            item("Clone Tags from Other") {
                 onAction = EventHandler { event ->
                     event.consume()
                     displaying?.obj2?.tags?.forEach { displaying?.obj1?.addTag(it) }
+                }
+            }
+            item("Copy Tags") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj1?.copyTagsToClipboard()
+                }
+            }
+            item("Paste Tags") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj1?.pasteTagsFromClipboard()
                 }
             }
             separator()
@@ -322,6 +336,18 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
                 onAction = EventHandler { event ->
                     event.consume()
                     displaying?.obj1?.tags?.forEach { displaying?.obj2?.addTag(it) }
+                }
+            }
+            item("Copy Tags") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj2?.copyTagsToClipboard()
+                }
+            }
+            item("Paste Tags") {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    displaying?.obj2?.pasteTagsFromClipboard()
                 }
             }
             separator()
