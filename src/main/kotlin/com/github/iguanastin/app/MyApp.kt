@@ -115,8 +115,8 @@ class MyApp : App(MainView::class, Styles::class) {
             runOnUIThread {
                 root.navigateForward(MenagerieView(context.menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
 
-                log.info("Flushing ${preLoadImportQueue.size} urls to import queue")
-                preLoadImportQueue.forEach { downloadFromWebUtility(it) }
+                log.info("Flushing ${preLoadImportQueue.size} urls from pre-load import queue")
+                preLoadImportQueue.forEach { communicator.importUrl(it) }
             }
         }
     }
@@ -127,7 +127,17 @@ class MyApp : App(MainView::class, Styles::class) {
             communicator = object : MenagerieCommunicator {
                 override fun importUrl(url: String) {
                     if (context != null) {
-                        runOnUIThread { downloadFromWebUtility(url) }
+                        val temp = url.split(",")
+
+                        val sanitizedUrl = temp[0]
+
+                        val tags = mutableListOf<Tag>()
+                        temp.subList(1, temp.size).forEach {
+                            val tag = context!!.menagerie.getTag(it)
+                            if (tag != null) tags.add(tag)
+                        }
+
+                        runOnUIThread { downloadFromWebUtility(sanitizedUrl, tags) }
                     } else {
                         log.info("Storing url for import once app is ready: $url")
                         preLoadImportQueue.add(url)
@@ -432,12 +442,12 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun downloadFromWebUtility(url: String) {
+    private fun downloadFromWebUtility(url: String, tags: List<Tag>? = null) {
         val importer = context?.importer ?: return
 
         val download = { folder: File? ->
             if (folder != null && folder.exists() && folder.isDirectory) {
-                importer.enqueue(RemoteImportJob.intoDirectory(url, folder))
+                importer.enqueue(RemoteImportJob.intoDirectory(url, folder, tags))
             }
         }
 

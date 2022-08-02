@@ -2,6 +2,7 @@ package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.menagerie.model.Tag
 import mu.KotlinLogging
 import java.io.File
 import java.io.FileOutputStream
@@ -11,14 +12,14 @@ import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
 
-class RemoteImportJob private constructor(val url: String, file: File) : ImportJob(file) {
+class RemoteImportJob private constructor(val url: String, file: File, tags: List<Tag>? = null) : ImportJob(file, tags) {
 
     companion object {
-        fun intoFile(url: String, file: File): RemoteImportJob {
-            return RemoteImportJob(url, file)
+        fun intoFile(url: String, file: File, tags: List<Tag>? = null): RemoteImportJob {
+            return RemoteImportJob(url, file, tags)
         }
 
-        fun intoDirectory(url: String, downloadsDir: File, incrementIfExists: Boolean = true): RemoteImportJob {
+        fun intoDirectory(url: String, downloadsDir: File, tags: List<Tag>? = null, incrementIfExists: Boolean = true): RemoteImportJob {
             val url = repairUrl(url)
             val filename = URL(url).path.substringAfterLast('/')
             var file: File = downloadsDir.resolve(filename)
@@ -31,7 +32,7 @@ class RemoteImportJob private constructor(val url: String, file: File) : ImportJ
                 i++
             }
 
-            return RemoteImportJob(url, file)
+            return RemoteImportJob(url, file, tags)
         }
 
         private fun repairUrl(url: String): String {

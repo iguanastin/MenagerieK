@@ -278,7 +278,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
                     return
                 } else {
                     if (filename.isNullOrBlank()) {
-                        context.importer.enqueue(RemoteImportJob.intoDirectory(url, File(folder), true))
+                        context.importer.enqueue(RemoteImportJob.intoDirectory(url, File(folder), incrementIfExists = true))
                     } else {
                         context.importer.enqueue(RemoteImportJob.intoFile(url, File(folder, filename)))
                     }

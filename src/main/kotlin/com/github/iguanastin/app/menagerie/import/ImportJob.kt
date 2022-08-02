@@ -6,7 +6,7 @@ import mu.KotlinLogging
 import java.io.File
 
 private val log = KotlinLogging.logger {}
-open class ImportJob(val file: File) {
+open class ImportJob(val file: File, val addTags: List<Tag>? = null) {
 
     var onStart: MutableSet<(ImportJob) -> Unit> = mutableSetOf()
     var onProgress: MutableSet<(String, Double) -> Unit> = mutableSetOf()
@@ -35,23 +35,7 @@ open class ImportJob(val file: File) {
 
         item = when {
             ImageItem.isImage(file) -> {
-                onProgress.forEach { it("Creating histogram", 0.66) }
-                val histogram = Histogram.from(image(file))
-
-                onProgress.forEach { it("Finding similar items", 0.8) }
-                var noSimilar = true
-                for (item in menagerie.items) {
-                    if (histogram == null) break
-                    if (item is ImageItem) {
-                        val h2 = item.histogram
-                        if (h2 != null && histogram.similarityTo(h2) > ImageItem.noSimilarMax) {
-                            noSimilar = false
-                            item.noSimilar = false
-                        }
-                    }
-                }
-
-                ImageItem(id, added, menagerie, md5, file, noSimilar = noSimilar, histogram = histogram)
+                createImageItem(menagerie, id, added, md5)
             }
             VideoItem.isVideo(file) -> {
                 VideoItem(id, added, menagerie, md5, file)
@@ -61,18 +45,48 @@ open class ImportJob(val file: File) {
             }
         }
 
-        var tagme = menagerie.getTag("tagme")
-        if (tagme == null) {
-            tagme = Tag(menagerie.reserveTagID(), "tagme")
-            menagerie.addTag(tagme)
-        }
-        item?.addTag(tagme)
+        initTags(menagerie)
 
         log.debug { "Generated item for \"$file\" with: id=$id, added=$added, md5=$md5" }
 
         onProgress.forEach { it("Finished importing", 1.0) }
 
         return item!!
+    }
+
+    private fun createImageItem(
+        menagerie: Menagerie,
+        id: Int,
+        added: Long,
+        md5: String
+    ): ImageItem {
+        onProgress.forEach { it("Creating histogram", 0.66) }
+        val histogram = Histogram.from(image(file))
+
+        onProgress.forEach { it("Finding similar items", 0.8) }
+        var noSimilar = true
+        for (item in menagerie.items) {
+            if (histogram == null) break
+            if (item is ImageItem) {
+                val h2 = item.histogram
+                if (h2 != null && histogram.similarityTo(h2) > ImageItem.noSimilarMax) {
+                    noSimilar = false
+                    item.noSimilar = false
+                }
+            }
+        }
+
+        return ImageItem(id, added, menagerie, md5, file, noSimilar = noSimilar, histogram = histogram)
+    }
+
+    private fun initTags(menagerie: Menagerie) {
+        var tagme = menagerie.getTag("tagme")
+        if (tagme == null) {
+            tagme = Tag(menagerie.reserveTagID(), "tagme")
+            menagerie.addTag(tagme)
+        }
+        item?.addTag(tagme)
+        addTags?.forEach { item?.addTag(it) }
     }
 
     open fun cleanupAfterError(e: Exception) {}
