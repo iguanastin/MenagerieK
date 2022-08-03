@@ -104,6 +104,11 @@ class MyApp : App(MainView::class, Styles::class) {
                 // TODO show error to user
                 log.error("Error occurred while updating database", e)
             }
+            context.importer.afterEach.add { job ->
+                if (root.itemGrid.selected.size == 1 && root.itemGrid.selected[0].equals(root.itemGrid.items[0])) {
+                    runOnUIThread { root.itemGrid.select(root.itemGrid.items[0]) }
+                }
+            }
 
             if (contextPrefs.getBoolean(prefsAPIKey, defaultAPIEnabled)) {
                 context.api.start(contextPrefs.getInt(prefsAPIPortKey, defaultAPIPort))
