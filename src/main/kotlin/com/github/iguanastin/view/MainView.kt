@@ -9,6 +9,7 @@ import com.github.iguanastin.app.utils.pasteTagsFromClipboard
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
+import com.github.iguanastin.view.dialog.TagSearchDialog
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
@@ -635,6 +636,10 @@ class MainView : View("Menagerie") {
                 } else if (event.code == KeyCode.N) {
                     event.consume()
                     importsButton.fire()
+                } else if (event.code == KeyCode.T) {
+                    event.consume()
+                    val tags = viewProperty.get()?.menagerie?.tags
+                    if (tags != null) root.add(TagSearchDialog(tags))
                 }
             } else if (!event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
                 if (event.code == KeyCode.ESCAPE) {
