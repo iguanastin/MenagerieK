@@ -446,10 +446,11 @@ class MainView : View("Menagerie") {
             clear()
             addAll(back.selected)
         }
-        itemGrid.lastSelectedIndex = if (back.lastSelected == null) {
-            -1
+        if (back.lastSelected == null) {
+            itemGrid.lastSelectedIndex = -1
         } else {
-            itemGrid.items.indexOf(back.lastSelected)
+            itemGrid.ensureVisible(back.lastSelected)
+            itemGrid.lastSelectedIndex = itemGrid.items.indexOf(back.lastSelected)
         }
     }
 

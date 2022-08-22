@@ -253,7 +253,7 @@ class MultiSelectGridView<T> : GridView<T> {
         ensureVisible(item)
     }
 
-    private fun ensureVisible(item: T) {
+    fun ensureVisible(item: T) {
         // Gross workaround. Couldn't find any other solution
         for (n in children) {
             if (n is VirtualFlow<*>) {
