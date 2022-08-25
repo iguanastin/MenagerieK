@@ -6,7 +6,7 @@ import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.ElementOfFilter
+import com.github.iguanastin.app.menagerie.view.FilterFactory
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.app.menagerie.view.ViewFilter
 import com.sun.net.httpserver.HttpExchange
@@ -357,12 +357,10 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         val expandTags = "1".equals(query["expand_tags"], ignoreCase = true)
         val expandGroups = "1".equals(query["expand_groups"], ignoreCase = true)
 
-        val filters: MutableList<ViewFilter> = mutableListOf()
-        if (!ungrouped) filters.add(ElementOfFilter(null, true))
-        // TODO process terms into filters
+        val filters: MutableList<ViewFilter> = FilterFactory.parseFilters(terms, context.menagerie, !ungrouped)
 
         val search = MenagerieView(context.menagerie, terms, descending, false, filters)
-        search.attachTo(observableListOf())
+        search.bindTo(observableListOf())
 
         val total: Int = search.items!!.size
         val count = Integer.min(pageSize, total - page * pageSize)
@@ -575,10 +573,10 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
                     e.printStackTrace()
                 }
                 if (param.isNotEmpty()) {
-                    if (s.contains("=")) {
-                        query[s.substring(0, s.indexOf('='))] = s.substring(s.indexOf('=') + 1)
+                    if (param.contains("=")) {
+                        query[param.substring(0, s.indexOf('='))] = param.substring(param.indexOf('=') + 1)
                     } else {
-                        query[s] = "1"
+                        query[param] = "1"
                     }
                 }
             }

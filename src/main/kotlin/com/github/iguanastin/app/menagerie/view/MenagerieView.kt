@@ -52,7 +52,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
     }
 
 
-    fun attachTo(list: ObservableList<Item>) {
+    fun bindTo(list: ObservableList<Item>) {
         close()
 
         menagerie.items.addListener(menagerieItemsListener)

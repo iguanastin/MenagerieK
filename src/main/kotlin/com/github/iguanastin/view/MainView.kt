@@ -2,7 +2,10 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.*
+import com.github.iguanastin.app.menagerie.view.ElementOfFilter
+import com.github.iguanastin.app.menagerie.view.FilterFactory
+import com.github.iguanastin.app.menagerie.view.MenagerieView
+import com.github.iguanastin.app.menagerie.view.ViewHistory
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
@@ -363,51 +366,7 @@ class MainView : View("Menagerie") {
             val view = viewProperty.get() ?: return@EventHandler
             event.consume()
             val text = searchTextField.text.trim()
-            val filters = mutableListOf<ViewFilter>()
-
-            for (str in text.split(Regex("\\s+"))) {
-                if (str.isBlank()) continue
-                val exclude = str.startsWith('-')
-                val word = if (exclude) str.substring(1) else str
-
-                if (word.matches(Regex("(in:any)|(in:[0-9]+)", RegexOption.IGNORE_CASE))) {
-                    // TODO refactor this to be more modular. Each filter type parses its own string?
-                    val parameter = word.substring(3)
-                    if (parameter.equals("any", true)) {
-                        filters.add(ElementOfFilter(null, exclude))
-                    } else {
-                        try {
-                            val item = view.menagerie.getItem(parameter.toInt())
-                            if (item is GroupItem) {
-                                filters.add(ElementOfFilter(item, exclude))
-                            } else {
-                                displaySearchError("No group in \"$word\" with ID: ${parameter.toInt()}")
-                                return@EventHandler
-                            }
-                        } catch (e: NumberFormatException) {
-                            displaySearchError("Parameter in \"$word\" is not a number: $parameter")
-                            return@EventHandler
-                        }
-                    }
-                } else if (word.toLowerCase() in arrayOf("is:group", "is:image", "is:video", "is:file")) {
-                    filters.add(IsTypeFilter(when (word.toLowerCase()) {
-                        "is:group" -> IsTypeFilter.Type.Group
-                        "is:image" -> IsTypeFilter.Type.Image
-                        "is:video" -> IsTypeFilter.Type.Video
-                        "is:file" -> IsTypeFilter.Type.File
-                        else -> throw IllegalArgumentException("Accepts type, but doesn't know how to handle it: \"$word\"")
-                    }, exclude))
-                } else {
-                    val tag = view.menagerie.getTag(word)
-                    if (tag == null) {
-                        displaySearchError("No such tag: \"$word\"")
-                        return@EventHandler
-                    }
-                    filters.add(TagFilter(tag, exclude))
-                }
-            }
-
-            if (!openGroupsToggle.isSelected) filters.add(ElementOfFilter(null, true))
+            val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
 
             navigateForward(MenagerieView(view.menagerie, searchTextField.text, descendingToggle.isSelected, shuffleToggle.isSelected, filters))
             itemGrid.requestFocus()
@@ -583,7 +542,7 @@ class MainView : View("Menagerie") {
             itemGrid.items.clear()
 
             if (newValue != null) {
-                newValue.attachTo(itemGrid.items)
+                newValue.bindTo(itemGrid.items)
                 if (itemGrid.items.isNotEmpty()) itemGrid.select(itemGrid.items.first())
 
                 searchTextField.text = newValue.searchString
