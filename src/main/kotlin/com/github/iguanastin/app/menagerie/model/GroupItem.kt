@@ -36,8 +36,12 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
                 item.elementOf?.removeItem(item)
             }
             item.elementOf = this
+
             if (index == null) _items.add(item)
             else _items.add(index, item)
+
+            if (index == 0 || _items.size == 1) invalidateThumbnail()
+
             return true
         } else {
             return false
@@ -53,17 +57,20 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
     }
 
     fun moveItem(item: FileItem, index: Int) {
+        if (index == 0 || _items.indexOf(item) == 0) invalidateThumbnail()
         _items.move(item, index)
     }
 
     fun removeItem(item: FileItem): Boolean {
         if (item in items) item.elementOf = null
+        if (_items.indexOf(item) == 0) invalidateThumbnail()
         return _items.remove(item)
     }
 
     fun clearItems() {
         items.forEach { it.elementOf = null }
         _items.clear()
+        invalidateThumbnail()
     }
 
     override fun invalidate() {
