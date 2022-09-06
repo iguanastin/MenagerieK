@@ -23,6 +23,7 @@ import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.control.ButtonType
+import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.TransferMode
@@ -93,6 +94,14 @@ class MyApp : App(MainView::class, Styles::class) {
 
         super.start(stage)
         root = find(primaryView) as MainView
+
+        // Add window icons to stage
+        stage.icons.addAll(
+            Image(javaClass.getResourceAsStream("/imgs/icons/16.png")),
+            Image(javaClass.getResourceAsStream("/imgs/icons/32.png")),
+            Image(javaClass.getResourceAsStream("/imgs/icons/64.png")),
+            Image(javaClass.getResourceAsStream("/imgs/icons/128.png"))
+        )
 
         log.info("Starting Menagerie")
         initMainStageProperties(stage)
