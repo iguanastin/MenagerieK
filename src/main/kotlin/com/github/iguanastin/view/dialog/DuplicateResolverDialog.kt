@@ -202,10 +202,10 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
     private fun delete(pair: SimilarPair<Item>, left: Boolean) {
         val item = if (left) pair.obj1 else pair.obj2
 
+        displayNextForRemovingItem(pair, item)
+
         item.menagerie.removeItem(item)
         if (item is FileItem) item.file.delete()
-
-        displayNextForRemovingItem(pair, item)
 
         pairs.removeIf { it.contains(item) }
         updateCountSimilarityLabel(displaying)
