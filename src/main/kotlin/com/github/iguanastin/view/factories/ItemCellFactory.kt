@@ -1,8 +1,9 @@
-package com.github.iguanastin.view
+package com.github.iguanastin.view.factories
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.view.nodes.MultiSelectGridView
+import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.value.ChangeListener
 import javafx.geometry.Pos
 import javafx.scene.control.Label

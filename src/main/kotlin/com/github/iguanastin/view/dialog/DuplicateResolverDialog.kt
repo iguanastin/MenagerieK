@@ -7,7 +7,7 @@ import com.github.iguanastin.app.menagerie.model.SimilarPair
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
-import com.github.iguanastin.view.TagCellFactory
+import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
 import javafx.beans.property.ObjectProperty

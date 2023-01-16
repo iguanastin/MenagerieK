@@ -8,7 +8,7 @@ import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNAOMatchFinder
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.utils.bytesToPrettyString
-import com.github.iguanastin.view.ItemCellFactory
+import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.gridView
 import com.github.iguanastin.view.image
 import com.github.iguanastin.view.runOnUIThread

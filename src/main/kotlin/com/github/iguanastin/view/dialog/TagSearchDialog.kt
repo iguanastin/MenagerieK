@@ -1,7 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.menagerie.model.Tag
-import com.github.iguanastin.view.TagCellFactory
+import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ObservableList
 import javafx.geometry.Pos

@@ -13,6 +13,8 @@ import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.dialog.TagSearchDialog
+import com.github.iguanastin.view.factories.ClickableTagCellFactory
+import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
@@ -106,7 +108,7 @@ class MainView : View("Menagerie") {
                         center {
                             tagView = listview {
                                 isFocusTraversable = false
-                                cellFactory = TagCellFactory.factory
+                                cellFactory = ClickableTagCellFactory.factory { robotSearch(text = it.name) }
                                 maxWidth = 200.0
                                 minWidth = 200.0
                             }
@@ -361,15 +363,27 @@ class MainView : View("Menagerie") {
         }
     }
 
+    private fun robotSearch(text: String = "", descending: Boolean = true, expandGroups: Boolean = false, shuffled: Boolean = false) {
+        searchTextField.text = text
+        descendingToggle.isSelected = descending
+        openGroupsToggle.isSelected = expandGroups
+        shuffleToggle.isSelected = shuffled
+        applySearch()
+    }
+
+    private fun applySearch() {
+        val view = viewProperty.get() ?: return
+        val text = searchTextField.text.trim()
+        val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
+
+        navigateForward(MenagerieView(view.menagerie, searchTextField.text, descendingToggle.isSelected, shuffleToggle.isSelected, filters))
+        runOnUIThread { itemGrid.requestFocus() }
+    }
+
     private fun initSearchListener() {
         searchButton.onAction = EventHandler { event ->
-            val view = viewProperty.get() ?: return@EventHandler
             event.consume()
-            val text = searchTextField.text.trim()
-            val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
-
-            navigateForward(MenagerieView(view.menagerie, searchTextField.text, descendingToggle.isSelected, shuffleToggle.isSelected, filters))
-            itemGrid.requestFocus()
+            applySearch()
         }
         searchTextField.onAction = searchButton.onAction
 

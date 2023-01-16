@@ -2,7 +2,7 @@ package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
-import com.github.iguanastin.view.ItemCellFactory
+import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.InvalidationListener
 import javafx.beans.value.ChangeListener
