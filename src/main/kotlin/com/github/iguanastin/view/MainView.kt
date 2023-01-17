@@ -108,7 +108,9 @@ class MainView : View("Menagerie") {
                         center {
                             tagView = listview {
                                 isFocusTraversable = false
-                                cellFactory = ClickableTagCellFactory.factory { robotSearch(text = it.name) }
+                                cellFactory = ClickableTagCellFactory.factory {
+                                    robotSearch(text = it.name, descending = true, expandGroups = false, shuffled = false)
+                                }
                                 maxWidth = 200.0
                                 minWidth = 200.0
                             }
@@ -363,11 +365,11 @@ class MainView : View("Menagerie") {
         }
     }
 
-    private fun robotSearch(text: String = "", descending: Boolean = true, expandGroups: Boolean = false, shuffled: Boolean = false) {
+    private fun robotSearch(text: String = "", descending: Boolean? = null, expandGroups: Boolean? = null, shuffled: Boolean? = null) {
         searchTextField.text = text
-        descendingToggle.isSelected = descending
-        openGroupsToggle.isSelected = expandGroups
-        shuffleToggle.isSelected = shuffled
+        if (descending != null) descendingToggle.isSelected = descending
+        if (expandGroups != null) openGroupsToggle.isSelected = expandGroups
+        if (shuffled != null) shuffleToggle.isSelected = shuffled
         applySearch()
     }
 
