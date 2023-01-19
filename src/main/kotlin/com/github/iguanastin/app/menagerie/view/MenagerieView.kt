@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.view
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.ItemChangeBase
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.menagerie.view.filters.ViewFilter
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList

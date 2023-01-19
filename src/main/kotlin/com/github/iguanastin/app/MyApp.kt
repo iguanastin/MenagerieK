@@ -12,8 +12,8 @@ import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.ElementOfFilter
 import com.github.iguanastin.app.menagerie.view.MenagerieView
+import com.github.iguanastin.app.menagerie.view.filters.ElementOfFilter
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.MainView

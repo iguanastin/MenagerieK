@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.view
+package com.github.iguanastin.app.menagerie.view.filters
 
 import com.github.iguanastin.app.menagerie.model.Item
 

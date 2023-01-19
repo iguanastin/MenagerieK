@@ -6,9 +6,9 @@ import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.FilterFactory
 import com.github.iguanastin.app.menagerie.view.MenagerieView
-import com.github.iguanastin.app.menagerie.view.ViewFilter
+import com.github.iguanastin.app.menagerie.view.filters.FilterFactory
+import com.github.iguanastin.app.menagerie.view.filters.ViewFilter
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer

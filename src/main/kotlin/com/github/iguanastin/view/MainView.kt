@@ -2,10 +2,10 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.ElementOfFilter
-import com.github.iguanastin.app.menagerie.view.FilterFactory
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.app.menagerie.view.ViewHistory
+import com.github.iguanastin.app.menagerie.view.filters.ElementOfFilter
+import com.github.iguanastin.app.menagerie.view.filters.FilterFactory
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
@@ -514,7 +514,9 @@ class MainView : View("Menagerie") {
                             openGroupsToggle.isSelected = false
                             shuffleToggle.isSelected = false
 
-                            navigateForward(MenagerieView(i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(ElementOfFilter(null, true))))
+                            navigateForward(MenagerieView(i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(
+                                ElementOfFilter(null, true)
+                            )))
                             itemGrid.select(i.elementOf!!)
                         }
                     }

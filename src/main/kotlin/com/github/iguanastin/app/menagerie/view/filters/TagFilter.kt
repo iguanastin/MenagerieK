@@ -1,6 +1,7 @@
-package com.github.iguanastin.app.menagerie.view
+package com.github.iguanastin.app.menagerie.view.filters
 
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 
 class TagFilter(val tag: Tag, exclude: Boolean): ViewFilter(exclude) {
@@ -14,6 +15,12 @@ class TagFilter(val tag: Tag, exclude: Boolean): ViewFilter(exclude) {
             "-${tag.name}"
         } else {
             tag.name
+        }
+    }
+
+    companion object {
+        fun fromSearchString(query: String, exclude: Boolean, menagerie: Menagerie): TagFilter {
+            return TagFilter(menagerie.getTag(query)!!, exclude)
         }
     }
 
