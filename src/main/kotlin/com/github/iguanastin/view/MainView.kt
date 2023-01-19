@@ -1,5 +1,6 @@
 package com.github.iguanastin.view
 
+import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.MenagerieView
@@ -479,6 +480,12 @@ class MainView : View("Menagerie") {
             }
 
             contextmenu {
+                item("Edit tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        showEditTagsPane()
+                    }
+                }
                 val syncGroupTags = item("Sync tags") {
                     onAction = EventHandler { event ->
                         event.consume()
@@ -490,6 +497,19 @@ class MainView : View("Menagerie") {
                         }
                     }
                 }
+                item("Copy Tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        itemGrid.selected.firstOrNull()?.copyTagsToClipboard()
+                    }
+                }
+                item("Paste Tags") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard()
+                    }
+                }
+                separator()
                 val showInExplorer = item("Show in Explorer") {
                     onAction = EventHandler { event ->
                         event.consume()
@@ -499,18 +519,7 @@ class MainView : View("Menagerie") {
                         }
                     }
                 }
-                val copyTagsToClipboard = item("Copy Tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        itemGrid.selected.firstOrNull()?.copyTagsToClipboard()
-                    }
-                }
-                val pasteTagsFromClipboard = item("Paste Tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard()
-                    }
-                }
+                separator()
                 val goToGroup = item("Go to Group") {
                     onAction = EventHandler { event ->
                         event.consume()
@@ -535,13 +544,30 @@ class MainView : View("Menagerie") {
                         }
                     }
                 }
+                val ungroup = item("Ungroup") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        (app as MyApp).ungroupShortcut() // TODO this probably isn't smart but I don't know enough to tell you why
+                    }
+                }
+                val group = item("Group") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        (app as MyApp).groupShortcut() // TODO this probably isn't smart but I don't know enough to tell you why
+                    }
+                }
 
                 onShown = EventHandler { event ->
                     event.consume()
-                    syncGroupTags.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is GroupItem
-                    showInExplorer.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem
-                    goToGroup.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem && (itemGrid.selected.first() as FileItem).elementOf != null
-                    removeFromGroup.isVisible = itemGrid.selected.size == 1 && itemGrid.selected.first() is FileItem && (itemGrid.selected.first() as FileItem).elementOf != null
+                    val onlyOne = itemGrid.selected.size == 1
+                    val first = itemGrid.selected.first()
+
+                    syncGroupTags.isVisible = onlyOne && first is GroupItem
+                    showInExplorer.isVisible = onlyOne && first is FileItem
+                    goToGroup.isVisible = onlyOne && first is FileItem && first.elementOf != null
+                    removeFromGroup.isVisible = goToGroup.isVisible
+                    ungroup.isVisible = onlyOne && first is GroupItem
+                    group.isVisible = !onlyOne
                 }
             }
         }
@@ -610,8 +636,7 @@ class MainView : View("Menagerie") {
             if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
                 if (event.code == KeyCode.E) {
                     event.consume()
-                    editTagsPane.show()
-                    editTags.requestFocus()
+                    showEditTagsPane()
                 } else if (event.code == KeyCode.F) {
                     event.consume()
                     searchTextField.selectAll()
@@ -643,6 +668,11 @@ class MainView : View("Menagerie") {
                 }
             }
         }
+    }
+
+    private fun showEditTagsPane() {
+        editTagsPane.show()
+        editTags.requestFocus()
     }
 
     private fun initTagsListener() {

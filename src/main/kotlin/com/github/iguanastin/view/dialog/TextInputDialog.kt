@@ -11,6 +11,7 @@ class TextInputDialog(header: String, text: String = "", prompt: String = "", on
 
     private val textField: TextField
     private lateinit var acceptButton: Button
+    private lateinit var cancelButton: Button
 
     init {
         root.graphic = VBox(10.0).apply {
@@ -36,6 +37,12 @@ class TextInputDialog(header: String, text: String = "", prompt: String = "", on
                         event.consume()
                         close()
                         onAccept(textField.text)
+                    }
+                }
+                cancelButton = button("Cancel") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        close()
                     }
                 }
             }

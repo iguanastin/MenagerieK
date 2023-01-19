@@ -371,7 +371,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun ungroupShortcut() {
+    fun ungroupShortcut() {
         if (root.itemGrid.selected.size != 1) return
         val group = root.itemGrid.selected.first()
         if (group !is GroupItem) return
@@ -379,13 +379,13 @@ class MyApp : App(MainView::class, Styles::class) {
 
         root.root.confirm("Ungroup", "Ungroup \"${group.title}\"?") {
             onConfirm = {
-                ArrayList(group.items).forEach { group.removeItem(it) }
+                group.clearItems()
                 menagerie.removeItem(group)
             }
         }
     }
 
-    private fun groupShortcut() {
+    fun groupShortcut() {
         if (root.itemGrid.selected.isEmpty()) return
         val menagerie = context?.menagerie ?: return
 
