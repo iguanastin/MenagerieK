@@ -31,6 +31,7 @@ class TypeFilter(val type: Type, exclude: Boolean): ViewFilter(exclude) {
 
     companion object {
         const val prefix = "is:"
+        val autocomplete = Type.values().map { "${prefix}${it.name.toLowerCase()}" }.toTypedArray()
 
         fun fromSearchString(query: String, exclude: Boolean): TypeFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")

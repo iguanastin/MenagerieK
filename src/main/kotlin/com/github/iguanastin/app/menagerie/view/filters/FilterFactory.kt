@@ -4,6 +4,8 @@ import com.github.iguanastin.app.menagerie.model.Menagerie
 
 class FilterFactory private constructor() {
     companion object {
+        val filterPrefixes: Array<String> = arrayOf(*ElementOfFilter.autocomplete, *DateFilter.autocomplete, *IDFilter.autocomplete, *TypeFilter.autocomplete)
+
         fun parseFilters(
             terms: String,
             menagerie: Menagerie,

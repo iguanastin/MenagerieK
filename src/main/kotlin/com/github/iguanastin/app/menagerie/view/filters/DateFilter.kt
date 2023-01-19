@@ -27,6 +27,7 @@ class DateFilter(private val time: Long, private val type: Type, exclude: Boolea
 
     companion object {
         const val prefix = "time:"
+        val autocomplete = arrayOf(prefix, "${prefix}<", "${prefix}>")
 
         fun fromSearchString(query: String, exclude: Boolean): DateFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")

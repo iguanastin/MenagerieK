@@ -20,6 +20,7 @@ class ElementOfFilter(val group: GroupItem?, exclude: Boolean): ViewFilter(exclu
 
     companion object {
         const val prefix = "in:"
+        val autocomplete = arrayOf(prefix, "${prefix}any")
 
         fun fromSearchQuery(query: String, exclude: Boolean, menagerie: Menagerie): ElementOfFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")

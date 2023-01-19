@@ -27,6 +27,7 @@ class IDFilter(private val id: Int, private val type: Type, exclude: Boolean): V
 
     companion object {
         const val prefix = "id:"
+        val autocomplete = arrayOf(prefix, "${prefix}<", "${prefix}>")
 
         fun fromSearchString(query: String, exclude: Boolean): IDFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")

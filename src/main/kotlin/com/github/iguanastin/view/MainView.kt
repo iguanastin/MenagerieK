@@ -331,17 +331,22 @@ class MainView : View("Menagerie") {
 
     private fun initSearchFieldAutoComplete() {
         searchTextField.bindAutoComplete { predict ->
-            val result = mutableListOf<Tag>()
             var word = predict.toLowerCase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
 
+            val tags = mutableListOf<Tag>()
             viewProperty.get()?.menagerie?.tags?.forEach { tag ->
-                if (tag.name.startsWith(word)) result.add(tag)
+                if (tag.name.startsWith(word)) tags.add(tag)
             }
-            result.sortByDescending { it.frequency }
+            tags.sortByDescending { it.frequency }
 
-            result.subList(0, 8.coerceAtMost(result.size)).map { if (exclude) "-${it.name}" else it.name }
+            val result = mutableListOf<String>()
+            tags.forEach { result.add(if (exclude) "-${it.name}" else it.name) }
+
+            FilterFactory.filterPrefixes.forEach { if (it.startsWith(word)) result.add(it) }
+
+            return@bindAutoComplete result.subList(0, 8.coerceAtMost(result.size))
         }
     }
 
