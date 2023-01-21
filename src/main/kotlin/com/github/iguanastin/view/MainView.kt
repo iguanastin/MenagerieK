@@ -61,32 +61,28 @@ class MainView : View("Menagerie") {
     private lateinit var importsButton: Button
     private lateinit var similarButton: Button
 
+    // TODO the current view should be handled and stored in MyApp, probably
     private val _viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
-    val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
+    private val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
+    private val currentView: MenagerieView?
+        get() = viewProperty.get()
 
-    val displayingProperty: ObjectProperty<Item?>
-        get() = itemDisplay.itemProperty
-    var displaying: Item?
+    private var displaying: Item?
         get() = itemDisplay.item
         set(value) {
             itemDisplay.item = value
         }
 
-    val tagsProperty: ObjectProperty<ObservableList<Tag>>
-        get() = tagView.itemsProperty()
-    var tags: ObservableList<Tag>
-        get() = tagView.items
-        set(value) {
-            tagView.items = value
-        }
-
+    // Should probably be in MyApp
     val imports: ObservableList<ImportNotification> = observableListOf()
 
+    // Should probably be in MyApp
     val similar: ObservableList<SimilarPair<Item>> = observableListOf()
 
-    val history: ObservableList<ViewHistory> = observableListOf()
+    // Should probably be in MyApp
+    private val history: ObservableList<ViewHistory> = observableListOf()
 
-    val groupElementSorter: (Item) -> Int? = {
+    private val groupElementSorter: (Item) -> Int? = {
         if (it is FileItem) {
             it.elementOf?.items?.indexOf(it)
         } else {
@@ -320,7 +316,7 @@ class MainView : View("Menagerie") {
                     }
                 }
             } else {
-                viewProperty.get()?.menagerie?.tags?.forEach { tag ->
+                currentView?.menagerie?.tags?.forEach { tag ->
                     if (tag.name.startsWith(word)) result.add(tag)
                 }
             }
@@ -337,7 +333,7 @@ class MainView : View("Menagerie") {
             if (exclude) word = word.substring(1)
 
             val tags = mutableListOf<Tag>()
-            viewProperty.get()?.menagerie?.tags?.forEach { tag ->
+            currentView?.menagerie?.tags?.forEach { tag ->
                 if (tag.name.startsWith(word)) tags.add(tag)
             }
             tags.sortByDescending { it.frequency }
@@ -380,7 +376,7 @@ class MainView : View("Menagerie") {
     }
 
     private fun applySearch() {
-        val view = viewProperty.get() ?: return
+        val view = currentView ?: return
         val text = searchTextField.text.trim()
         val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
 
@@ -397,15 +393,19 @@ class MainView : View("Menagerie") {
 
         searchTextField.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
             if (event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
-                if (event.code == KeyCode.G) {
-                    event.consume()
-                    openGroupsToggle.isSelected = !openGroupsToggle.isSelected
-                } else if (event.code == KeyCode.D) {
-                    event.consume()
-                    descendingToggle.isSelected = !descendingToggle.isSelected
-                } else if (event.code == KeyCode.S) {
-                    event.consume()
-                    shuffleToggle.isSelected = !shuffleToggle.isSelected
+                when (event.code) {
+                    KeyCode.G -> {
+                        event.consume()
+                        openGroupsToggle.isSelected = !openGroupsToggle.isSelected
+                    }
+                    KeyCode.D -> {
+                        event.consume()
+                        descendingToggle.isSelected = !descendingToggle.isSelected
+                    }
+                    KeyCode.S -> {
+                        event.consume()
+                        shuffleToggle.isSelected = !shuffleToggle.isSelected
+                    }
                 }
             }
         }
@@ -646,7 +646,7 @@ class MainView : View("Menagerie") {
                     importsButton.fire()
                 } else if (event.code == KeyCode.T) {
                     event.consume()
-                    val tags = viewProperty.get()?.menagerie?.tags
+                    val tags = currentView?.menagerie?.tags
                     if (tags != null) root.add(TagSearchDialog(tags))
                 }
             } else if (!event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
@@ -677,16 +677,16 @@ class MainView : View("Menagerie") {
 
     private fun initTagsListener() {
         val displayTagsListener = InvalidationListener {
-            tags.apply {
+            tagView.items.apply {
                 clear()
                 val item = displaying
                 if (item != null) addAll(item.tags.sortedBy { it.name })
             }
         }
-        displayingProperty.addListener(ChangeListener { _, old, new ->
+        itemDisplay.itemProperty.addListener(ChangeListener { _, old, new ->
             old?.tags?.removeListener(displayTagsListener)
             new?.tags?.addListener(displayTagsListener)
-            tags.apply {
+            tagView.items.apply {
                 clear()
                 if (new != null) addAll(new.tags.sortedBy { it.name })
             }

@@ -102,6 +102,10 @@ class Menagerie {
         return null
     }
 
+    fun getOrMakeTag(name: String): Tag {
+        return getTag(name) ?: Tag(reserveTagID(), name).also { addTag(it) }
+    }
+
     fun hasTag(id: Int): Boolean {
         return tagIdMap.containsKey(id)
     }

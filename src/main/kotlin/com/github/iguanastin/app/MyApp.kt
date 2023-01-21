@@ -48,7 +48,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val communicatorName = "communicator"
+        const val rmiCommunicatorName = "communicator"
 
         const val prefsKeyDBURL = "db_url"
         const val prefsKeyDBUser = "db_user"
@@ -79,8 +79,8 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private var context: MenagerieContext? = null
 
-    private lateinit var registry: Registry
-    private lateinit var communicator: MenagerieCommunicator
+    private lateinit var rmiRegistry: Registry
+    private lateinit var rmiCommunicator: MenagerieRMICommunicator
 
     private lateinit var root: MainView
 
@@ -96,62 +96,83 @@ class MyApp : App(MainView::class, Styles::class) {
         root = find(primaryView) as MainView
 
         // Add window icons to stage
+        // TODO icon works as expected in IDE, but doesn't set the windows toolbar icon when launched externally
         stage.icons.addAll(
-            Image(javaClass.getResourceAsStream("/imgs/icons/16.png")),
-            Image(javaClass.getResourceAsStream("/imgs/icons/32.png")),
-            Image(javaClass.getResourceAsStream("/imgs/icons/64.png")),
-            Image(javaClass.getResourceAsStream("/imgs/icons/128.png"))
+            Image(MyApp::class.java.getResource("/imgs/icons/16.png")!!.toExternalForm()),
+            Image(MyApp::class.java.getResource("/imgs/icons/32.png")!!.toExternalForm()),
+            Image(MyApp::class.java.getResource("/imgs/icons/64.png")!!.toExternalForm()),
+            Image(MyApp::class.java.getResource("/imgs/icons/128.png")!!.toExternalForm()),
         )
 
         log.info("Starting Menagerie")
         initMainStageProperties(stage)
         initViewControls()
-        loadMenagerie(stage, contextPrefs.get(prefsKeyDBURL, defaultDatabaseUrl), contextPrefs.get(prefsKeyDBUser, defaultDatabaseUser), contextPrefs.get(prefsKeyDBPass, defaultDatabasePassword)) { context ->
-            this.context = context
+        loadMenagerie(
+            stage,
+            contextPrefs.get(prefsKeyDBURL, defaultDatabaseUrl),
+            contextPrefs.get(prefsKeyDBUser, defaultDatabaseUser),
+            contextPrefs.get(prefsKeyDBPass, defaultDatabasePassword)
+        ) { context ->
+            onMenagerieLoaded(context)
+        }
+    }
 
-            context.database.updateErrorHandlers.add { e ->
-                // TODO show error to user
-                log.error("Error occurred while updating database", e)
+    private fun onMenagerieLoaded(context: MenagerieContext) {
+        this.context = context
+
+        context.database.updateErrorHandlers.add { e ->
+            log.error("Error occurred while updating database", e)
+            information("Error while updating database", e.message, owner = root.currentWindow, title = "Error")
+            // TODO show better error to user
+        }
+
+        context.importer.afterEach.add {
+            // If only the first item in search is selected when an item is imported, select the newly imported item
+            val singleSelected = root.itemGrid.selected.singleOrNull() ?: return@add
+            if (singleSelected == root.itemGrid.items.first()) {
+                runOnUIThread { root.itemGrid.select(root.itemGrid.items.first()) }
             }
-            context.importer.afterEach.add { job ->
-                if (root.itemGrid.selected.size == 1 && root.itemGrid.selected[0].equals(root.itemGrid.items[0])) {
-                    runOnUIThread { root.itemGrid.select(root.itemGrid.items[0]) }
-                }
-            }
+        }
 
-            if (contextPrefs.getBoolean(prefsAPIKey, defaultAPIEnabled)) {
-                context.api.start(contextPrefs.getInt(prefsAPIPortKey, defaultAPIPort))
-            }
+        // Start the HTTP API server
+        if (contextPrefs.getBoolean(prefsAPIKey, defaultAPIEnabled)) {
+            context.api.start(contextPrefs.getInt(prefsAPIPortKey, defaultAPIPort))
+        }
 
-            purgeZombieTags(context.menagerie)
-            initImporterListeners(context)
+        purgeUnusedTags(context.menagerie)
+        initImporterListeners(context)
 
-            runOnUIThread {
-                root.navigateForward(MenagerieView(context.menagerie, "", true, false, listOf(ElementOfFilter(null, true))))
+        // Initial search
+        runOnUIThread {
+            root.navigateForward(
+                MenagerieView(
+                    context.menagerie,
+                    searchString = "",
+                    descending = true,
+                    shuffle = false,
+                    filters = listOf(ElementOfFilter(null, true))
+                )
+            )
 
-                log.info("Flushing ${preLoadImportQueue.size} urls from pre-load import queue")
-                preLoadImportQueue.forEach { communicator.importUrl(it) }
-            }
+            log.info("Flushing ${preLoadImportQueue.size} urls from pre-load import queue")
+            preLoadImportQueue.forEach { rmiCommunicator.importUrl(it) }
         }
     }
 
     private fun initInterProcessCommunicator() {
         try {
-            registry = LocateRegistry.createRegistry(1099)
-            communicator = object : MenagerieCommunicator {
+            rmiRegistry = LocateRegistry.createRegistry(1099)
+            rmiCommunicator = object : MenagerieRMICommunicator {
                 override fun importUrl(url: String) {
                     if (context != null) {
-                        val temp = url.split(",")
+                        val splitString = url.split(",")
 
-                        val sanitizedUrl = temp[0]
+                        val sanitizedUrl = splitString[0]
 
-                        val tags = mutableListOf<Tag>()
-                        temp.subList(1, temp.size).forEach {
-                            val tag = context!!.menagerie.getTag(it)
-                            if (tag != null) tags.add(tag)
-                        }
+                        val tags: List<Tag> =
+                            splitString.subList(1, splitString.size).mapNotNull { context!!.menagerie.getTag(it) }
 
-                        runOnUIThread { downloadFromWebUtility(sanitizedUrl, tags) }
+                        runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
                     } else {
                         log.info("Storing url for import once app is ready: $url")
                         preLoadImportQueue.add(url)
@@ -162,17 +183,19 @@ class MyApp : App(MainView::class, Styles::class) {
                     root.currentStage?.toFront()
                 }
             }
-            registry.bind(communicatorName, UnicastRemoteObject.exportObject(communicator, 0))
+            rmiRegistry.bind(rmiCommunicatorName, UnicastRemoteObject.exportObject(rmiCommunicator, 0))
 
             // Import url if in parameter
             if (parameters.named.containsKey("import")) {
-                communicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
+                rmiCommunicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
             }
         } catch (e: ExportException) {
+            // Cannot open an RMI registry as Menagerie instance is already running
             try {
-                registry = LocateRegistry.getRegistry(1099)
-                val communicator = (registry.lookup(communicatorName) as MenagerieCommunicator)
+                rmiRegistry = LocateRegistry.getRegistry(1099)
+                val communicator = (rmiRegistry.lookup(rmiCommunicatorName) as MenagerieRMICommunicator)
 
+                // Attempt to send an import message to the open menagerie instance
                 val url = parameters.named["import"]?.removePrefix("menagerie:")
                 if (url != null) {
                     communicator.importUrl(url)
@@ -194,42 +217,63 @@ class MyApp : App(MainView::class, Styles::class) {
             uiPrefs.clear()
         }
 
-        if (parameters.named.containsKey("db")) contextPrefs.put(prefsKeyDBURL, parameters.named["db"]
-                ?: defaultDatabaseUrl)
-        if (parameters.named.containsKey("db-url")) contextPrefs.put(prefsKeyDBURL, parameters.named["db-url"]
-                ?: defaultDatabaseUrl)
+        if (parameters.named.containsKey("db")) contextPrefs.put(
+            prefsKeyDBURL, parameters.named["db"]
+                ?: defaultDatabaseUrl
+        )
+        if (parameters.named.containsKey("db-url")) contextPrefs.put(
+            prefsKeyDBURL, parameters.named["db-url"]
+                ?: defaultDatabaseUrl
+        )
 
-        if (parameters.named.containsKey("dbu")) contextPrefs.put(prefsKeyDBUser, parameters.named["dbu"]
-                ?: defaultDatabaseUser)
-        if (parameters.named.containsKey("db-user")) contextPrefs.put(prefsKeyDBUser, parameters.named["db-user"]
-                ?: defaultDatabaseUser)
+        if (parameters.named.containsKey("dbu")) contextPrefs.put(
+            prefsKeyDBUser, parameters.named["dbu"]
+                ?: defaultDatabaseUser
+        )
+        if (parameters.named.containsKey("db-user")) contextPrefs.put(
+            prefsKeyDBUser, parameters.named["db-user"]
+                ?: defaultDatabaseUser
+        )
 
-        if (parameters.named.containsKey("dbp")) contextPrefs.put(prefsKeyDBPass, parameters.named["dbp"]
-                ?: defaultDatabasePassword)
-        if (parameters.named.containsKey("db-pass")) contextPrefs.put(prefsKeyDBPass, parameters.named["db-pass"]
-                ?: defaultDatabasePassword)
+        if (parameters.named.containsKey("dbp")) contextPrefs.put(
+            prefsKeyDBPass, parameters.named["dbp"]
+                ?: defaultDatabasePassword
+        )
+        if (parameters.named.containsKey("db-pass")) contextPrefs.put(
+            prefsKeyDBPass, parameters.named["db-pass"]
+                ?: defaultDatabasePassword
+        )
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
 
     private fun initImporterListeners(context: MenagerieContext) {
         context.importer.onError.add { e ->
-            // TODO show error to user
             log.error("Error occurred while importing", e)
+            information("Import failed", e.message, owner = root.currentWindow, title = "Error")
+            // TODO show better error message to user
         }
         context.importer.onQueued.add { job ->
             runOnUIThread {
-                root.imports.add(ImportNotification(job))
-                root.imports.sortBy { it.isFinished }
+                root.imports.apply {
+                    add(ImportNotification(job))
+                    sortBy { it.isFinished }
+                }
             }
         }
         context.importer.afterEach.add { job ->
             val item = job.item ?: return@add
-            val similar = CPUDuplicateFinder.findDuplicates(listOf(item), context.menagerie.items, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence), false)
+            val similar = CPUDuplicateFinder.findDuplicates(
+                listOf(item),
+                context.menagerie.items,
+                contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence),
+                false
+            )
 
             runOnUIThread { root.similar.addAll(0, similar.filter { it !in root.similar }) }
         }
 
+        // Listen to item list and remove similar pairs containing removed items
         context.menagerie.items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 if (change.removedSize > 0) {
@@ -239,7 +283,7 @@ class MyApp : App(MainView::class, Styles::class) {
         })
     }
 
-    private fun purgeZombieTags(menagerie: Menagerie) {
+    private fun purgeUnusedTags(menagerie: Menagerie) {
         val toRemove = mutableSetOf<Tag>()
         for (tag in menagerie.tags) {
             if (tag.frequency == 0) {
@@ -247,7 +291,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
         toRemove.forEach {
-            log.info("Purging zombie tag: $it")
+            log.info("Purging unused tag: $it")
             menagerie.removeTag(it)
         }
     }
@@ -261,8 +305,8 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initEditTagsControl() {
         root.applyTagEdit.onAction = EventHandler { event ->
             val items = root.itemGrid.selected
-            val add = mutableListOf<Tag>()
-            val remove = mutableListOf<Tag>()
+            val tagsToAdd = mutableListOf<Tag>()
+            val tagsToRemove = mutableListOf<Tag>()
 
             for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
                 if (name.isBlank()) continue // Ignore empty and blank additions
@@ -271,19 +315,19 @@ class MyApp : App(MainView::class, Styles::class) {
                 if (name.startsWith('-')) {
                     if (name.length == 1) continue
                     val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
-                    remove.add(tag)
+                    tagsToRemove.add(tag)
                 } else {
                     var tag: Tag? = menagerie.getTag(name)
                     if (tag == null) {
                         tag = Tag(menagerie.reserveTagID(), name)
                         menagerie.addTag(tag)
                     }
-                    add.add(tag)
+                    tagsToAdd.add(tag)
                 }
             }
 
-            val edit = TagEdit(items, add, remove)
-            if (items.isNotEmpty() && (add.isNotEmpty() || remove.isNotEmpty())) {
+            val edit = TagEdit(items, tagsToAdd, tagsToRemove)
+            if (items.isNotEmpty() && (tagsToAdd.isNotEmpty() || tagsToRemove.isNotEmpty())) {
                 edit.applyEdit()
                 context?.tagEdits?.push(edit)
             }
@@ -329,14 +373,20 @@ class MyApp : App(MainView::class, Styles::class) {
             }
             if (event.code == KeyCode.Z && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
                 event.consume()
-                if (context?.tagEdits?.isNotEmpty() == true) {
-                    val peek = context?.tagEdits?.peek()
-                    if (peek != null) {
-                        root.root.confirm("Undo tag edit", peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString("\n") { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
-                            context?.tagEdits?.pop()?.undoEdit()
-                        }
-                    }
-                }
+                undoLastEdit()
+            }
+        }
+    }
+
+    private fun undoLastEdit() {
+        if (context?.tagEdits?.isNotEmpty() == true) {
+            val peek = context?.tagEdits?.peek() ?: return
+            root.root.confirm(
+                "Undo tag edit",
+                peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString(
+                    "\n"
+                ) { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
+                context?.tagEdits?.pop()?.undoEdit()
             }
         }
     }
@@ -354,7 +404,7 @@ class MyApp : App(MainView::class, Styles::class) {
         root.root.onDragDropped = EventHandler { event ->
             if (context != null && event.isAccepted) {
                 if (event.dragboard.url?.startsWith("http") == true) {
-                    downloadFromWebUtility(event.dragboard.url)
+                    downloadFileFromWeb(event.dragboard.url)
                 }
                 if (event.dragboard.files?.isNotEmpty() == true) {
                     importFilesDialog(event.dragboard.files)
@@ -372,15 +422,13 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     fun ungroupShortcut() {
-        if (root.itemGrid.selected.size != 1) return
-        val group = root.itemGrid.selected.first()
+        val group = root.itemGrid.selected.singleOrNull() ?: return
         if (group !is GroupItem) return
-        val menagerie = context?.menagerie ?: return
 
         root.root.confirm("Ungroup", "Ungroup \"${group.title}\"?") {
             onConfirm = {
                 group.clearItems()
-                menagerie.removeItem(group)
+                group.menagerie.removeItem(group)
             }
         }
     }
@@ -412,12 +460,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
             tags.forEach { group.addTag(it) }
 
-            var tagme = menagerie.getTag("tagme")
-            if (tagme == null) {
-                tagme = Tag(menagerie.reserveTagID(), "tagme")
-                menagerie.addTag(tagme)
-            }
-            group.addTag(tagme)
+            group.addTag(menagerie.getOrMakeTag("tagme"))
 
             menagerie.addItem(group)
 
@@ -433,15 +476,25 @@ class MyApp : App(MainView::class, Styles::class) {
         val first = expandGroups(root.itemGrid.selected)
         val second = if (event.isAltDown) expandGroups(menagerie.items) else first
 
-        val progress = ProgressDialog(header = "Finding duplicates", message = "${first.size} against ${second.size} items")
+        val progress =
+            ProgressDialog(header = "Finding duplicates", message = "${first.size} against ${second.size} items")
         root.root.add(progress)
 
         thread(start = true, isDaemon = true, name = "DuplicateFinder") {
             try {
                 val pairs = if (contextPrefs.getBoolean(prefsEnableCudaKey, defaultCUDAEnabled)) {
-                    CUDADuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence).toFloat(), 100000)
+                    CUDADuplicateFinder.findDuplicates(
+                        first,
+                        second,
+                        contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence).toFloat(),
+                        100000
+                    )
                 } else {
-                    CPUDuplicateFinder.findDuplicates(first, second, contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence))
+                    CPUDuplicateFinder.findDuplicates(
+                        first,
+                        second,
+                        contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence)
+                    )
                 }
                 if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
 
@@ -456,7 +509,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun downloadFromWebUtility(url: String, tags: List<Tag>? = null) {
+    private fun downloadFileFromWeb(url: String, tags: List<Tag>? = null) {
         val importer = context?.importer ?: return
 
         val download = { folder: File? ->
@@ -484,13 +537,12 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun renameGroupShortcut() {
-        if (root.itemGrid.selected.size == 1 && root.itemGrid.selected.first() is GroupItem) {
-            val group = root.itemGrid.selected.first() as GroupItem
+        val group = root.itemGrid.selected.singleOrNull() ?: return
+        if (group !is GroupItem) return
 
-            root.root.add(TextInputDialog(header = "Rename group", text = group.title, onAccept = {
-                group.title = it
-            }))
-        }
+        root.root.add(TextInputDialog(header = "Rename group", text = group.title, onAccept = {
+            group.title = it
+        }))
     }
 
     private fun deleteShortcut(shortcutDown: Boolean) {
@@ -546,7 +598,7 @@ class MyApp : App(MainView::class, Styles::class) {
             individually = {
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) importer.enqueue(ImportJob(it)) }
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) importer.enqueue(ImportJob(it)) }
                     } else {
                         importer.enqueue(ImportJob(file))
                     }
@@ -556,7 +608,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 val jobs = mutableListOf<ImportJob>()
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
                     } else {
                         if (!menagerie.hasFile(file)) jobs.add(ImportJob(file))
                     }
@@ -573,7 +625,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 for (file in files) {
                     if (file.isDirectory) {
                         val jobs = mutableListOf<ImportJob>()
-                        recursiveFiles(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
                         ImportJobIntoGroup.asGroup(jobs, file.name).forEach { importer.enqueue(it) }
                     } else if (!menagerie.hasFile(file)) {
                         importer.enqueue(ImportJob(file))
@@ -584,12 +636,12 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun recursiveFiles(folder: File): List<File> {
+    private fun getFilesRecursively(folder: File): List<File> {
         if (folder.isDirectory) {
             val result = mutableListOf<File>()
             folder.listFiles()?.sortedWith(WindowsExplorerComparator())!!.forEach {
                 if (it.isDirectory) {
-                    result.addAll(recursiveFiles(it))
+                    result.addAll(getFilesRecursively(it))
                 } else {
                     result.add(it)
                 }
@@ -600,10 +652,10 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun deleteItems(del: List<Item>) {
+    private fun deleteItems(items: List<Item>) {
         val menagerie = context?.menagerie ?: return
 
-        del.forEach { item ->
+        items.forEach { item ->
             log.info("Removing item: $item")
             if (item is GroupItem) {
                 ArrayList(item.items).forEach {
@@ -615,29 +667,26 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun deleteFiles(del: List<Item>) {
-        deleteItems(del)
+    private fun deleteFiles(items: List<Item>) {
+        deleteItems(items)
 
-        del.forEach {
+        items.forEach {
             if (it is FileItem) {
-                try {
-                    log.info("Deleting file: ${it.file}")
-                    it.file.delete()
-                } catch (e: IOException) {
-                    log.error("Exception while deleting file: ${it.file}", e)
-                }
+                deleteFile(it)
             } else if (it is GroupItem) {
                 for (item in it.items) {
-                    if (item is FileItem) {
-                        try {
-                            log.info("Deleting file: ${item.file}")
-                            item.file.delete()
-                        } catch (e: IOException) {
-                            log.error("Exception while deleting file: ${item.file}", e)
-                        }
-                    }
+                    deleteFile(item)
                 }
             }
+        }
+    }
+
+    private fun deleteFile(item: FileItem) {
+        try {
+            log.info("Deleting file: ${item.file}")
+            item.file.delete()
+        } catch (e: IOException) {
+            log.error("Exception while deleting file: ${item.file}", e)
         }
     }
 
@@ -647,13 +696,19 @@ class MyApp : App(MainView::class, Styles::class) {
         log.info("Stopping app")
 
         // Close RMI communicator
-        UnicastRemoteObject.unexportObject(communicator, true)
-        registry.unbind(communicatorName)
+        UnicastRemoteObject.unexportObject(rmiCommunicator, true)
+        rmiRegistry.unbind(rmiCommunicatorName)
 
         context?.close()
     }
 
-    private fun loadMenagerie(stage: Stage, dbURL: String, dbUser: String, dbPass: String, after: ((MenagerieContext) -> Unit)? = null) {
+    private fun loadMenagerie(
+        stage: Stage,
+        dbURL: String,
+        dbUser: String,
+        dbPass: String,
+        after: ((MenagerieContext) -> Unit)? = null
+    ) {
         try {
             val database = MenagerieDatabase(dbURL, dbUser, dbPass)
 
@@ -671,14 +726,25 @@ class MyApp : App(MainView::class, Styles::class) {
                             after?.invoke(MenagerieContext(menagerie, importer, database, contextPrefs))
                         } catch (e: MenagerieDatabaseException) {
                             e.printStackTrace()
-                            runOnUIThread { error(title = "Error", header = "Failed to read database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                            runOnUIThread {
+                                error(
+                                    title = "Error",
+                                    header = "Failed to read database: $dbURL",
+                                    content = e.localizedMessage,
+                                    owner = stage,
+                                    buttons = arrayOf(ButtonType.OK)
+                                )
+                            }
                         }
                     }
                 }
             }
             val migrate: () -> Unit = {
                 runOnUIThread {
-                    val progress = ProgressDialog(header = "Migrating database to v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}", message = " ($dbURL)")
+                    val progress = ProgressDialog(
+                        header = "Migrating database to v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}",
+                        message = " ($dbURL)"
+                    )
                     root.root.add(progress)
 
                     thread(name = "Database migrator thread", start = true) {
@@ -689,7 +755,15 @@ class MyApp : App(MainView::class, Styles::class) {
                             load()
                         } catch (e: MenagerieDatabaseException) {
                             e.printStackTrace()
-                            runOnUIThread { error(title = "Error", header = "Failed to migrate database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage) }
+                            runOnUIThread {
+                                error(
+                                    title = "Error",
+                                    header = "Failed to migrate database: $dbURL",
+                                    content = e.localizedMessage,
+                                    owner = stage,
+                                    buttons = arrayOf(ButtonType.OK)
+                                )
+                            }
                         }
                     }
                 }
@@ -698,22 +772,41 @@ class MyApp : App(MainView::class, Styles::class) {
             if (database.needsMigration()) {
                 if (database.canMigrate()) {
                     if (database.version == -1) {
-                        confirm(title = "Database initialization", header = "Database needs to be initialized: $dbURL", owner = stage, actionFn = {
-                            migrate()
-                        })
+                        confirm(
+                            title = "Database initialization",
+                            header = "Database needs to be initialized: $dbURL",
+                            owner = stage,
+                            actionFn = {
+                                migrate()
+                            })
                     } else {
-                        confirm(title = "Database migration", header = "Database ($dbURL) needs to update (v${database.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})", owner = stage, actionFn = {
-                            migrate()
-                        })
+                        confirm(
+                            title = "Database migration",
+                            header = "Database ($dbURL) needs to update (v${database.version} -> v${MenagerieDatabase.REQUIRED_DATABASE_VERSION})",
+                            owner = stage,
+                            actionFn = {
+                                migrate()
+                            })
                     }
                 } else {
-                    error(title = "Incompatible database", header = "Database v${database.version} is not supported!", content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database", owner = stage)
+                    error(
+                        title = "Incompatible database",
+                        header = "Database v${database.version} is not supported!",
+                        content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database",
+                        owner = stage
+                    )
                 }
             } else {
                 load()
             }
         } catch (e: Exception) {
-            error(title = "Error", header = "Failed to connect to database: $dbURL", content = e.localizedMessage, buttons = arrayOf(ButtonType.OK), owner = stage)
+            error(
+                title = "Error",
+                header = "Failed to connect to database: $dbURL",
+                content = e.localizedMessage,
+                owner = stage,
+                buttons = arrayOf(ButtonType.OK)
+            )
         }
     }
 
