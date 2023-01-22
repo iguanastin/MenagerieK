@@ -14,6 +14,8 @@ import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.app.menagerie.view.filters.ElementOfFilter
+import com.github.iguanastin.app.settings.AppSettings
+import com.github.iguanastin.app.settings.WindowSettings
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.MainView
@@ -39,7 +41,6 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.registry.Registry
 import java.rmi.server.ExportException
 import java.rmi.server.UnicastRemoteObject
-import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -49,33 +50,10 @@ class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
         const val rmiCommunicatorName = "communicator"
-
-        const val prefsKeyDBURL = "db_url"
-        const val prefsKeyDBUser = "db_user"
-        const val prefsKeyDBPass = "db_pass"
-        const val prefsConfidenceKey = "confidence"
-        const val prefsEnableCudaKey = "cuda"
-        const val prefsAPIKey = "api"
-        const val prefsAPIPortKey = "api_port"
-        const val prefsDownloadsKey = "downloads"
-        const val prefsMaximizedKey = "maximized"
-        const val prefsWidthKey = "width"
-        const val prefsHeightKey = "height"
-        const val prefsXKey = "x"
-        const val prefsYKey = "y"
-
-        const val defaultAPIPort = 54321
-        const val defaultConfidence = 0.95
-        const val defaultDatabaseUrl = "~/menagerie"
-        const val defaultDatabaseUser = "sa"
-        const val defaultDatabasePassword = ""
-        const val defaultCUDAEnabled = false
-        const val defaultAPIEnabled = true
-        val defaultDownloadsPath: String? = null
     }
 
-    private val uiPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/ui")
-    private val contextPrefs: Preferences = Preferences.userRoot().node("iguanastin/MenagerieK/context")
+    private val uiPrefs: WindowSettings = WindowSettings()
+    private val contextPrefs: AppSettings = AppSettings()
 
     private var context: MenagerieContext? = null
 
@@ -109,9 +87,9 @@ class MyApp : App(MainView::class, Styles::class) {
         initViewControls()
         loadMenagerie(
             stage,
-            contextPrefs.get(prefsKeyDBURL, defaultDatabaseUrl),
-            contextPrefs.get(prefsKeyDBUser, defaultDatabaseUser),
-            contextPrefs.get(prefsKeyDBPass, defaultDatabasePassword)
+            contextPrefs.database.url.value!!,
+            contextPrefs.database.user.value!!,
+            contextPrefs.database.pass.value!!
         ) { context ->
             onMenagerieLoaded(context)
         }
@@ -122,7 +100,14 @@ class MyApp : App(MainView::class, Styles::class) {
 
         context.database.updateErrorHandlers.add { e ->
             log.error("Error occurred while updating database", e)
-            runOnUIThread { information("Error while updating database", e.message, owner = root.currentWindow, title = "Error") }
+            runOnUIThread {
+                information(
+                    "Error while updating database",
+                    e.message,
+                    owner = root.currentWindow,
+                    title = "Error"
+                )
+            }
             // TODO show better error to user
         }
 
@@ -135,8 +120,8 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         // Start the HTTP API server
-        if (contextPrefs.getBoolean(prefsAPIKey, defaultAPIEnabled)) {
-            context.api.start(contextPrefs.getInt(prefsAPIPortKey, defaultAPIPort))
+        if (contextPrefs.api.enabled.value) {
+            context.api.start(contextPrefs.api.port.value)
         }
 
         purgeUnusedTags(context.menagerie)
@@ -213,36 +198,24 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun handleParameters() {
         if ("--reset" in parameters.unnamed) {
-            context?.prefs?.clear()
-            uiPrefs.clear()
+            contextPrefs.resetToDefaults()
+            uiPrefs.resetToDefaults()
         }
 
-        if (parameters.named.containsKey("db")) contextPrefs.put(
-            prefsKeyDBURL, parameters.named["db"]
-                ?: defaultDatabaseUrl
-        )
-        if (parameters.named.containsKey("db-url")) contextPrefs.put(
-            prefsKeyDBURL, parameters.named["db-url"]
-                ?: defaultDatabaseUrl
-        )
+        if (parameters.named.containsKey("db")) contextPrefs.database.url.value =
+            parameters.named["db"] ?: contextPrefs.database.url.default
+        if (parameters.named.containsKey("db-url")) contextPrefs.database.url.value =
+            parameters.named["db-url"] ?: contextPrefs.database.url.default
 
-        if (parameters.named.containsKey("dbu")) contextPrefs.put(
-            prefsKeyDBUser, parameters.named["dbu"]
-                ?: defaultDatabaseUser
-        )
-        if (parameters.named.containsKey("db-user")) contextPrefs.put(
-            prefsKeyDBUser, parameters.named["db-user"]
-                ?: defaultDatabaseUser
-        )
+        if (parameters.named.containsKey("dbu")) contextPrefs.database.user.value =
+            parameters.named["dbu"] ?: contextPrefs.database.user.value
+        if (parameters.named.containsKey("db-user")) contextPrefs.database.user.value =
+            parameters.named["db-user"] ?: contextPrefs.database.user.default
 
-        if (parameters.named.containsKey("dbp")) contextPrefs.put(
-            prefsKeyDBPass, parameters.named["dbp"]
-                ?: defaultDatabasePassword
-        )
-        if (parameters.named.containsKey("db-pass")) contextPrefs.put(
-            prefsKeyDBPass, parameters.named["db-pass"]
-                ?: defaultDatabasePassword
-        )
+        if (parameters.named.containsKey("dbp")) contextPrefs.database.pass.value =
+            parameters.named["dbp"] ?: contextPrefs.database.pass.default
+        if (parameters.named.containsKey("db-pass")) contextPrefs.database.pass.value =
+            parameters.named["db-pass"] ?: contextPrefs.database.pass.default
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
@@ -266,7 +239,7 @@ class MyApp : App(MainView::class, Styles::class) {
             val similar = CPUDuplicateFinder.findDuplicates(
                 listOf(item),
                 context.menagerie.items,
-                contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence),
+                contextPrefs.duplicate.confidence.value,
                 false
             )
 
@@ -482,18 +455,18 @@ class MyApp : App(MainView::class, Styles::class) {
 
         thread(start = true, isDaemon = true, name = "DuplicateFinder") {
             try {
-                val pairs = if (contextPrefs.getBoolean(prefsEnableCudaKey, defaultCUDAEnabled)) {
+                val pairs = if (contextPrefs.duplicate.enableCuda.value) {
                     CUDADuplicateFinder.findDuplicates(
                         first,
                         second,
-                        contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence).toFloat(),
+                        contextPrefs.duplicate.confidence.value.toFloat(),
                         100000
                     )
                 } else {
                     CPUDuplicateFinder.findDuplicates(
                         first,
                         second,
-                        contextPrefs.getDouble(prefsConfidenceKey, defaultConfidence)
+                        contextPrefs.duplicate.confidence.value
                     )
                 }
                 if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
@@ -518,7 +491,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
 
-        val folderPath = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
+        val folderPath = contextPrefs.general.downloadFolder.value
 
         if (folderPath.isNullOrBlank()) {
             val dc = DirectoryChooser()
@@ -568,22 +541,22 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             if (shiftDown) {
                 val dc = DirectoryChooser()
-                val dir = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
+                val dir = contextPrefs.general.downloadFolder.value
                 if (dir != null) dc.initialDirectory = File(dir)
                 dc.title = "Import directory"
                 val folder = dc.showDialog(root.currentWindow)
                 if (folder != null) {
-                    contextPrefs.put(prefsDownloadsKey, folder.parent)
+                    contextPrefs.general.downloadFolder.value = folder.parent
                     importFilesDialog(listOf(folder))
                 }
             } else {
                 val fc = FileChooser()
-                val dir = contextPrefs.get(prefsDownloadsKey, defaultDownloadsPath)
+                val dir = contextPrefs.general.downloadFolder.value
                 if (dir != null) fc.initialDirectory = File(dir)
                 fc.title = "Import files"
                 val files = fc.showOpenMultipleDialog(root.currentWindow)
                 if (!files.isNullOrEmpty()) {
-                    contextPrefs.put(prefsDownloadsKey, files.first().parent)
+                    contextPrefs.general.downloadFolder.value = files.first().parent
                     importFilesDialog(files)
                 }
             }
@@ -812,34 +785,34 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initMainStageProperties(stage: Stage) {
         // Maximized
-        stage.isMaximized = uiPrefs.getBoolean(prefsMaximizedKey, false)
+        stage.isMaximized = uiPrefs.ui.maximized.value
         stage.maximizedProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putBoolean(prefsMaximizedKey, newValue)
+            uiPrefs.ui.maximized.value = newValue
         }
 
         // Width
-        stage.width = uiPrefs.getDouble(prefsWidthKey, 600.0)
+        stage.width = uiPrefs.ui.width.value
         stage.widthProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble(prefsWidthKey, newValue.toDouble())
+            uiPrefs.ui.width.value = newValue.toDouble()
         }
 
         // Height
-        stage.height = uiPrefs.getDouble(prefsHeightKey, 400.0)
+        stage.height = uiPrefs.ui.height.value
         stage.heightProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble(prefsHeightKey, newValue.toDouble())
+            uiPrefs.ui.height.value = newValue.toDouble()
         }
 
         // Screen position
         val screen = Screen.getPrimary().visualBounds
         // X
-        stage.x = uiPrefs.getDouble(prefsXKey, (screen.maxX + screen.minX) / 2)
+        stage.x = uiPrefs.ui.x.value
         stage.xProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble(prefsXKey, newValue.toDouble())
+            uiPrefs.ui.x.value = newValue.toDouble()
         }
         // Y
-        stage.y = uiPrefs.getDouble(prefsYKey, (screen.maxY + screen.minY) / 2)
+        stage.y = uiPrefs.ui.y.value
         stage.yProperty()?.addListener { _, _, newValue ->
-            uiPrefs.putDouble(prefsYKey, newValue.toDouble())
+            uiPrefs.ui.y.value = newValue.toDouble()
         }
     }
 

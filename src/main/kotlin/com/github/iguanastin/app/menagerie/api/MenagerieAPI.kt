@@ -1,6 +1,5 @@
 package com.github.iguanastin.app.menagerie.api
 
-import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.import.ImportJob
@@ -266,7 +265,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
             return
         }
 
-        val folder = context.prefs.get(MyApp.prefsDownloadsKey, MyApp.defaultDownloadsPath)
+        val folder = context.prefs.general.downloadFolder.value
         if (folder.isNullOrBlank()) {
             sendErrorResponse(exchange, 500, "Missing download folder", "Download folder is not specified")
             return

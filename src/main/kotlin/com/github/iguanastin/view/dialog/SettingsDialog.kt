@@ -1,6 +1,6 @@
 package com.github.iguanastin.view.dialog
 
-import com.github.iguanastin.app.MyApp
+import com.github.iguanastin.app.settings.AppSettings
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.Button
@@ -11,9 +11,8 @@ import javafx.scene.text.FontWeight
 import javafx.stage.DirectoryChooser
 import tornadofx.*
 import java.io.File
-import java.util.prefs.Preferences
 
-class SettingsDialog(private val prefs: Preferences) : StackDialog() {
+class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
 
     private lateinit var cancelButton: Button
     private lateinit var downloadsBrowseButton: Button
@@ -61,26 +60,27 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
                             vbox(5.0) {
                                 padding = insets(5.0)
 
+                                // TODO dynamically generate views for each setting
                                 label("Database") { style { fontWeight = FontWeight.BOLD } }
                                 gridpane {
                                     vgap = 5.0
                                     paddingLeft = 10.0
                                     row {
                                         label("Path/URL: ")
-                                        databaseUrlTextField = textfield(prefs.get("db_url", "")) {
-                                            promptText = MyApp.defaultDatabaseUrl
+                                        databaseUrlTextField = textfield(prefs.database.url.value) {
+                                            promptText = prefs.database.url.default
                                         }
                                     }
                                     row {
                                         label("Username: ")
-                                        databaseUserTextField = textfield(prefs.get("db_user", "")) {
-                                            promptText = MyApp.defaultDatabaseUser
+                                        databaseUserTextField = textfield(prefs.database.user.value) {
+                                            promptText = prefs.database.user.default
                                         }
                                     }
                                     row {
                                         label("Password: ")
-                                        databasePasswordTextField = textfield(prefs.get("db_pass", "")) {
-                                            promptText = MyApp.defaultDatabasePassword
+                                        databasePasswordTextField = textfield(prefs.database.pass.value) {
+                                            promptText = prefs.database.pass.default
                                         }
                                     }
                                 }
@@ -94,7 +94,7 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
                                     paddingLeft = 10.0
                                     alignment = Pos.CENTER_LEFT
 
-                                    downloadsTextField = textfield(prefs.get("downloads", MyApp.defaultDownloadsPath)) {
+                                    downloadsTextField = textfield(prefs.general.downloadFolder.value) {
                                         hgrow = Priority.ALWAYS
                                         promptText = "Path to default downloads directory"
                                     }
@@ -126,15 +126,15 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
 
                                     row {
                                         label("Confidence: ")
-                                        confidenceTextField = textfield(prefs.getDouble("confidence", MyApp.defaultConfidence).toString()) {
-                                            promptText = "0.95"
+                                        confidenceTextField = textfield(prefs.duplicate.confidence.value.toString()) {
+                                            promptText = prefs.duplicate.confidence.default.toString()
                                             filterInput { it.controlNewText.isDouble() && it.controlNewText.toDouble() in 0.9..1.0 }
                                         }
                                     }
                                     row {
                                         label("CUDA hardware acceleration: ")
                                         cudaToggle = checkbox {
-                                            isSelected = prefs.getBoolean("cuda", MyApp.defaultCUDAEnabled)
+                                            isSelected = prefs.duplicate.enableCuda.value
                                         }
                                     }
                                 }
@@ -168,37 +168,17 @@ class SettingsDialog(private val prefs: Preferences) : StackDialog() {
     }
 
     private fun apply() {
-        if (databaseUrlTextField.text.isNullOrBlank()) {
-            prefs.remove("db_url")
-        } else {
-            prefs.put("db_url", databaseUrlTextField.text)
-        }
+        prefs.database.url.value = databaseUrlTextField.text
 
-        if (databaseUserTextField.text.isNullOrBlank()) {
-            prefs.remove("db_user")
-        } else {
-            prefs.put("db_user", databaseUserTextField.text)
-        }
+        prefs.database.user.value = databaseUserTextField.text
 
-        if (databasePasswordTextField.text.isNullOrBlank()) {
-            prefs.remove("db_pass")
-        } else {
-            prefs.put("db_pass", databasePasswordTextField.text)
-        }
+        prefs.database.pass.value = databasePasswordTextField.text
 
-        if (downloadsTextField.text.isNullOrBlank()) {
-            prefs.remove("downloads")
-        } else {
-            prefs.put("downloads", downloadsTextField.text)
-        }
+        prefs.general.downloadFolder.value = downloadsTextField.text
 
-        prefs.putBoolean("cuda", cudaToggle.isSelected)
+        prefs.duplicate.enableCuda.value = cudaToggle.isSelected
 
-        if (confidenceTextField.text.isNullOrBlank()) {
-            prefs.remove("confidence")
-        } else {
-            prefs.putDouble("confidence", confidenceTextField.text.toDouble())
-        }
+        prefs.duplicate.confidence.value = confidenceTextField.text.toDouble()
     }
 
     override fun requestFocus() {

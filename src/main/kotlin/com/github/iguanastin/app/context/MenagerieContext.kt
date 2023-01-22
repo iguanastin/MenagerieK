@@ -4,11 +4,11 @@ import com.github.iguanastin.app.menagerie.api.MenagerieAPI
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.settings.AppSettings
 import java.util.*
-import java.util.prefs.Preferences
 import kotlin.concurrent.thread
 
-class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter, val database: MenagerieDatabase, val prefs: Preferences) {
+class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter, val database: MenagerieDatabase, val prefs: AppSettings) {
 
     val tagEdits: Stack<TagEdit> = Stack()
 
