@@ -19,7 +19,7 @@ class GeneralSettingGroup(title: String, prefs: Preferences) : SettingGroup(titl
     init {
         settings = mutableListOf()
 
-        downloadFolder = StringSetting("downloads", "Downloads folder", "", prefs).also { settings.add(it) }
+        downloadFolder = StringSetting("downloads", "Downloads folder", "", prefs, StringSetting.Type.FOLDER_PATH).also { settings.add(it) }
     }
 
 }
@@ -52,7 +52,7 @@ class DuplicateSettingGroup(title: String, prefs: Preferences) : SettingGroup(ti
     init {
         settings = mutableListOf()
 
-        confidence = DoubleSetting("confidence", "Similarity confidence", 0.95, prefs).also { settings.add(it) }
+        confidence = DoubleSetting("confidence", "Similarity confidence", 0.95, prefs, min = 0.5, max = 1.0).also { settings.add(it) }
         enableCuda = BoolSetting("cuda", "CUDA GPU acceleration", false, prefs).also { settings.add(it) }
     }
 
@@ -69,7 +69,7 @@ class APISettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
         settings = mutableListOf()
 
         enabled = BoolSetting("api", "Host HTTP API server", false, prefs).also { settings.add(it) }
-        port = IntSetting("api_port", "HTTP API port", 54321, prefs).also { settings.add(it) }
+        port = IntSetting("api_port", "HTTP API port", 54321, prefs, min = 0, max = 65536).also { settings.add(it) }
     }
 
 }

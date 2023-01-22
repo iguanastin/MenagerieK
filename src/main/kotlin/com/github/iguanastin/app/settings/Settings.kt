@@ -6,7 +6,7 @@ abstract class BaseSettings(prefsPath: String) {
 
     protected val prefs: Preferences = Preferences.userRoot().node(prefsPath)
 
-    protected abstract val groups: List<SettingGroup>
+    abstract val groups: List<SettingGroup>
 
     fun resetToDefaults() {
         groups.forEach { it.resetToDefaults() }
