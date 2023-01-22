@@ -31,7 +31,6 @@ import javafx.scene.input.KeyEvent
 import javafx.scene.input.TransferMode
 import javafx.stage.DirectoryChooser
 import javafx.stage.FileChooser
-import javafx.stage.Screen
 import javafx.stage.Stage
 import mu.KotlinLogging
 import tornadofx.*
@@ -785,32 +784,31 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initMainStageProperties(stage: Stage) {
         // Maximized
-        stage.isMaximized = uiPrefs.ui.maximized.value
+        if (!stage.isMaximized) stage.isMaximized = uiPrefs.ui.maximized.value
         stage.maximizedProperty()?.addListener { _, _, newValue ->
             uiPrefs.ui.maximized.value = newValue
         }
 
         // Width
-        stage.width = uiPrefs.ui.width.value
+        if (!stage.isMaximized) stage.width = uiPrefs.ui.width.value
         stage.widthProperty()?.addListener { _, _, newValue ->
             uiPrefs.ui.width.value = newValue.toDouble()
         }
 
         // Height
-        stage.height = uiPrefs.ui.height.value
+        if (!stage.isMaximized) stage.height = uiPrefs.ui.height.value
         stage.heightProperty()?.addListener { _, _, newValue ->
             uiPrefs.ui.height.value = newValue.toDouble()
         }
 
         // Screen position
-        val screen = Screen.getPrimary().visualBounds
         // X
-        stage.x = uiPrefs.ui.x.value
+        if (!stage.isMaximized) stage.x = uiPrefs.ui.x.value
         stage.xProperty()?.addListener { _, _, newValue ->
             uiPrefs.ui.x.value = newValue.toDouble()
         }
         // Y
-        stage.y = uiPrefs.ui.y.value
+        if (!stage.isMaximized) stage.y = uiPrefs.ui.y.value
         stage.yProperty()?.addListener { _, _, newValue ->
             uiPrefs.ui.y.value = newValue.toDouble()
         }
