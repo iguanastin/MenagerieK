@@ -122,7 +122,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         context.database.updateErrorHandlers.add { e ->
             log.error("Error occurred while updating database", e)
-            information("Error while updating database", e.message, owner = root.currentWindow, title = "Error")
+            runOnUIThread { information("Error while updating database", e.message, owner = root.currentWindow, title = "Error") }
             // TODO show better error to user
         }
 
@@ -250,7 +250,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initImporterListeners(context: MenagerieContext) {
         context.importer.onError.add { e ->
             log.error("Error occurred while importing", e)
-            information("Import failed", e.message, owner = root.currentWindow, title = "Error")
+            runOnUIThread { information("Import failed", e.message, owner = root.currentWindow, title = "Error") }
             // TODO show better error message to user
         }
         context.importer.onQueued.add { job ->
