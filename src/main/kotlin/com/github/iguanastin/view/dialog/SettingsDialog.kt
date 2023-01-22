@@ -152,7 +152,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
                     button("Apply") {
                         onAction = EventHandler { event ->
                             event.consume()
-                            apply()
+                            applySettings()
                             close()
                         }
                     }
@@ -167,17 +167,12 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
         }
     }
 
-    private fun apply() {
+    private fun applySettings() {
         prefs.database.url.value = databaseUrlTextField.text
-
         prefs.database.user.value = databaseUserTextField.text
-
         prefs.database.pass.value = databasePasswordTextField.text
-
         prefs.general.downloadFolder.value = downloadsTextField.text
-
         prefs.duplicate.enableCuda.value = cudaToggle.isSelected
-
         prefs.duplicate.confidence.value = confidenceTextField.text.toDouble()
     }
 

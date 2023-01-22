@@ -1,95 +1,57 @@
 package com.github.iguanastin.app.settings
 
-import javafx.beans.property.*
+import javafx.beans.property.ObjectProperty
+import javafx.beans.property.ReadOnlyObjectProperty
+import javafx.beans.property.SimpleObjectProperty
 import java.util.prefs.Preferences
 
-abstract class Setting(val name: String, protected val prefs: Preferences) {
-    abstract fun resetToDefault()
-}
-
-class StringSetting(name: String, val default: String?, prefs: Preferences) : Setting(name, prefs) {
-
-    private val _property: StringProperty = SimpleStringProperty(default)
-    val property: ReadOnlyStringProperty = _property
-    var value: String?
-        get() = prefs.get(name, default)
+abstract class Setting<T>(private val key: String, val label: String?, val default: T, private val prefs: Preferences) {
+    private val _property: ObjectProperty<T> = SimpleObjectProperty()
+    val property: ReadOnlyObjectProperty<T> = _property
+    var value: T
+        get() = stringToObject(prefs.get(key, default.toString()))
         set(value) {
-            prefs.put(name, value)
+            prefs.put(key, value.toString())
         }
 
     init {
         prefs.addPreferenceChangeListener {
-            if (it.key == name) _property.value = it.newValue
+            if (it.key == key) _property.value = stringToObject(it.newValue)
         }
     }
 
-    override fun resetToDefault() {
+    fun resetToDefault() {
         value = default
     }
-}
 
-class IntSetting(name: String, val default: Int, prefs: Preferences) : Setting(name, prefs) {
-
-    private val _property: IntegerProperty = SimpleIntegerProperty(default)
-    val property: ReadOnlyIntegerProperty = _property
-    var value: Int
-        get() = prefs.getInt(name, default)
-        set(value) {
-            prefs.putInt(name, value)
-        }
-
-    init {
-        prefs.addPreferenceChangeListener {
-            if (it.key == name) _property.value = it.newValue.toInt()
-        }
-    }
-
-    override fun resetToDefault() {
-        value = default
-    }
+    protected abstract fun stringToObject(string: String): T
 
 }
 
-class BoolSetting(name: String, val default: Boolean, prefs: Preferences) : Setting(name, prefs) {
-
-    private val _property: BooleanProperty = SimpleBooleanProperty(default)
-    val property: ReadOnlyBooleanProperty = _property
-    var value: Boolean
-        get() = prefs.getBoolean(name, default)
-        set(value) {
-            prefs.putBoolean(name, value)
-        }
-
-    init {
-        prefs.addPreferenceChangeListener {
-            if (it.key == name) _property.value = it.newValue.toBoolean()
-        }
+class StringSetting(key: String, label: String? = null, default: String, prefs: Preferences) :
+    Setting<String>(key, label, default, prefs) {
+    override fun stringToObject(string: String): String {
+        return string
     }
-
-    override fun resetToDefault() {
-        value = default
-    }
-
 }
 
-class DoubleSetting(name: String, val default: Double, prefs: Preferences) : Setting(name, prefs) {
-
-    private val _property: DoubleProperty = SimpleDoubleProperty(default)
-    val property: ReadOnlyDoubleProperty = _property
-    var value: Double
-        get() = prefs.getDouble(name, default)
-        set(value) {
-            prefs.putDouble(name, value)
-        }
-
-    init {
-        prefs.addPreferenceChangeListener {
-            if (it.key == name) _property.value = it.newValue.toDouble()
-        }
+class BoolSetting(key: String, label: String? = null, default: Boolean, prefs: Preferences) :
+    Setting<Boolean>(key, label, default, prefs) {
+    override fun stringToObject(string: String): Boolean {
+        return string.toBoolean()
     }
+}
 
-    override fun resetToDefault() {
-        value = default
+class IntSetting(key: String, label: String? = null, default: Int, prefs: Preferences) :
+    Setting<Int>(key, label, default, prefs) {
+    override fun stringToObject(string: String): Int {
+        return string.toInt()
     }
+}
 
+class DoubleSetting(key: String, label: String? = null, default: Double, prefs: Preferences) :
+    Setting<Double>(key, label, default, prefs) {
+    override fun stringToObject(string: String): Double {
+        return string.toDouble()
+    }
 }
