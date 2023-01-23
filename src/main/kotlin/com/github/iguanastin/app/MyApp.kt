@@ -36,10 +36,6 @@ import mu.KotlinLogging
 import tornadofx.*
 import java.io.File
 import java.io.IOException
-import java.rmi.registry.LocateRegistry
-import java.rmi.registry.Registry
-import java.rmi.server.ExportException
-import java.rmi.server.UnicastRemoteObject
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -47,20 +43,23 @@ private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
 
-    companion object {
-        const val rmiCommunicatorName = "communicator"
-    }
-
     private val uiPrefs: WindowSettings = WindowSettings()
     private val contextPrefs: AppSettings = AppSettings()
 
     private var context: MenagerieContext? = null
 
-    private lateinit var rmiRegistry: Registry
-    private lateinit var rmiCommunicator: MenagerieRMICommunicator
+    /**
+     * Inter-process communicator to avoid having two instances of the app and to enable importing from the browser.
+     */
+    private lateinit var rmi: MenagerieRMI
 
     private lateinit var root: MainView
 
+    /**
+     * Queue of urls collected before the Menagerie has fully loaded.
+     *
+     * Gets flushed to the importer once the Menagerie context is ready.
+     */
     private val preLoadImportQueue: MutableList<String> = mutableListOf()
 
 
@@ -84,11 +83,13 @@ class MyApp : App(MainView::class, Styles::class) {
         log.info("Starting Menagerie")
         initMainStageProperties(stage)
         initViewControls()
+
+        // Load the Menagerie data from disk
         loadMenagerie(
             stage,
-            contextPrefs.database.url.value!!,
-            contextPrefs.database.user.value!!,
-            contextPrefs.database.pass.value!!
+            contextPrefs.database.url.value,
+            contextPrefs.database.user.value,
+            contextPrefs.database.pass.value
         ) { context ->
             onMenagerieLoaded(context)
         }
@@ -126,8 +127,8 @@ class MyApp : App(MainView::class, Styles::class) {
         purgeUnusedTags(context.menagerie)
         initImporterListeners(context)
 
-        // Initial search
         runOnUIThread {
+            // Initial search
             root.navigateForward(
                 MenagerieView(
                     context.menagerie,
@@ -139,60 +140,40 @@ class MyApp : App(MainView::class, Styles::class) {
             )
 
             log.info("Flushing ${preLoadImportQueue.size} urls from pre-load import queue")
-            preLoadImportQueue.forEach { rmiCommunicator.importUrl(it) }
+            preLoadImportQueue.forEach { rmi.communicator.importUrl(it) }
         }
     }
 
     private fun initInterProcessCommunicator() {
-        try {
-            rmiRegistry = LocateRegistry.createRegistry(1099)
-            rmiCommunicator = object : MenagerieRMICommunicator {
-                override fun importUrl(url: String) {
-                    if (context != null) {
-                        val splitString = url.split(",")
-
-                        val sanitizedUrl = splitString[0]
-
-                        val tags: List<Tag> =
-                            splitString.subList(1, splitString.size).mapNotNull { context!!.menagerie.getTag(it) }
-
-                        runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
-                    } else {
-                        log.info("Storing url for import once app is ready: $url")
-                        preLoadImportQueue.add(url)
-                    }
-                }
-
-                override fun bringToFront() {
-                    root.currentStage?.toFront()
-                }
-            }
-            rmiRegistry.bind(rmiCommunicatorName, UnicastRemoteObject.exportObject(rmiCommunicator, 0))
-
+        rmi = MenagerieRMI(onServerStart = { rmi ->
             // Import url if in parameter
             if (parameters.named.containsKey("import")) {
-                rmiCommunicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
+                rmi.communicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
             }
-        } catch (e: ExportException) {
-            // Cannot open an RMI registry as Menagerie instance is already running
-            try {
-                rmiRegistry = LocateRegistry.getRegistry(1099)
-                val communicator = (rmiRegistry.lookup(rmiCommunicatorName) as MenagerieRMICommunicator)
-
-                // Attempt to send an import message to the open menagerie instance
-                val url = parameters.named["import"]?.removePrefix("menagerie:")
-                if (url != null) {
-                    communicator.importUrl(url)
-                } else {
-                    communicator.bringToFront()
-                }
-            } catch (e: Exception) {
-                log.error("Failed to communicate", e)
-                exitProcess(1)
+        }, onClientStart = { rmi ->
+            // Attempt to send an import message to the open menagerie instance
+            val url = parameters.named["import"]?.removePrefix("menagerie:")
+            if (url != null) {
+                rmi.communicator.importUrl(url)
             }
-
             exitProcess(0)
-        }
+        }, onImportURL = { url ->
+            if (context != null) {
+                val splitString = url.split(",")
+
+                val sanitizedUrl = splitString[0]
+
+                val tags: List<Tag> =
+                    splitString.subList(1, splitString.size).mapNotNull { context!!.menagerie.getTag(it) }
+
+                runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
+            } else {
+                preLoadImportQueue.add(url)
+            }
+        }, onFailedConnect = { _, e ->
+            log.error("Failed to connect RMI", e)
+            exitProcess(1)
+        })
     }
 
     private fun handleParameters() {
@@ -668,8 +649,7 @@ class MyApp : App(MainView::class, Styles::class) {
         log.info("Stopping app")
 
         // Close RMI communicator
-        UnicastRemoteObject.unexportObject(rmiCommunicator, true)
-        rmiRegistry.unbind(rmiCommunicatorName)
+        rmi.close()
 
         context?.close()
     }
