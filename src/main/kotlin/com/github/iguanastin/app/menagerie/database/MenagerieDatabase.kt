@@ -16,7 +16,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
-class MenagerieDatabase(private val url: String, private val user: String, private val password: String) : AutoCloseable {
+
+class MenagerieDatabase(private val url: String, private val user: String, private val password: String) :
+    AutoCloseable {
 
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
@@ -58,7 +60,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 }
 
                 if (update != null) {
-                    log.debug { "Database update: $update" }
+                    log.debug { "Update: $update" }
 
                     try {
                         update.sync(this)
@@ -97,20 +99,51 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val changeListener: (ItemChangeBase) -> Unit = { change ->
             when (change) {
                 is ImageItemChange -> {
-                    if (change.histogram != null) updateQueue.put(DatabaseSetImageHistogram(change.item as ImageItem, change.histogram.new))
-                    if (change.noSimilar != null) updateQueue.put(DatabaseSetImageNoSimilar(change.item as ImageItem, change.noSimilar.new))
+                    if (change.histogram != null) updateQueue.put(
+                        DatabaseSetImageHistogram(
+                            change.item as ImageItem,
+                            change.histogram.new
+                        )
+                    )
+                    if (change.noSimilar != null) updateQueue.put(
+                        DatabaseSetImageNoSimilar(
+                            change.item as ImageItem,
+                            change.noSimilar.new
+                        )
+                    )
                 }
                 is FileItemChange -> {
                     if (change.md5 != null) updateQueue.put(DatabaseSetFileMD5(change.item as FileItem, change.md5.new))
-                    if (change.file != null) updateQueue.put(DatabaseSetFilePath(change.item as FileItem, change.file.new))
+                    if (change.file != null) updateQueue.put(
+                        DatabaseSetFilePath(
+                            change.item as FileItem,
+                            change.file.new
+                        )
+                    )
                 }
                 is GroupItemChange -> {
                     if (change.title != null) updateQueue.put(DatabaseSetGroupTitle(change.item.id, change.title.new))
-                    if (!change.items.isNullOrEmpty()) updateQueue.put(DatabaseSetGroupItems(change.item as GroupItem, change.items))
+                    if (!change.items.isNullOrEmpty()) updateQueue.put(
+                        DatabaseSetGroupItems(
+                            change.item as GroupItem,
+                            change.items
+                        )
+                    )
                 }
                 is ItemChange -> {
-                    if (!change.tagsAdded.isNullOrEmpty()) change.tagsAdded.forEach { updateQueue.put(DatabaseTagItem(change.item, it)) }
-                    if (!change.tagsRemoved.isNullOrEmpty()) change.tagsRemoved.forEach { updateQueue.put(DatabaseUntagItem(change.item, it)) }
+                    if (!change.tagsAdded.isNullOrEmpty()) change.tagsAdded.forEach {
+                        updateQueue.put(
+                            DatabaseTagItem(
+                                change.item,
+                                it
+                            )
+                        )
+                    }
+                    if (!change.tagsRemoved.isNullOrEmpty()) change.tagsRemoved.forEach {
+                        updateQueue.put(
+                            DatabaseUntagItem(change.item, it)
+                        )
+                    }
                 }
             }
         }
@@ -127,12 +160,14 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 }
                 change.addedSubList.forEach { item ->
                     item.changeListeners.add(changeListener)
-                    updateQueue.put(when (item) {
-                        is ImageItem -> DatabaseCreateImage(item)
-                        is FileItem -> DatabaseCreateFile(item)
-                        is GroupItem -> DatabaseCreateGroup(item)
-                        else -> TODO("Unimplemented")
-                    })
+                    updateQueue.put(
+                        when (item) {
+                            is ImageItem -> DatabaseCreateImage(item)
+                            is FileItem -> DatabaseCreateFile(item)
+                            is GroupItem -> DatabaseCreateGroup(item)
+                            else -> TODO("Unimplemented")
+                        }
+                    )
                 }
             }
         })
@@ -188,12 +223,15 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
         while (needsMigration()) {
             val migration = getBestMigrationFor(version)
-                    ?: throw MenagerieDatabaseException("No database migration path from v$version to v$REQUIRED_DATABASE_VERSION")
+                ?: throw MenagerieDatabaseException("No database migration path from v$version to v$REQUIRED_DATABASE_VERSION")
 
             try {
                 migration.migrate(db) // TODO if any error occurs, revert to backup database and throw error
             } catch (e: Exception) {
-                throw MenagerieDatabaseException("Exception during migration from v$version to v${migration.toVersion}", e)
+                throw MenagerieDatabaseException(
+                    "Exception during migration from v$version to v${migration.toVersion}",
+                    e
+                )
             }
 
             version = migration.toVersion
@@ -205,10 +243,9 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         var migration: DatabaseMigration? = null
 
         for (i in migrations.indices) {
-            if (migrations[i].fromVersion == version) {
-                if (migration == null || migrations[i].toVersion > migration.toVersion) {
-                    migration = migrations[i]
-                }
+            if (migrations[i].fromVersion != version) continue
+            if (migration == null || migrations[i].toVersion > migration.toVersion) {
+                migration = migrations[i]
             }
         }
 
@@ -248,7 +285,12 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
                 val alpha = rs.getBinaryStream("hist_a")
                 if (alpha != null) {
-                    histogram = Histogram.from(alpha, rs.getBinaryStream("hist_r"), rs.getBinaryStream("hist_g"), rs.getBinaryStream("hist_b"))
+                    histogram = Histogram.from(
+                        alpha,
+                        rs.getBinaryStream("hist_r"),
+                        rs.getBinaryStream("hist_g"),
+                        rs.getBinaryStream("hist_b")
+                    )
                 }
 
                 images[rs.getInt("id")] = TempImageV9(rs.getBoolean("no_similar"), histogram)
@@ -324,7 +366,15 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val generatedItems: MutableList<Item> = mutableListOf()
         val groupChildMap: MutableMap<Int, FileItem> = mutableMapOf()
         for (i in images.keys) {
-            val item = ImageItem(i, items[i]!!.added, menagerie, files[i]!!.md5, files[i]!!.file, images[i]!!.noSimilar, images[i]!!.histogram)
+            val item = ImageItem(
+                i,
+                items[i]!!.added,
+                menagerie,
+                files[i]!!.md5,
+                files[i]!!.file,
+                images[i]!!.noSimilar,
+                images[i]!!.histogram
+            )
             generatedItems.add(item)
             groupChildMap[i] = item
             files.remove(i)
@@ -406,14 +456,15 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
     private fun retrieveVersion(): Int {
         try {
-            genericStatement.executeQuery("SELECT TOP 1 version.version FROM version ORDER BY version.version DESC;").use { rs ->
-                return if (rs.next()) {
-                    rs.getInt("version")
-                } else {
-                    // No version information in existing version table, probably corrupted
-                    -1
+            genericStatement.executeQuery("SELECT TOP 1 version.version FROM version ORDER BY version.version DESC;")
+                .use { rs ->
+                    return if (rs.next()) {
+                        rs.getInt("version")
+                    } else {
+                        // No version information in existing version table, probably corrupted
+                        -1
+                    }
                 }
-            }
         } catch (e: SQLException) {
             //Database is either version 0 schema or not initialized
             try {
@@ -443,7 +494,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
         closeAndCompress(false)
 
-        // TODO: Backup the database file
+        TODO("Backup of database file unimplemented")
 
         log.info("Restarting database connection...")
         db = DriverManager.getConnection("jdbc:h2:$url", user, password)

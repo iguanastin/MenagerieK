@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
+import com.github.iguanastin.app.menagerie.model.GroupItem
 
 class DatabaseSetGroupTitle(private val itemID: Int, private val title: String): DatabaseUpdate() {
 
@@ -15,6 +15,10 @@ class DatabaseSetGroupTitle(private val itemID: Int, private val title: String):
         ps.setInt(2, itemID)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "SetGroupTitle(item=$itemID, title=$title)"
     }
 
 }

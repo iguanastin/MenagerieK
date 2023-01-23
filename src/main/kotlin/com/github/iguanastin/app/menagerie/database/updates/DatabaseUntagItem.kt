@@ -1,8 +1,8 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
+import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Tag
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseUntagItem(private val itemID: Int, private val tagID: Int): DatabaseUpdate() {
 
@@ -16,6 +16,10 @@ class DatabaseUntagItem(private val itemID: Int, private val tagID: Int): Databa
         ps.setInt(2, tagID)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "UntagItem(item=$itemID, tag=$tagID)"
     }
 
 }

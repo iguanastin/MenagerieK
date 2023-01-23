@@ -258,31 +258,31 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initEditTagsControl() {
         root.applyTagEdit.onAction = EventHandler { event ->
             val items = root.itemGrid.selected
+            if (items.isEmpty()) return@EventHandler // Do nothing if there are no items selected
+
             val tagsToAdd = mutableListOf<Tag>()
             val tagsToRemove = mutableListOf<Tag>()
+
+            val menagerie = context?.menagerie ?: return@EventHandler // Do nothing if there is no menagerie context
 
             for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
                 if (name.isBlank()) continue // Ignore empty and blank additions
 
-                val menagerie = root.itemGrid.selected[0].menagerie
                 if (name.startsWith('-')) {
-                    if (name.length == 1) continue
-                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue
+                    if (name.length == 1) continue // Ignore a '-' by itself
+                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue // Ignore tags that don't exist
                     tagsToRemove.add(tag)
                 } else {
-                    var tag: Tag? = menagerie.getTag(name)
-                    if (tag == null) {
-                        tag = Tag(menagerie.reserveTagID(), name)
-                        menagerie.addTag(tag)
-                    }
-                    tagsToAdd.add(tag)
+                    tagsToAdd.add(menagerie.getOrMakeTag(name))
                 }
             }
 
-            val edit = TagEdit(items, tagsToAdd, tagsToRemove)
-            if (items.isNotEmpty() && (tagsToAdd.isNotEmpty() || tagsToRemove.isNotEmpty())) {
-                edit.applyEdit()
-                context?.tagEdits?.push(edit)
+            if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@EventHandler // Do nothing if there are no viable tag edits
+
+            // Apply tag edits
+            TagEdit(items, tagsToAdd, tagsToRemove).apply {
+                applyEdit()
+                context?.tagEdits?.push(this)
             }
 
             root.editTagsPane.hide()
@@ -292,39 +292,43 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun initItemGridKeyHandler() {
         root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.I && event.isShortcutDown) {
+            val ctrl = event.isShortcutDown
+            val shift = event.isShiftDown
+            val alt = event.isAltDown
+
+            if (event.code == KeyCode.I && ctrl) {
                 event.consume()
-                importShortcut(event.isShiftDown)
+                importShortcut(shift)
             }
             if (event.code == KeyCode.DELETE) {
                 event.consume()
-                deleteShortcut(event.isShortcutDown)
+                deleteShortcut(ctrl)
             }
-            if (event.code == KeyCode.R && event.isShortcutDown && !event.isShiftDown) {
+            if (event.code == KeyCode.R && ctrl && !shift) {
                 event.consume()
                 renameGroupShortcut()
             }
-            if (event.code == KeyCode.D && event.isShortcutDown && !event.isShiftDown) {
+            if (event.code == KeyCode.D && ctrl && !shift) {
                 event.consume()
                 duplicatesShortcut(event)
             }
-            if (event.code == KeyCode.G && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+            if (event.code == KeyCode.G && ctrl && !shift && !alt) {
                 event.consume()
                 groupShortcut()
             }
-            if (event.code == KeyCode.U && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+            if (event.code == KeyCode.U && ctrl && !shift && !alt) {
                 event.consume()
                 ungroupShortcut()
             }
-            if (event.code == KeyCode.S && event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
+            if (event.code == KeyCode.S && ctrl && !alt && !shift) {
                 event.consume()
                 root.root.add(SettingsDialog(contextPrefs))
             }
-            if (event.code == KeyCode.F && event.isShortcutDown && event.isShiftDown && !event.isAltDown) {
+            if (event.code == KeyCode.F && ctrl && shift && !alt) {
                 event.consume()
                 root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
             }
-            if (event.code == KeyCode.Z && event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
+            if (event.code == KeyCode.Z && ctrl && !shift && !alt) {
                 event.consume()
                 undoLastEdit()
             }
@@ -332,41 +336,40 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun undoLastEdit() {
-        if (context?.tagEdits?.isNotEmpty() == true) {
-            val peek = context?.tagEdits?.peek() ?: return
-            root.root.confirm(
-                "Undo tag edit",
-                peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString(
-                    "\n"
-                ) { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
-                context?.tagEdits?.pop()?.undoEdit()
-            }
+        val peek = context?.tagEdits?.peek() ?: return // Return if there are no tag edits in the stack
+
+        root.root.confirm(
+            "Undo tag edit",
+            peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString(
+                "\n"
+            ) { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
+            context?.tagEdits?.pop()?.undoEdit()
         }
     }
 
     private fun initExternalDragDrop() {
         root.root.onDragOver = EventHandler { event ->
-            if (context != null && event.gestureSource == null && (event.dragboard.hasFiles() || event.dragboard.hasUrl())) {
-                root.dragOverlay.show()
-                event.apply {
-                    acceptTransferModes(*TransferMode.ANY)
-                    consume()
-                }
+            if (context == null || event.gestureSource != null || (!event.dragboard.hasFiles() && !event.dragboard.hasUrl())) return@EventHandler
+
+            root.dragOverlay.show()
+            event.apply {
+                acceptTransferModes(*TransferMode.ANY)
+                consume()
             }
         }
         root.root.onDragDropped = EventHandler { event ->
-            if (context != null && event.isAccepted) {
-                if (event.dragboard.url?.startsWith("http") == true) {
-                    downloadFileFromWeb(event.dragboard.url)
-                }
-                if (event.dragboard.files?.isNotEmpty() == true) {
-                    importFilesDialog(event.dragboard.files)
-                }
+            if (context == null || !event.isAccepted) return@EventHandler
 
-                event.apply {
-                    isDropCompleted = true
-                    consume()
-                }
+            if (event.dragboard.url?.startsWith("http") == true) {
+                downloadFileFromWeb(event.dragboard.url)
+            }
+            if (event.dragboard.files?.isNotEmpty() == true) {
+                importFilesDialog(event.dragboard.files)
+            }
+
+            event.apply {
+                isDropCompleted = true
+                consume()
             }
         }
         root.root.onDragExited = EventHandler {
@@ -473,7 +476,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         val folderPath = contextPrefs.general.downloadFolder.value
 
-        if (folderPath.isNullOrBlank()) {
+        if (folderPath.isBlank()) {
             val dc = DirectoryChooser()
             dc.title = "Download into folder"
             download(dc.showDialog(root.currentWindow))
@@ -500,18 +503,18 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun deleteShortcut(shortcutDown: Boolean) {
         val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
-        if (del.isNotEmpty()) {
-            if (!shortcutDown) {
-                root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
-                    onConfirm = {
-                        deleteFiles(del)
-                    }
+        if (del.isEmpty()) return
+
+        if (shortcutDown) {
+            root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
+                onConfirm = {
+                    deleteItems(del)
                 }
-            } else {
-                root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
-                    onConfirm = {
-                        deleteItems(del)
-                    }
+            }
+        } else {
+            root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
+                onConfirm = {
+                    deleteFiles(del)
                 }
             }
         }
@@ -522,7 +525,7 @@ class MyApp : App(MainView::class, Styles::class) {
             if (shiftDown) {
                 val dc = DirectoryChooser()
                 val dir = contextPrefs.general.downloadFolder.value
-                if (dir != null) dc.initialDirectory = File(dir)
+                dc.initialDirectory = File(dir)
                 dc.title = "Import directory"
                 val folder = dc.showDialog(root.currentWindow)
                 if (folder != null) {
@@ -532,7 +535,7 @@ class MyApp : App(MainView::class, Styles::class) {
             } else {
                 val fc = FileChooser()
                 val dir = contextPrefs.general.downloadFolder.value
-                if (dir != null) fc.initialDirectory = File(dir)
+                fc.initialDirectory = File(dir)
                 fc.title = "Import files"
                 val files = fc.showOpenMultipleDialog(root.currentWindow)
                 if (!files.isNullOrEmpty()) {
@@ -590,19 +593,17 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun getFilesRecursively(folder: File): List<File> {
-        if (folder.isDirectory) {
-            val result = mutableListOf<File>()
-            folder.listFiles()?.sortedWith(WindowsExplorerComparator())!!.forEach {
-                if (it.isDirectory) {
-                    result.addAll(getFilesRecursively(it))
-                } else {
-                    result.add(it)
-                }
+        if (!folder.isDirectory) return listOf(folder)
+
+        val result = mutableListOf<File>()
+        folder.listFiles()?.sortedWith(WindowsExplorerComparator())!!.forEach {
+            if (it.isDirectory) {
+                result.addAll(getFilesRecursively(it))
+            } else {
+                result.add(it)
             }
-            return result
-        } else {
-            return listOf(folder)
         }
+        return result
     }
 
     private fun deleteItems(items: List<Item>) {

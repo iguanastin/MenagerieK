@@ -16,4 +16,8 @@ open class DatabaseCreateFile(item: FileItem): DatabaseCreateItem(item) {
         return super.sync(db) + ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "CreateFileItem(item=${item.id}, md5=${(item as FileItem).md5}, file=${item.file.absolutePath})"
+    }
+
 }

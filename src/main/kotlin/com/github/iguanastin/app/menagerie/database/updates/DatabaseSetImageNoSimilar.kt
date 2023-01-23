@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
+import com.github.iguanastin.app.menagerie.model.ImageItem
 
 class DatabaseSetImageNoSimilar(private val itemID: Int, private val noSimilar: Boolean): DatabaseUpdate() {
 
@@ -15,6 +15,10 @@ class DatabaseSetImageNoSimilar(private val itemID: Int, private val noSimilar: 
         ps.setInt(2, itemID)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "SetImageNoSimilar(item=$itemID, value=$noSimilar)"
     }
 
 }

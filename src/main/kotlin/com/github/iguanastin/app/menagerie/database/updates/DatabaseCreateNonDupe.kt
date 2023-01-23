@@ -19,4 +19,8 @@ class DatabaseCreateNonDupe(private val item1ID: Int, private val item2ID: Int):
         return ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "CreateNonDupe(item1=$item1ID, item2=$item2ID)"
+    }
+
 }

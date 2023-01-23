@@ -20,4 +20,8 @@ open class DatabaseCreateItem(val item: Item): DatabaseUpdate() {
         return updates
     }
 
+    override fun toString(): String {
+        return "CreateItem(item=${item.id}, added=${item.added}, tagCount=${item.tags.size})"
+    }
+
 }

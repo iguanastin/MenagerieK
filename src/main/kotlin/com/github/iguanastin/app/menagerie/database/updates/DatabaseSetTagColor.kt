@@ -17,4 +17,8 @@ class DatabaseSetTagColor(private val tagId: Int, private val color: String?): D
         return ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "SetTagColor(tag=$tagId, color=$color)"
+    }
+
 }

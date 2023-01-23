@@ -39,10 +39,12 @@ private val log = KotlinLogging.logger {}
 
 class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
 
-    val HTTP_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
+    companion object {
+        private val HTTP_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
+    }
 
     private var server: HttpServer? = null
-    var port: Int = 54321
+    var port: Int = context.prefs.api.port.value
         private set
 
 
@@ -169,8 +171,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
 
         // TODO allow multiple items to be edited with one call. Dash-separated ids?
         val idStr = exchange.requestURI.path.substring(11)
-        val id: Int
-        id = try {
+        val id: Int = try {
             idStr.toInt()
         } catch (e: NumberFormatException) {
             sendErrorResponse(exchange, 400, "Invalid ID", "ID must be an integer")
@@ -217,8 +218,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
 
         // Get and verify ID
         val idStr = exchange.requestURI.path.substring(6)
-        val id: Int
-        id = try {
+        val id: Int = try {
             idStr.toInt()
         } catch (e: NumberFormatException) {
             sendErrorResponse(exchange, 400, "Invalid ID", "ID must be an integer")
@@ -266,7 +266,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         }
 
         val folder = context.prefs.general.downloadFolder.value
-        if (folder.isNullOrBlank()) {
+        if (folder.isBlank()) {
             sendErrorResponse(exchange, 500, "Missing download folder", "Download folder is not specified")
             return
         } else {

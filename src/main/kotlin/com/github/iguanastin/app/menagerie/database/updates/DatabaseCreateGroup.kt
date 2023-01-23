@@ -16,4 +16,8 @@ class DatabaseCreateGroup(item: GroupItem): DatabaseCreateItem(item) {
         return super.sync(db) + ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "CreateGroup(item=${item.id}, title=${(item as GroupItem).title}, itemCount=${item.items.size})"
+    }
+
 }

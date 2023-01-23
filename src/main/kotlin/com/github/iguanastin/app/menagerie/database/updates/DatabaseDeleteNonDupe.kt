@@ -22,4 +22,8 @@ class DatabaseDeleteNonDupe(private val item1ID: Int, private val item2ID: Int):
         return ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "DeleteNonDupe(item1=$item1ID, item2=$item2ID)"
+    }
+
 }

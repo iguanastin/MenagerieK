@@ -19,4 +19,8 @@ class DatabaseCreateImage(item: ImageItem): DatabaseCreateFile(item) {
         return super.sync(db) + ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "CreateImage(item=${item.id}, noSimilar=${(item as ImageItem).noSimilar}, file=${item.file.absolutePath})"
+    }
+
 }

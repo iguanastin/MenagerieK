@@ -21,4 +21,8 @@ class DatabaseSetImageHistogram(private val itemID: Int, private val histogram: 
         return ps.executeUpdate()
     }
 
+    override fun toString(): String {
+        return "SetImageHistogram(item=$itemID)"
+    }
+
 }

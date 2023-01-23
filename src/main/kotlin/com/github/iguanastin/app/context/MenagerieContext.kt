@@ -10,6 +10,7 @@ import kotlin.concurrent.thread
 
 class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter, val database: MenagerieDatabase, val prefs: AppSettings) {
 
+    // TODO: Extract superclass generic edit to allow undoing groups/ungroups/renames/etc.
     val tagEdits: Stack<TagEdit> = Stack()
 
     val api = MenagerieAPI(this, 100)

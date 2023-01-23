@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
+import com.github.iguanastin.app.menagerie.model.Tag
 
 class DatabaseCreateTag(private val id: Int, private val name: String, private val color: String?): DatabaseUpdate() {
 
@@ -16,6 +16,10 @@ class DatabaseCreateTag(private val id: Int, private val name: String, private v
         ps.setNString(3, color)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "CreateTag(tag=$id, name=$name, color=$color)"
     }
 
 }

@@ -1,8 +1,8 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
+import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
-import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 
 class DatabaseSetGroupItems(private val itemID: Int, private val ids: List<Int>): DatabaseUpdate() {
 
@@ -16,6 +16,10 @@ class DatabaseSetGroupItems(private val itemID: Int, private val ids: List<Int>)
         ps.setInt(2, itemID)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "SetGroupItems(item=$itemID, itemCount=${ids.size})"
     }
 
 }

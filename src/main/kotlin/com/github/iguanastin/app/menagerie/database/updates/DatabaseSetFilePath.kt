@@ -1,7 +1,7 @@
 package com.github.iguanastin.app.menagerie.database.updates
 
-import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
+import com.github.iguanastin.app.menagerie.model.FileItem
 import java.io.File
 
 class DatabaseSetFilePath(private val itemID: Int, private val file: String): DatabaseUpdate() {
@@ -16,6 +16,10 @@ class DatabaseSetFilePath(private val itemID: Int, private val file: String): Da
         ps.setInt(2, itemID)
 
         return ps.executeUpdate()
+    }
+
+    override fun toString(): String {
+        return "SetFilePath(item=$itemID, path=$file)"
     }
 
 }
