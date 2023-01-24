@@ -7,7 +7,7 @@ import javafx.beans.property.StringProperty
 
 class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) {
 
-    val name: String = name.toLowerCase()
+    val name: String = name.lowercase()
 
     val colorProperty: StringProperty = SimpleStringProperty(color)
     var color: String?

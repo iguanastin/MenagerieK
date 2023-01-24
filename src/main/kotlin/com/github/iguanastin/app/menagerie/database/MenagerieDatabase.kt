@@ -488,6 +488,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         return ps
     }
 
+    @Suppress("UNREACHABLE_CODE")
     fun backupDatabase() {
         log.info("Shutting down database for backup...")
         updaterLock.acquireUninterruptibly()

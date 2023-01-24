@@ -5,3 +5,6 @@ MenagerieK.iml
 *.log
 *.log.1
 *.log.2
+
+/jpackage/input/
+/jpackage/*.exe

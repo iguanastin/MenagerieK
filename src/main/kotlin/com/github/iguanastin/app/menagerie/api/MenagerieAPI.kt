@@ -132,7 +132,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
      */
     private fun handleRequest(exchange: HttpExchange) {
         try {
-            val target = exchange.requestURI.path.substring(1).toLowerCase()
+            val target = exchange.requestURI.path.substring(1).lowercase()
             log.info(exchange.remoteAddress.toString() + " requested: \"" + exchange.requestURI + "\"")
             when {
                 target.startsWith("thumbs/") -> {
@@ -315,11 +315,11 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
             tags.removeIf { tag: Tag -> !tag.name.equals(name, true) }
         }
         if (query.containsKey("starts")) {
-            val starts = query["starts"]!!.toLowerCase()
+            val starts = query["starts"]!!.lowercase()
             tags.removeIf { tag: Tag -> !tag.name.startsWith(starts) }
         }
         if (query.containsKey("color")) {
-            val color = query["color"]!!.toLowerCase()
+            val color = query["color"]!!.lowercase()
             tags.removeIf { tag: Tag -> !color.equals(tag.color, ignoreCase = true) }
         }
         val json = JSONObject()

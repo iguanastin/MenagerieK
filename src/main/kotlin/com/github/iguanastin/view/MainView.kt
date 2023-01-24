@@ -319,7 +319,7 @@ class MainView : View("Menagerie") {
     private fun initEditTagsAutoComplete() {
         editTags.bindAutoComplete { predict ->
             val result = mutableListOf<Tag>()
-            var word = predict.toLowerCase()
+            var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
 
@@ -342,7 +342,7 @@ class MainView : View("Menagerie") {
 
     private fun initSearchFieldAutoComplete() {
         searchTextField.bindAutoComplete { predict ->
-            var word = predict.toLowerCase()
+            var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
 
@@ -433,6 +433,7 @@ class MainView : View("Menagerie") {
                         event.consume()
                         shuffleToggle.isSelected = !shuffleToggle.isSelected
                     }
+                    else -> {}
                 }
             }
         }

@@ -71,13 +71,13 @@ class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder()
             }
 
             val rows = element.select("tbody > tr")
-            if (rows.first().selectFirst("th").ownText() !in arrayOf("Possible match", "Best match")) continue
+            if (rows.first()!!.selectFirst("th")!!.ownText() !in arrayOf("Possible match", "Best match")) continue
 
             val sources = element.select("a").map { fixLink(it.attr("href")) }
             val thumbUrl = url + element.selectFirst("img")?.attr("src")
 
-            val res = rows[rows.lastIndex - 1].selectFirst("td").ownText().substringBefore(' ').replace('×', 'x')
-            val sim = rows[rows.lastIndex].selectFirst("td").ownText().substringBefore(' ')
+            val res = rows[rows.lastIndex - 1].selectFirst("td")!!.ownText().substringBefore(' ').replace('×', 'x')
+            val sim = rows[rows.lastIndex].selectFirst("td")!!.ownText().substringBefore(' ')
             val details = "$res - $sim"
 
             for (source in sources) {
@@ -99,7 +99,7 @@ class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder()
     }
 
     private fun post(item: FileItem): Document? {
-        if (item.file.extension.toLowerCase() !in ImageItem.fileExtensions) throw IllegalArgumentException("Cannot process this type of file")
+        if (item.file.extension.lowercase() !in ImageItem.fileExtensions) throw IllegalArgumentException("Cannot process this type of file")
         val img = acquireThumbnail(item) ?: return null
 
         ByteArrayOutputStream().use { baos ->
