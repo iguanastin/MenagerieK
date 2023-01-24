@@ -1,0 +1,2 @@
+reg add HKLM\Software\Classes\menageriek\shell\open\command /t REG_SZ /f /d "\"C:\Program Files\MenagerieK\MenagerieK.exe\" \"--import=%%1\""
+reg add HKLM\Software\Classes\menageriek /t REG_SZ /f /v "URL Protocol"

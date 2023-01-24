@@ -6,7 +6,7 @@
 
     <groupId>com.github.iguanastin.menageriek</groupId>
     <artifactId>menageriek</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -208,6 +208,7 @@
                                 <argument>None</argument>
                                 <argument>-File</argument>
                                 <argument>./jpackage.ps1</argument>
+                                <argument>${project.version}</argument>
                             </arguments>
                         </configuration>
                     </execution>

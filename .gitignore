@@ -7,4 +7,4 @@ MenagerieK.iml
 *.log.2
 
 /jpackage/input/
-/jpackage/*.exe
+/jpackage/output/
