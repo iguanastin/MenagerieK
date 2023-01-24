@@ -336,6 +336,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun undoLastEdit() {
+        if (context?.tagEdits?.isEmpty() == true) return
         val peek = context?.tagEdits?.peek() ?: return // Return if there are no tag edits in the stack
 
         root.root.confirm(
