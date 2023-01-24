@@ -9,14 +9,6 @@
     <version>1.0</version>
     <packaging>jar</packaging>
 
-    <repositories>
-        <repository>
-            <id>oss.sonatype.snapshots</id>
-            <name>Sonatype</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
-    </repositories>
-
     <properties>
         <kotlin.version>1.7.10</kotlin.version>
         <tornadofx.version>1.7.20</tornadofx.version>
