@@ -43,7 +43,7 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}) :
 
                         text = search
                         textProperty().addListener { _, _, newValue ->
-                            search = newValue.toLowerCase()
+                            search = newValue.lowercase()
                             filterTags()
                         }
                     }

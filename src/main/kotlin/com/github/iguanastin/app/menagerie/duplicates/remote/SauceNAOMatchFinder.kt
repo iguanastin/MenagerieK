@@ -66,8 +66,8 @@ class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFind
         for (element in doc.select("div#middle > div.result:not(.hidden)")) {
             if (element.id() == "result-hidden-notification") continue
 
-            val thumbUrl = element.select("div.resultimage img").first().attr("src")
-            val details = element.select("div.resultsimilarityinfo").first().ownText()
+            val thumbUrl = element.select("div.resultimage img").first()!!.attr("src")
+            val details = element.select("div.resultsimilarityinfo").first()!!.ownText()
             val sources = mutableListOf<String>()
 
             // Misc source (gelbooru/danbooru)
@@ -78,7 +78,7 @@ class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFind
             // Pixiv/Generic source
             for (strong in element.select("div.resultcontentcolumn > strong")) {
                 if (strong.ownText() in arrayOf("Pixiv ID:", "Source:")) {
-                    val source = fixLink(strong.nextElementSibling().attr("href"))
+                    val source = fixLink(strong.nextElementSibling()!!.attr("href"))
                     if (!sources.contains(source)) sources.add(source)
                 }
             }
@@ -109,7 +109,7 @@ class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFind
     }
 
     private fun post(item: FileItem): Document? {
-        if (item.file.extension.toLowerCase() !in ImageItem.fileExtensions) throw IllegalArgumentException("Cannot process this type of file")
+        if (item.file.extension.lowercase() !in ImageItem.fileExtensions) throw IllegalArgumentException("Cannot process this type of file")
         val img = acquireThumbnail(item) ?: return null
 
         ByteArrayOutputStream().use { baos ->

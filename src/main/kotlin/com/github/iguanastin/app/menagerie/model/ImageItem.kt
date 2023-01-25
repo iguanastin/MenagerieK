@@ -35,7 +35,7 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")
 
         fun isImage(file: File): Boolean {
-            return fileExtensions.contains(file.extension.toLowerCase())
+            return fileExtensions.contains(file.extension.lowercase())
         }
     }
 

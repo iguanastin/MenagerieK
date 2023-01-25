@@ -207,7 +207,7 @@ object CUDADuplicateFinder {
         val confidenceSquare = 1 - (1 - confidence) * (1 - confidence)
         for (i in 0 until N) {
             if (i < trueSet.size) {
-                confs[i] = if (trueSet[i].histogram!!.isColorful!!) confidence else confidenceSquare
+                confs[i] = if (trueSet[i].histogram!!.isColorful) confidence else confidenceSquare
             } else {
                 confs[i] = 2f // Impossible confidence
             }

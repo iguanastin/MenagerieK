@@ -9,7 +9,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         val fileExtensions = listOf("webm", "mp4", "mov", "flv", "avi", "wmv", "3gp", "mpg", "m4v", "mkv")
 
         fun isVideo(file: File): Boolean {
-            return fileExtensions.contains(file.extension.toLowerCase())
+            return fileExtensions.contains(file.extension.lowercase())
         }
     }
 

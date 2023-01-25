@@ -72,7 +72,6 @@ class MyApp : App(MainView::class, Styles::class) {
         root = find(primaryView) as MainView
 
         // Add window icons to stage
-        // TODO icon works as expected in IDE, but doesn't set the windows toolbar icon when launched externally
         stage.icons.addAll(
             Image(MyApp::class.java.getResource("/imgs/icons/16.png")!!.toExternalForm()),
             Image(MyApp::class.java.getResource("/imgs/icons/32.png")!!.toExternalForm()),
@@ -148,11 +147,11 @@ class MyApp : App(MainView::class, Styles::class) {
         rmi = MenagerieRMI(onServerStart = { rmi ->
             // Import url if in parameter
             if (parameters.named.containsKey("import")) {
-                rmi.communicator.importUrl(parameters.named["import"]?.removePrefix("menagerie:")!!)
+                rmi.communicator.importUrl(parameters.named["import"]?.removePrefix("menageriek:")!!)
             }
         }, onClientStart = { rmi ->
             // Attempt to send an import message to the open menagerie instance
-            val url = parameters.named["import"]?.removePrefix("menagerie:")
+            val url = parameters.named["import"]?.removePrefix("menageriek:")
             if (url != null) {
                 rmi.communicator.importUrl(url)
             }
@@ -336,6 +335,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun undoLastEdit() {
+        if (context?.tagEdits?.isEmpty() == true) return
         val peek = context?.tagEdits?.peek() ?: return // Return if there are no tag edits in the stack
 
         root.root.confirm(

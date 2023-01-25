@@ -106,7 +106,12 @@ class MainView : View("Menagerie") {
                             tagView = listview {
                                 isFocusTraversable = false
                                 cellFactory = ClickableTagCellFactory.factory {
-                                    robotSearch(text = it.name, descending = true, expandGroups = false, shuffled = false)
+                                    robotSearch(
+                                        text = it.name,
+                                        descending = true,
+                                        expandGroups = false,
+                                        shuffled = false
+                                    )
                                 }
                                 maxWidth = 200.0
                                 minWidth = 200.0
@@ -138,13 +143,22 @@ class MainView : View("Menagerie") {
                                         hbox(5.0) {
                                             alignment = Pos.CENTER_LEFT
                                             descendingToggle = togglebutton(selectFirst = true) {
-                                                graphic = ImageView(MainView::class.java.getResource("/imgs/descending.png").toExternalForm())
+                                                graphic = ImageView(
+                                                    MainView::class.java.getResource("/imgs/descending.png")
+                                                        .toExternalForm()
+                                                )
                                             }
                                             openGroupsToggle = togglebutton(selectFirst = false) {
-                                                graphic = ImageView(MainView::class.java.getResource("/imgs/opengroups.png").toExternalForm())
+                                                graphic = ImageView(
+                                                    MainView::class.java.getResource("/imgs/opengroups.png")
+                                                        .toExternalForm()
+                                                )
                                             }
                                             shuffleToggle = togglebutton(selectFirst = false) {
-                                                graphic = ImageView(MainView::class.java.getResource("/imgs/shuffle.png").toExternalForm())
+                                                graphic = ImageView(
+                                                    MainView::class.java.getResource("/imgs/shuffle.png")
+                                                        .toExternalForm()
+                                                )
                                             }
                                         }
                                     }
@@ -305,7 +319,7 @@ class MainView : View("Menagerie") {
     private fun initEditTagsAutoComplete() {
         editTags.bindAutoComplete { predict ->
             val result = mutableListOf<Tag>()
-            var word = predict.toLowerCase()
+            var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
 
@@ -328,7 +342,7 @@ class MainView : View("Menagerie") {
 
     private fun initSearchFieldAutoComplete() {
         searchTextField.bindAutoComplete { predict ->
-            var word = predict.toLowerCase()
+            var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
 
@@ -367,7 +381,12 @@ class MainView : View("Menagerie") {
         }
     }
 
-    private fun robotSearch(text: String = "", descending: Boolean? = null, expandGroups: Boolean? = null, shuffled: Boolean? = null) {
+    private fun robotSearch(
+        text: String = "",
+        descending: Boolean? = null,
+        expandGroups: Boolean? = null,
+        shuffled: Boolean? = null
+    ) {
         searchTextField.text = text
         if (descending != null) descendingToggle.isSelected = descending
         if (expandGroups != null) openGroupsToggle.isSelected = expandGroups
@@ -380,7 +399,15 @@ class MainView : View("Menagerie") {
         val text = searchTextField.text.trim()
         val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
 
-        navigateForward(MenagerieView(view.menagerie, searchTextField.text, descendingToggle.isSelected, shuffleToggle.isSelected, filters))
+        navigateForward(
+            MenagerieView(
+                view.menagerie,
+                searchTextField.text,
+                descendingToggle.isSelected,
+                shuffleToggle.isSelected,
+                filters
+            )
+        )
         runOnUIThread { itemGrid.requestFocus() }
     }
 
@@ -406,6 +433,7 @@ class MainView : View("Menagerie") {
                         event.consume()
                         shuffleToggle.isSelected = !shuffleToggle.isSelected
                     }
+                    else -> {}
                 }
             }
         }
@@ -437,14 +465,29 @@ class MainView : View("Menagerie") {
 
     fun navigateForward(view: MenagerieView) {
         val old = _viewProperty.get()
-        if (old != null) history.add(ViewHistory(old, itemGrid.selected.toList(), itemGrid.items.getOrNull(itemGrid.lastSelectedIndex)))
+        if (old != null) history.add(
+            ViewHistory(
+                old,
+                itemGrid.selected.toList(),
+                itemGrid.items.getOrNull(itemGrid.lastSelectedIndex)
+            )
+        )
         _viewProperty.set(view)
     }
 
     private fun onItemAction(item: Item) {
         if (item is GroupItem) {
             val filter = ElementOfFilter(item, false)
-            navigateForward(MenagerieView(item.menagerie, filter.toString(), false, false, listOf(filter), groupElementSorter))
+            navigateForward(
+                MenagerieView(
+                    item.menagerie,
+                    filter.toString(),
+                    false,
+                    false,
+                    listOf(filter),
+                    groupElementSorter
+                )
+            )
         } else if (item is FileItem) {
             Desktop.getDesktop().open(item.file)
         }
@@ -528,9 +571,13 @@ class MainView : View("Menagerie") {
                             openGroupsToggle.isSelected = false
                             shuffleToggle.isSelected = false
 
-                            navigateForward(MenagerieView(i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(
-                                ElementOfFilter(null, true)
-                            )))
+                            navigateForward(
+                                MenagerieView(
+                                    i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(
+                                        ElementOfFilter(null, true)
+                                    )
+                                )
+                            )
                             itemGrid.select(i.elementOf!!)
                         }
                     }

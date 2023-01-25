@@ -170,6 +170,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
 
     private fun applySettings() {
         settingNodeMap.keys.forEach { setting ->
+            @Suppress("UNCHECKED_CAST")
             when (setting) {
                 is StringSetting -> setting.value = (settingNodeMap[setting] as TextField).text
                 is IntSetting -> setting.value = (settingNodeMap[setting] as Spinner<Int>).value

@@ -2,12 +2,12 @@ package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.view.runOnUIThread
-import com.sun.javafx.scene.control.skin.VirtualFlow
 import impl.org.controlsfx.skin.GridViewSkin
 import javafx.beans.InvalidationListener
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventTarget
+import javafx.scene.control.skin.VirtualFlow
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseButton
@@ -257,10 +257,13 @@ class MultiSelectGridView<T> : GridView<T> {
         // Gross workaround. Couldn't find any other solution
         for (n in children) {
             if (n is VirtualFlow<*>) {
-                n.show(items.indexOf(item) / getItemsInRow())
+//                n.show(items.indexOf(item) / getItemsInRow())
+                n.scrollTo(items.indexOf(item) / getItemsInRow())
+                // TODO: Verify this actually works in java 17/javafx 19
                 break
             }
         }
+
     }
 
     fun getItemsInRow(): Int = (skin as GridViewSkin<*>).computeMaxCellsInRow()

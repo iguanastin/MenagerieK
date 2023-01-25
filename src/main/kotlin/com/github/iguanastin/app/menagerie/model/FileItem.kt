@@ -1,11 +1,11 @@
 package com.github.iguanastin.app.menagerie.model
 
-import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 import java.io.File
+import java.util.*
 
 open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File) : Item(id, added, menagerie) {
 
@@ -41,7 +41,7 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
 
     companion object {
         fun fileHash(file: File): String {
-            return HexBin.encode(MD5Hasher.hash(file))
+            return HexFormat.of().formatHex(MD5Hasher.hash(file))
         }
     }
 

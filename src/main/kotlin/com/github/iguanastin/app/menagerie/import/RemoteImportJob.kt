@@ -12,21 +12,29 @@ import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
 
-class RemoteImportJob private constructor(val url: String, file: File, tags: List<Tag>? = null) : ImportJob(file, tags) {
+class RemoteImportJob private constructor(val url: String, file: File, tags: List<Tag>? = null) :
+    ImportJob(file, tags) {
 
     companion object {
         fun intoFile(url: String, file: File, tags: List<Tag>? = null): RemoteImportJob {
             return RemoteImportJob(url, file, tags)
         }
 
-        fun intoDirectory(url: String, downloadsDir: File, tags: List<Tag>? = null, incrementIfExists: Boolean = true): RemoteImportJob {
+        fun intoDirectory(
+            url: String,
+            downloadsDir: File,
+            tags: List<Tag>? = null,
+            incrementIfExists: Boolean = true
+        ): RemoteImportJob {
+            @Suppress("NAME_SHADOWING")
             val url = repairUrl(url)
             val filename = URL(url).path.substringAfterLast('/')
             var file: File = downloadsDir.resolve(filename)
 
             var i = 1
             while (file.exists()) {
-                file = downloadsDir.resolve(filename.substringBeforeLast('.') + " ($i)." + filename.substringAfterLast('.'))
+                file =
+                    downloadsDir.resolve(filename.substringBeforeLast('.') + " ($i)." + filename.substringAfterLast('.'))
 
                 if (!incrementIfExists && file.exists()) throw FileAlreadyExistsException(file)
                 i++
@@ -36,11 +44,15 @@ class RemoteImportJob private constructor(val url: String, file: File, tags: Lis
         }
 
         private fun repairUrl(url: String): String {
+            @Suppress("NAME_SHADOWING")
             var url = url
 
-            if (url.startsWith("https://pbs.twimg.com/media/", true) && url.substringAfterLast('/').contains('?') && !url.substringAfterLast('/').substringBefore('?').contains('.')) {
+            if (url.startsWith("https://pbs.twimg.com/media/", true) && url.substringAfterLast('/')
+                    .contains('?') && !url.substringAfterLast('/').substringBefore('?').contains('.')
+            ) {
                 val query = mutableMapOf<String, String>()
-                url.substringAfter('?').toLowerCase().split('&').forEach { query[it.substringBefore('=')] = it.substringAfter('=') }
+                url.substringAfter('?').lowercase().split('&')
+                    .forEach { query[it.substringBefore('=')] = it.substringAfter('=') }
                 url = url.substringBefore('?') + "." + (query["format"] ?: "jpg")
             }
 
