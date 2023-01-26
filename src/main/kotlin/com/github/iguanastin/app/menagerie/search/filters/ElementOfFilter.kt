@@ -1,11 +1,11 @@
-package com.github.iguanastin.app.menagerie.view.filters
+package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
 
-class ElementOfFilter(val group: GroupItem?, exclude: Boolean): ViewFilter(exclude) {
+class ElementOfFilter(val group: GroupItem?, exclude: Boolean): SearchFilter(exclude) {
 
     override fun accepts(item: Item): Boolean {
         return invertIfExcluded((group == null && item is FileItem && item.elementOf != null) || (group != null && item in group.items))

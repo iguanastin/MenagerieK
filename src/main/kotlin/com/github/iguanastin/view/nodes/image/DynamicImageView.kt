@@ -16,8 +16,8 @@ open class DynamicImageView : ImageView {
     }
 
     override fun prefWidth(height: Double): Double {
-        val I = image ?: return minWidth(height)
-        return I.width
+        val img = image ?: return minWidth(height)
+        return img.width
     }
 
     override fun maxWidth(height: Double): Double {
@@ -29,8 +29,8 @@ open class DynamicImageView : ImageView {
     }
 
     override fun prefHeight(width: Double): Double {
-        val I = image ?: return minHeight(width)
-        return I.height
+        val img = image ?: return minHeight(width)
+        return img.height
     }
 
     override fun maxHeight(width: Double): Double {

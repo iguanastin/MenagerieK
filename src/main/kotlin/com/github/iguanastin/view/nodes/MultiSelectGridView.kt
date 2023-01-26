@@ -19,7 +19,7 @@ import tornadofx.*
 import java.lang.Integer.max
 import java.lang.Integer.min
 
-class MultiSelectGridView<T> : GridView<T> {
+class MultiSelectGridView<T> : GridView<T>() {
 
     private enum class SelectionType {
         ONLY,
@@ -35,7 +35,7 @@ class MultiSelectGridView<T> : GridView<T> {
     init {
         items.addListener(ListChangeListener { change ->
             while (change.next()) {
-                selected.removeAll(change.removed)
+                selected.removeAll(change.removed.toSet())
 
                 updateLastSelectedIndex(change)
             }
@@ -147,9 +147,6 @@ class MultiSelectGridView<T> : GridView<T> {
         }
     }
 
-    constructor() : super()
-    constructor(items: ObservableList<T>) : super(items)
-
 
     fun initSelectableCell(cell: GridCell<T>) {
         cell.itemProperty().addListener(InvalidationListener {
@@ -257,16 +254,14 @@ class MultiSelectGridView<T> : GridView<T> {
         // Gross workaround. Couldn't find any other solution
         for (n in children) {
             if (n is VirtualFlow<*>) {
-//                n.show(items.indexOf(item) / getItemsInRow())
                 n.scrollTo(items.indexOf(item) / getItemsInRow())
-                // TODO: Verify this actually works in java 17/javafx 19
                 break
             }
         }
 
     }
 
-    fun getItemsInRow(): Int = (skin as GridViewSkin<*>).computeMaxCellsInRow()
+    private fun getItemsInRow(): Int = (skin as GridViewSkin<*>).computeMaxCellsInRow()
 
 }
 

@@ -1,4 +1,4 @@
-package com.github.iguanastin.app.menagerie.view.filters
+package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.Menagerie
 
@@ -10,8 +10,8 @@ class FilterFactory private constructor() {
             terms: String,
             menagerie: Menagerie,
             excludeElements: Boolean = true
-        ): MutableList<ViewFilter> {
-            val filters = mutableListOf<ViewFilter>()
+        ): MutableList<SearchFilter> {
+            val filters = mutableListOf<SearchFilter>()
 
             for (str in terms.trim().split(Regex("\\s+"))) {
                 if (str.isBlank()) continue

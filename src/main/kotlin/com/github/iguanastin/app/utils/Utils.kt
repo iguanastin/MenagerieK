@@ -29,7 +29,7 @@ fun expandGroups(items: List<Item>, includeGroupItems: Boolean = false): List<It
     return result
 }
 
-fun bytesToPrettyString(bytes: Long): String? {
+fun bytesToPrettyString(bytes: Long): String {
     return if (bytes > 1024 * 1024 * 1024) String.format("%.2fGB", bytes / 1024.0 / 1024 / 1024) else if (bytes > 1024 * 1024) String.format("%.2fMB", bytes / 1024.0 / 1024) else if (bytes > 1024) String.format("%.2fKB", bytes / 1024.0) else String.format("%dB", bytes)
 }
 

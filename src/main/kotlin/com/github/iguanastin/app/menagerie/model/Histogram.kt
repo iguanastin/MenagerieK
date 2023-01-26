@@ -40,7 +40,7 @@ class Histogram private constructor(
         const val NUM_CHANNELS = 4
         const val BLACK_AND_WHITE_CONFIDENCE = 0.25
 
-        fun channelToInputStream(channel: DoubleArray): ByteArrayInputStream? {
+        fun channelToInputStream(channel: DoubleArray): ByteArrayInputStream {
             val bb = ByteBuffer.wrap(ByteArray(BIN_SIZE * 8))
             for (d in channel) {
                 bb.putDouble(d)
@@ -48,7 +48,7 @@ class Histogram private constructor(
             return ByteArrayInputStream(bb.array())
         }
 
-        fun inputStreamToChannel(stream: InputStream, output: DoubleArray = DoubleArray(BIN_SIZE)): DoubleArray {
+        private fun inputStreamToChannel(stream: InputStream, output: DoubleArray = DoubleArray(BIN_SIZE)): DoubleArray {
             val b = ByteArray(BIN_SIZE * 8)
             if (stream.read(b) != BIN_SIZE * 8) throw HistogramReadException("Mismatched stream length")
             val bb = ByteBuffer.wrap(b)

@@ -1,9 +1,9 @@
-package com.github.iguanastin.app.menagerie.view
+package com.github.iguanastin.app.menagerie.search
 
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.ItemChangeBase
 import com.github.iguanastin.app.menagerie.model.Menagerie
-import com.github.iguanastin.app.menagerie.view.filters.ViewFilter
+import com.github.iguanastin.app.menagerie.search.filters.SearchFilter
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -11,7 +11,7 @@ import tornadofx.*
 import kotlin.collections.sortBy
 import kotlin.random.Random
 
-class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<ViewFilter>, val sortBy: (Item) -> Int? = { it.id }) {
+class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<SearchFilter>, val sortBy: (Item) -> Int? = { it.id }) {
 
     var items: ObservableList<Item>? = null
         private set
@@ -37,7 +37,7 @@ class MenagerieView(val menagerie: Menagerie, val searchString: String = "", val
         if (items == null) return@ListChangeListener
         runOnUIThread {
             while (change.next()) {
-                items?.removeAll(change.removed)
+                items?.removeAll(change.removed.toSet())
                 change.removed.forEach { item -> item.changeListeners.remove(itemChangeListener) }
 
                 val temp = mutableListOf<Item>()

@@ -4,10 +4,10 @@ import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.bindVisibleShortcut
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.MenagerieView
-import com.github.iguanastin.app.menagerie.view.ViewHistory
-import com.github.iguanastin.app.menagerie.view.filters.ElementOfFilter
-import com.github.iguanastin.app.menagerie.view.filters.FilterFactory
+import com.github.iguanastin.app.menagerie.search.MenagerieSearch
+import com.github.iguanastin.app.menagerie.search.SearchHistory
+import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
+import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
@@ -22,7 +22,6 @@ import javafx.application.Platform
 import javafx.beans.InvalidationListener
 import javafx.beans.Observable
 import javafx.beans.property.ObjectProperty
-import javafx.beans.property.ReadOnlyObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -61,17 +60,9 @@ class MainView : View("Menagerie") {
     private lateinit var importsButton: Button
     private lateinit var similarButton: Button
 
-    // TODO the current view should be handled and stored in MyApp, probably
-    private val _viewProperty: ObjectProperty<MenagerieView?> = SimpleObjectProperty(null)
-    private val viewProperty: ReadOnlyObjectProperty<MenagerieView?> = _viewProperty
-    private val currentView: MenagerieView?
-        get() = viewProperty.get()
-
-    private var displaying: Item?
-        get() = itemDisplay.item
-        set(value) {
-            itemDisplay.item = value
-        }
+    private val searchProperty: ObjectProperty<MenagerieSearch?> = SimpleObjectProperty(null)
+    private val currentSearch: MenagerieSearch?
+        get() = searchProperty.get()
 
     // Should probably be in MyApp
     val imports: ObservableList<ImportNotification> = observableListOf()
@@ -80,7 +71,7 @@ class MainView : View("Menagerie") {
     val similar: ObservableList<SimilarPair<Item>> = observableListOf()
 
     // Should probably be in MyApp
-    private val history: ObservableList<ViewHistory> = observableListOf()
+    private val history: ObservableList<SearchHistory> = observableListOf()
 
     private val myApp = (app as MyApp)
 
@@ -334,7 +325,7 @@ class MainView : View("Menagerie") {
                     }
                 }
             } else {
-                currentView?.menagerie?.tags?.forEach { tag ->
+                currentSearch?.menagerie?.tags?.forEach { tag ->
                     if (tag.name.startsWith(word)) result.add(tag)
                 }
             }
@@ -351,7 +342,7 @@ class MainView : View("Menagerie") {
             if (exclude) word = word.substring(1)
 
             val tags = mutableListOf<Tag>()
-            currentView?.menagerie?.tags?.forEach { tag ->
+            currentSearch?.menagerie?.tags?.forEach { tag ->
                 if (tag.name.startsWith(word)) tags.add(tag)
             }
             tags.sortByDescending { it.frequency }
@@ -399,12 +390,12 @@ class MainView : View("Menagerie") {
     }
 
     private fun applySearch() {
-        val view = currentView ?: return
+        val view = currentSearch ?: return
         val text = searchTextField.text.trim()
         val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
 
         navigateForward(
-            MenagerieView(
+            MenagerieSearch(
                 view.menagerie,
                 searchTextField.text,
                 descendingToggle.isSelected,
@@ -446,7 +437,7 @@ class MainView : View("Menagerie") {
 
     fun navigateBack() {
         val back = history.removeLastOrNull() ?: return
-        _viewProperty.set(back.view)
+        searchProperty.set(back.view)
 
         itemGrid.selected.apply {
             clear()
@@ -460,16 +451,16 @@ class MainView : View("Menagerie") {
         }
     }
 
-    fun navigateForward(view: MenagerieView) {
-        val old = _viewProperty.get()
+    fun navigateForward(view: MenagerieSearch) {
+        val old = searchProperty.get()
         if (old != null) history.add(
-            ViewHistory(
+            SearchHistory(
                 old,
                 itemGrid.selected.toList(),
                 itemGrid.items.getOrNull(itemGrid.lastSelectedIndex)
             )
         )
-        _viewProperty.set(view)
+        searchProperty.set(view)
     }
 
     private fun initItemGrid() {
@@ -551,7 +542,7 @@ class MainView : View("Menagerie") {
                             shuffleToggle.isSelected = false
 
                             navigateForward(
-                                MenagerieView(
+                                MenagerieSearch(
                                     i.menagerie, "", descendingToggle.isSelected, shuffleToggle.isSelected, listOf(
                                         ElementOfFilter(null, true)
                                     )
@@ -600,7 +591,7 @@ class MainView : View("Menagerie") {
     }
 
     private fun initViewListener() {
-        _viewProperty.addListener { _, oldValue, newValue ->
+        searchProperty.addListener { _, oldValue, newValue ->
             oldValue?.close()
             itemGrid.items.clear()
 
@@ -627,7 +618,7 @@ class MainView : View("Menagerie") {
 
     private fun initDisplayLastSelectedListener() {
         itemGrid.selected.addListener(InvalidationListener {
-            displaying = itemGrid.selected.lastOrNull()
+            itemDisplay.item = itemGrid.selected.lastOrNull()
         })
     }
 
@@ -646,7 +637,7 @@ class MainView : View("Menagerie") {
     }
 
     fun displayTagsDialog() {
-        val tags = currentView?.menagerie?.tags
+        val tags = currentSearch?.menagerie?.tags
         if (tags != null) root.add(TagSearchDialog(tags))
     }
 
@@ -660,21 +651,24 @@ class MainView : View("Menagerie") {
         editTags.requestFocus()
     }
 
-    private fun initTagsListener() {
-        val displayTagsListener = InvalidationListener {
+    private fun applyPreviewTags(item: Item?) {
+        runOnUIThread {
             tagView.items.apply {
                 clear()
-                val item = displaying
-                if (item != null) addAll(item.tags.sortedBy { it.name })
+                addAll(item?.tags?.sortedBy { it.name } ?: return@apply)
             }
         }
+    }
+
+    private fun initTagsListener() {
+        val displayTagsListener = InvalidationListener {
+            applyPreviewTags(itemDisplay.item)
+        }
+        // Listener is attached to currently displayed/previewed item
         itemDisplay.itemProperty.addListener(ChangeListener { _, old, new ->
             old?.tags?.removeListener(displayTagsListener)
             new?.tags?.addListener(displayTagsListener)
-            tagView.items.apply {
-                clear()
-                if (new != null) addAll(new.tags.sortedBy { it.name })
-            }
+            applyPreviewTags(new)
         })
     }
 

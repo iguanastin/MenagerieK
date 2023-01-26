@@ -1,11 +1,10 @@
+@file:Suppress("unused")
+
 package com.github.iguanastin.app.menagerie.database.updates
 
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.model.GroupItem
 
 class DatabaseSetGroupTitle(private val itemID: Int, private val title: String): DatabaseUpdate() {
-
-    constructor(item: GroupItem, title: String = item.title): this(item.id, title)
 
 
     override fun sync(db: MenagerieDatabase): Int {

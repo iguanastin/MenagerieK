@@ -163,7 +163,7 @@ object CUDADuplicateFinder {
         )
 
         // Launch kernel
-        JCudaDriver.cuLaunchKernel(function, Math.ceil(N1 / 64.0).toInt(), 1, 1, 64, 1, 1, 0, null, kernelParameters, null)
+        JCudaDriver.cuLaunchKernel(function, ceil(N1 / 64.0).toInt(), 1, 1, 64, 1, 1, 0, null, kernelParameters, null)
         JCudaDriver.cuCtxSynchronize()
     }
 

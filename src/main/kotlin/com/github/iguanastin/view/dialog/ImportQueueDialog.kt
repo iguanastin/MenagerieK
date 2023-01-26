@@ -123,7 +123,7 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
             }
         }
 
-        val isFinishedListener = InvalidationListener { _, ->
+        val isFinishedListener = InvalidationListener { _ ->
             runOnUIThread { imports.sortBy { it.isFinished } }
         }
         imports.forEach { it.finishedProperty.addListener(isFinishedListener) }

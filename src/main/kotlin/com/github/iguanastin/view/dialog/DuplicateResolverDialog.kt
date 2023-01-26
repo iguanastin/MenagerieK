@@ -258,19 +258,21 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             rightTags.hide()
         }
 
+        @Suppress("RemoveExplicitTypeArguments")
         val leftTagsListener = ListChangeListener<Tag> { change ->
             while (change.next()) {
                 leftTags.items.apply {
-                    removeAll(change.removed)
+                    removeAll(change.removed.toSet())
                     addAll(change.addedSubList)
                     sortBy { it.name }
                 }
             }
         }
+        @Suppress("RemoveExplicitTypeArguments")
         val rightTagsListener = ListChangeListener<Tag> { change ->
             while (change.next()) {
                 rightTags.items.apply {
-                    removeAll(change.removed)
+                    removeAll(change.removed.toSet())
                     addAll(change.addedSubList)
                     sortBy { it.name }
                 }

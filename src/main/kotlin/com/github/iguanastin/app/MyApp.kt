@@ -12,8 +12,8 @@ import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.MenagerieView
-import com.github.iguanastin.app.menagerie.view.filters.ElementOfFilter
+import com.github.iguanastin.app.menagerie.search.MenagerieSearch
+import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.settings.AppSettings
 import com.github.iguanastin.app.settings.WindowSettings
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
@@ -49,17 +49,9 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.0.2"
+        const val VERSION = "1.0.2" // When updating version, update it in pom.xml as well
 
         val shortcuts: MutableList<Shortcut> = mutableListOf()
-
-        private val groupElementSorter: (Item) -> Int? = {
-            if (it is FileItem) {
-                it.elementOf?.items?.indexOf(it)
-            } else {
-                it.id
-            }
-        }
     }
 
     private val uiPrefs: WindowSettings = WindowSettings()
@@ -148,7 +140,7 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             // Initial search
             root.navigateForward(
-                MenagerieView(
+                MenagerieSearch(
                     context.menagerie,
                     searchString = "",
                     descending = true,
@@ -726,13 +718,19 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun navigateIntoGroup(group: GroupItem) {
         val filter = ElementOfFilter(group, false)
         root.navigateForward(
-            MenagerieView(
+            MenagerieSearch(
                 group.menagerie,
                 filter.toString(),
                 descending = false,
                 shuffle = false,
                 filters = listOf(filter),
-                sortBy = groupElementSorter
+                sortBy = {
+                    if (it is FileItem) {
+                        it.elementOf?.items?.indexOf(it)
+                    } else {
+                        it.id
+                    }
+                }
             )
         )
     }

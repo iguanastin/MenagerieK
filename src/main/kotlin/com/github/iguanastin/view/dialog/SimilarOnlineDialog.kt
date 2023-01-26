@@ -235,7 +235,7 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
 
                 if (viewing?.state == OnlineMatchSet.State.FAILED) {
                     errorText.show()
-                    errorText.text = " !!! --- FAILED --- !!!\n\n${viewing?.error?.localizedMessage}";
+                    errorText.text = " !!! --- FAILED --- !!!\n\n${viewing?.error?.localizedMessage}"
                 } else {
                     errorText.hide()
                 }

@@ -5,9 +5,9 @@ import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.menagerie.view.MenagerieView
-import com.github.iguanastin.app.menagerie.view.filters.FilterFactory
-import com.github.iguanastin.app.menagerie.view.filters.ViewFilter
+import com.github.iguanastin.app.menagerie.search.MenagerieSearch
+import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
+import com.github.iguanastin.app.menagerie.search.filters.SearchFilter
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
@@ -356,9 +356,9 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         val expandTags = "1".equals(query["expand_tags"], ignoreCase = true)
         val expandGroups = "1".equals(query["expand_groups"], ignoreCase = true)
 
-        val filters: MutableList<ViewFilter> = FilterFactory.parseFilters(terms, context.menagerie, !ungrouped)
+        val filters: MutableList<SearchFilter> = FilterFactory.parseFilters(terms, context.menagerie, !ungrouped)
 
-        val search = MenagerieView(context.menagerie, terms, descending, false, filters)
+        val search = MenagerieSearch(context.menagerie, terms, descending, false, filters)
         search.bindTo(observableListOf())
 
         val total: Int = search.items!!.size

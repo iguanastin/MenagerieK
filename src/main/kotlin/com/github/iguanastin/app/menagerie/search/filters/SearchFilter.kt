@@ -1,8 +1,8 @@
-package com.github.iguanastin.app.menagerie.view.filters
+package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.Item
 
-abstract class ViewFilter(val exclude: Boolean) {
+abstract class SearchFilter(val exclude: Boolean) {
 
     abstract fun accepts(item: Item): Boolean
 

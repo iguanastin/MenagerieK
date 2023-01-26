@@ -61,7 +61,7 @@ public class WindowsExplorerComparator implements Comparator<File> {
             int result;
             try {
                 //If both datas are numbers, then compare numbers
-                result = Long.compare(Long.valueOf(data1), Long.valueOf(data2));
+                result = Long.compare(Long.parseLong(data1), Long.parseLong(data2));
                 //If numbers are equal than longer comes first
                 if (result == 0) {
                     result = -Integer.compare(data1.length(), data2.length());
@@ -79,7 +79,7 @@ public class WindowsExplorerComparator implements Comparator<File> {
 
     private List<String> splitStringPreserveDelimiter(String str) {
         Matcher matcher = splitPattern.matcher(str);
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         int pos = 0;
         while (matcher.find()) {
             list.add(str.substring(pos, matcher.start()));

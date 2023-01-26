@@ -1,8 +1,8 @@
-package com.github.iguanastin.app.menagerie.view.filters
+package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.*
 
-class TypeFilter(val type: Type, exclude: Boolean): ViewFilter(exclude) {
+class TypeFilter(val type: Type, exclude: Boolean): SearchFilter(exclude) {
 
     enum class Type {
         Image,

@@ -94,7 +94,7 @@ fun TextField.bindAutoComplete(provider: (String) -> List<String>) {
             val text = text
             val word = getPreviousWord(text, index.toInt())
 
-            if (!word.isBlank()) {
+            if (word.isNotBlank()) {
                 val predictions = provider(word)
                 if (predictions.isNotEmpty()) {
                     vbox.children.clear()
