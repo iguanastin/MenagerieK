@@ -130,20 +130,23 @@ class MainView : View("Menagerie") {
                                             descendingToggle = togglebutton(selectFirst = true) {
                                                 graphic = ImageView(
                                                     MainView::class.java.getResource("/imgs/descending.png")
-                                                        .toExternalForm()
+                                                        ?.toExternalForm()
                                                 )
+                                                tooltip("Toggle descending")
                                             }
                                             openGroupsToggle = togglebutton(selectFirst = false) {
                                                 graphic = ImageView(
                                                     MainView::class.java.getResource("/imgs/opengroups.png")
-                                                        .toExternalForm()
+                                                        ?.toExternalForm()
                                                 )
+                                                tooltip("Toggle show group elements")
                                             }
                                             shuffleToggle = togglebutton(selectFirst = false) {
                                                 graphic = ImageView(
                                                     MainView::class.java.getResource("/imgs/shuffle.png")
-                                                        .toExternalForm()
+                                                        ?.toExternalForm()
                                                 )
+                                                tooltip("Toggle shuffle results")
                                             }
                                         }
                                     }
@@ -573,6 +576,26 @@ class MainView : View("Menagerie") {
                         myApp.groupShortcut()
                     }
                 }
+                val dupesGroup = menu("Duplicates") {
+                    item("Find in Menagerie") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            myApp.duplicatesShortcut(false)
+                        }
+                    }
+                    item("Find in selected") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            myApp.duplicatesShortcut(true)
+                        }
+                    }
+                    item("Find online") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            myApp.findOnlineShortcut()
+                        }
+                    }
+                }
 
                 onShown = EventHandler { event ->
                     event.consume()
@@ -585,7 +608,11 @@ class MainView : View("Menagerie") {
                     removeFromGroup.isVisible = goToGroup.isVisible
                     ungroup.isVisible = onlyOne && first is GroupItem
                     group.isVisible = !onlyOne
+                    dupesGroup.isVisible = itemGrid.selected.size > 0
                 }
+                itemGrid.selected.addListener(InvalidationListener {
+                    hide()
+                })
             }
         }
     }

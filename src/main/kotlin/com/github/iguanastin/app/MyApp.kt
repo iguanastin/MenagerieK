@@ -335,7 +335,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 desc = "Find similar files in selected",
                 context = "Item List"
             ) {
-                duplicatesShortcutUtil(true)
+                duplicatesShortcut(true)
             }
             bindVisibleShortcut(
                 KeyCode.D,
@@ -344,7 +344,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 desc = "Find similar files in Menagerie",
                 context = "Item List"
             ) {
-                duplicatesShortcutUtil(false)
+                duplicatesShortcut(false)
             }
             bindVisibleShortcut(KeyCode.G, ctrl = true, desc = "Group selected items", context = "Item List") {
                 groupShortcut()
@@ -362,7 +362,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 desc = "Find similar images online",
                 context = "Item List"
             ) {
-                root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
+                findOnlineShortcut()
             }
             bindVisibleShortcut(KeyCode.Z, ctrl = true, desc = "Undo last tag edit", context = "Main Screen") {
                 undoLastEdit()
@@ -386,6 +386,10 @@ class MyApp : App(MainView::class, Styles::class) {
                 root.openSimilarDialog()
             }
         }
+    }
+
+    fun findOnlineShortcut() {
+        root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
     }
 
     private fun undoLastEdit() {
@@ -480,7 +484,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }))
     }
 
-    private fun duplicatesShortcutUtil(inSelected: Boolean) {
+    fun duplicatesShortcut(inSelected: Boolean) {
         val menagerie = context?.menagerie ?: return
 
         val first = expandGroups(root.itemGrid.selected)
