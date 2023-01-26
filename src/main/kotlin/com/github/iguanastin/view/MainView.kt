@@ -2,6 +2,7 @@ package com.github.iguanastin.view
 
 import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.app.bindVisibleShortcut
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.view.MenagerieView
 import com.github.iguanastin.app.menagerie.view.ViewHistory
@@ -36,7 +37,6 @@ import javafx.stage.Popup
 import javafx.stage.PopupWindow
 import mu.KotlinLogging
 import tornadofx.*
-import java.awt.Desktop
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
@@ -82,13 +82,7 @@ class MainView : View("Menagerie") {
     // Should probably be in MyApp
     private val history: ObservableList<ViewHistory> = observableListOf()
 
-    private val groupElementSorter: (Item) -> Int? = {
-        if (it is FileItem) {
-            it.elementOf?.items?.indexOf(it)
-        } else {
-            it.id
-        }
-    }
+    private val myApp = (app as MyApp)
 
     override val root = topenabledstackpane {
         focusingstackpane {
@@ -199,8 +193,12 @@ class MainView : View("Menagerie") {
 
             editTagsPane = borderpane {
                 isPickOnBounds = false
-                hide()
                 padding = insets(50)
+
+                addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+                    if (event.code == KeyCode.ESCAPE) hide()
+                }
+
                 bottom {
                     hbox(10) {
                         addClass(Styles.dialogPane)
@@ -215,6 +213,8 @@ class MainView : View("Menagerie") {
                         applyTagEdit = button("Ok")
                     }
                 }
+
+                hide()
             }
 
             dragOverlay = borderpane {
@@ -265,15 +265,19 @@ class MainView : View("Menagerie") {
 
         similarButton.onAction = EventHandler { event ->
             event.consume()
-            this.add(DuplicateResolverDialog(similar).apply {
-                onClose = {
-                    if (similar.isNotEmpty()) {
-                        val menagerie = similar.first().obj1.menagerie
-                        similar.removeIf { menagerie.hasNonDupe(it) }
-                    }
-                }
-            })
+            openSimilarDialog()
         }
+    }
+
+    fun openSimilarDialog() {
+        this.add(DuplicateResolverDialog(similar).apply {
+            onClose = {
+                if (similar.isNotEmpty()) {
+                    val menagerie = similar.first().obj1.menagerie
+                    similar.removeIf { menagerie.hasNonDupe(it) }
+                }
+            }
+        })
     }
 
     private fun initImportsButton() {
@@ -416,25 +420,18 @@ class MainView : View("Menagerie") {
             event.consume()
             applySearch()
         }
-        searchTextField.onAction = searchButton.onAction
 
-        searchTextField.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.isShortcutDown && !event.isShiftDown && !event.isAltDown) {
-                when (event.code) {
-                    KeyCode.G -> {
-                        event.consume()
-                        openGroupsToggle.isSelected = !openGroupsToggle.isSelected
-                    }
-                    KeyCode.D -> {
-                        event.consume()
-                        descendingToggle.isSelected = !descendingToggle.isSelected
-                    }
-                    KeyCode.S -> {
-                        event.consume()
-                        shuffleToggle.isSelected = !shuffleToggle.isSelected
-                    }
-                    else -> {}
-                }
+        searchTextField.apply {
+            onAction = searchButton.onAction
+
+            bindVisibleShortcut(KeyCode.G, ctrl = true, desc = "Toggle expand groups", context = "Search Field") {
+                openGroupsToggle.isSelected = !openGroupsToggle.isSelected
+            }
+            bindVisibleShortcut(KeyCode.D, ctrl = true, desc = "Toggle sort descending", context = "Search Field") {
+                descendingToggle.isSelected = !descendingToggle.isSelected
+            }
+            bindVisibleShortcut(KeyCode.S, ctrl = true, desc = "Toggle shuffle results", context = "Search Field") {
+                shuffleToggle.isSelected = !shuffleToggle.isSelected
             }
         }
     }
@@ -475,30 +472,12 @@ class MainView : View("Menagerie") {
         _viewProperty.set(view)
     }
 
-    private fun onItemAction(item: Item) {
-        if (item is GroupItem) {
-            val filter = ElementOfFilter(item, false)
-            navigateForward(
-                MenagerieView(
-                    item.menagerie,
-                    filter.toString(),
-                    false,
-                    false,
-                    listOf(filter),
-                    groupElementSorter
-                )
-            )
-        } else if (item is FileItem) {
-            Desktop.getDesktop().open(item.file)
-        }
-    }
-
     private fun initItemGrid() {
         itemGrid.cellFactory = ItemCellFactory.factory {
             addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
                 if (event.button == MouseButton.PRIMARY && event.clickCount == 2) {
                     event.consume()
-                    onItemAction(item)
+                    myApp.onItemAction(item)
                 }
             }
 
@@ -594,13 +573,13 @@ class MainView : View("Menagerie") {
                 val ungroup = item("Ungroup") {
                     onAction = EventHandler { event ->
                         event.consume()
-                        (app as MyApp).ungroupShortcut() // TODO this probably isn't smart but I don't know enough to tell you why
+                        myApp.ungroupShortcut()
                     }
                 }
                 val group = item("Group") {
                     onAction = EventHandler { event ->
                         event.consume()
-                        (app as MyApp).groupShortcut() // TODO this probably isn't smart but I don't know enough to tell you why
+                        myApp.groupShortcut()
                     }
                 }
 
@@ -616,18 +595,6 @@ class MainView : View("Menagerie") {
                     ungroup.isVisible = onlyOne && first is GroupItem
                     group.isVisible = !onlyOne
                 }
-            }
-        }
-        itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ENTER && !event.isShortcutDown && !event.isShiftDown) {
-                if (itemGrid.selected.size == 1) {
-                    event.consume()
-                    onItemAction(itemGrid.selected.first())
-                }
-            }
-            if (event.code == KeyCode.BACK_SPACE && !event.isShortcutDown && !event.isShiftDown) {
-                event.consume()
-                navigateBack()
             }
         }
     }
@@ -665,59 +632,30 @@ class MainView : View("Menagerie") {
     }
 
     private fun initEditTagsDialog() {
-        editTagsPane.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ESCAPE) editTagsPane.hide()
-        }
         editTagsPane.visibleProperty().addListener(ChangeListener { _, _, newValue ->
             if (!newValue) itemGrid.requestFocus()
         })
-        editTags.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (!event.isAltDown && !event.isShiftDown && event.code == KeyCode.ENTER) {
-                applyTagEdit.fire()
-            }
-        }
+        editTags.bindShortcut(KeyCode.ENTER) { applyTagEdit.fire() }
+        editTags.bindShortcut(KeyCode.ENTER, ctrl = true) { applyTagEdit.fire() }
     }
 
     private fun initRootKeyPressedListener() {
-        root.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.E) {
-                    event.consume()
-                    showEditTagsPane()
-                } else if (event.code == KeyCode.F) {
-                    event.consume()
-                    searchTextField.selectAll()
-                    searchTextField.requestFocus()
-                } else if (event.code == KeyCode.N) {
-                    event.consume()
-                    importsButton.fire()
-                } else if (event.code == KeyCode.T) {
-                    event.consume()
-                    val tags = currentView?.menagerie?.tags
-                    if (tags != null) root.add(TagSearchDialog(tags))
-                }
-            } else if (!event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.ESCAPE) {
-                    event.consume()
-                    itemGrid.requestFocus()
-                }
-            } else if (event.isShortcutDown && event.isShiftDown && !event.isAltDown) {
-                if (event.code == KeyCode.D) {
-                    event.consume()
-                    similarButton.fire()
-                }
-            }
-        }
-        root.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.isShortcutDown && !event.isAltDown && !event.isShiftDown) {
-                if (event.code == KeyCode.Q) {
-                    Platform.exit()
-                }
-            }
+        root.bindShortcut(KeyCode.ESCAPE) {
+            itemGrid.requestFocus()
         }
     }
 
-    private fun showEditTagsPane() {
+    fun displayTagsDialog() {
+        val tags = currentView?.menagerie?.tags
+        if (tags != null) root.add(TagSearchDialog(tags))
+    }
+
+    fun focusSearchField() {
+        searchTextField.selectAll()
+        searchTextField.requestFocus()
+    }
+
+    fun showEditTagsPane() {
         editTagsPane.show()
         editTags.requestFocus()
     }

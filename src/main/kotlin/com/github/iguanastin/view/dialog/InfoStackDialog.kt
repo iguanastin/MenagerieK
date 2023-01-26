@@ -1,9 +1,9 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.view.bindShortcut
 import javafx.event.EventHandler
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import tornadofx.*
 
 class InfoStackDialog(header: String, message: String, okText: String = "Ok", onOk: () -> Unit = {}, onClose: () -> Unit = {}) : StackDialog(onClose) {
@@ -36,11 +36,8 @@ class InfoStackDialog(header: String, message: String, okText: String = "Ok", on
             }
         }
 
-        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ENTER) {
-                event.consume()
-                okButton.fire()
-            }
+        bindShortcut(KeyCode.ENTER) {
+            okButton.fire()
         }
     }
 

@@ -1,10 +1,9 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import javafx.scene.Node
+import com.github.iguanastin.view.bindShortcut
 import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import javafx.scene.layout.BorderPane
 import tornadofx.*
 
@@ -19,11 +18,8 @@ open class StackDialog(var onClose: () -> Unit = {}): BorderPane() {
             addClass(Styles.dialogPane)
         }
 
-        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ESCAPE) {
-                close()
-                event.consume()
-            }
+        bindShortcut(KeyCode.ESCAPE) {
+            close()
         }
     }
 

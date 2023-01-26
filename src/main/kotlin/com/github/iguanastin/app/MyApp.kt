@@ -19,11 +19,15 @@ import com.github.iguanastin.app.settings.WindowSettings
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.MainView
+import com.github.iguanastin.view.Shortcut
+import com.github.iguanastin.view.bindShortcut
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
+import javafx.event.EventType
+import javafx.scene.Node
 import javafx.scene.control.ButtonType
 import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
@@ -34,6 +38,7 @@ import javafx.stage.FileChooser
 import javafx.stage.Stage
 import mu.KotlinLogging
 import tornadofx.*
+import java.awt.Desktop
 import java.io.File
 import java.io.IOException
 import kotlin.concurrent.thread
@@ -42,6 +47,20 @@ import kotlin.system.exitProcess
 private val log = KotlinLogging.logger {}
 
 class MyApp : App(MainView::class, Styles::class) {
+
+    companion object {
+        const val VERSION = "1.0.2"
+
+        val shortcuts: MutableList<Shortcut> = mutableListOf()
+
+        private val groupElementSorter: (Item) -> Int? = {
+            if (it is FileItem) {
+                it.elementOf?.items?.indexOf(it)
+            } else {
+                it.id
+            }
+        }
+    }
 
     private val uiPrefs: WindowSettings = WindowSettings()
     private val contextPrefs: AppSettings = AppSettings()
@@ -252,6 +271,10 @@ class MyApp : App(MainView::class, Styles::class) {
         initExternalDragDrop()
         initItemGridKeyHandler()
         initEditTagsControl()
+
+        root.root.bindVisibleShortcut(KeyCode.Q, ctrl = true, desc = "Exit Menagerie", context = "Global") {
+            Platform.exit()
+        }
     }
 
     private fun initEditTagsControl() {
@@ -290,46 +313,85 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initItemGridKeyHandler() {
-        root.itemGrid.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            val ctrl = event.isShortcutDown
-            val shift = event.isShiftDown
-            val alt = event.isAltDown
-
-            if (event.code == KeyCode.I && ctrl) {
-                event.consume()
-                importShortcut(shift)
+        root.itemGrid.apply {
+            bindVisibleShortcut(KeyCode.H, ctrl = true, desc = "Open help", context = "Main Screen") {
+                root.root.helpDialog()
             }
-            if (event.code == KeyCode.DELETE) {
-                event.consume()
-                deleteShortcut(ctrl)
+            bindVisibleShortcut(KeyCode.I, ctrl = true, desc = "Import file(s)", context = "Main Screen") {
+                importFileShortcut()
             }
-            if (event.code == KeyCode.R && ctrl && !shift) {
-                event.consume()
+            bindVisibleShortcut(KeyCode.I, ctrl = true, shift = true, desc = "Import folder", context = "Main Screen") {
+                importFolderShortcut()
+            }
+            bindVisibleShortcut(KeyCode.DELETE, desc = "Delete selected items and files", context = "Item List") {
+                deleteShortcut()
+            }
+            bindVisibleShortcut(
+                KeyCode.DELETE,
+                ctrl = true,
+                desc = "Drop selected items without deleting files",
+                context = "Item List"
+            ) {
+                forgetShortcut()
+            }
+            bindVisibleShortcut(KeyCode.R, ctrl = true, desc = "Rename selected group", context = "Item List") {
                 renameGroupShortcut()
             }
-            if (event.code == KeyCode.D && ctrl && !shift) {
-                event.consume()
-                duplicatesShortcut(event)
+            bindVisibleShortcut(
+                KeyCode.D,
+                ctrl = true,
+                desc = "Find similar files in selected",
+                context = "Item List"
+            ) {
+                duplicatesShortcutUtil(true)
             }
-            if (event.code == KeyCode.G && ctrl && !shift && !alt) {
-                event.consume()
+            bindVisibleShortcut(
+                KeyCode.D,
+                ctrl = true,
+                alt = true,
+                desc = "Find similar files in Menagerie",
+                context = "Item List"
+            ) {
+                duplicatesShortcutUtil(false)
+            }
+            bindVisibleShortcut(KeyCode.G, ctrl = true, desc = "Group selected items", context = "Item List") {
                 groupShortcut()
             }
-            if (event.code == KeyCode.U && ctrl && !shift && !alt) {
-                event.consume()
+            bindVisibleShortcut(KeyCode.U, ctrl = true, desc = "Ungroup selected group", context = "Item List") {
                 ungroupShortcut()
             }
-            if (event.code == KeyCode.S && ctrl && !alt && !shift) {
-                event.consume()
+            bindVisibleShortcut(KeyCode.S, ctrl = true, desc = "Open settings", context = "Main Screen") {
                 root.root.add(SettingsDialog(contextPrefs))
             }
-            if (event.code == KeyCode.F && ctrl && shift && !alt) {
-                event.consume()
+            bindVisibleShortcut(
+                KeyCode.F,
+                ctrl = true,
+                shift = true,
+                desc = "Find similar images online",
+                context = "Item List"
+            ) {
                 root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
             }
-            if (event.code == KeyCode.Z && ctrl && !shift && !alt) {
-                event.consume()
+            bindVisibleShortcut(KeyCode.Z, ctrl = true, desc = "Undo last tag edit", context = "Main Screen") {
                 undoLastEdit()
+            }
+            bindVisibleShortcut(KeyCode.ENTER, desc = "Open item or group", context = "Item List") {
+                onItemAction(selected.singleOrNull() ?: return@bindVisibleShortcut)
+            }
+            bindVisibleShortcut(KeyCode.BACK_SPACE, desc = "Navigate back", context = "Main Screen") {
+                root.navigateBack()
+            }
+            bindVisibleShortcut(KeyCode.E, ctrl = true, desc = "Edit tags", context = "Item List") {
+                root.showEditTagsPane()
+            }
+            bindVisibleShortcut(KeyCode.F, ctrl = true, desc = "Search", context = "Main Screen") {
+                root.focusSearchField()
+            }
+            bindVisibleShortcut(KeyCode.T, ctrl = true, desc = "Display all tags", context = "Main Screen") {
+                root.displayTagsDialog()
+            }
+            bindVisibleShortcut(KeyCode.D, ctrl = true, shift = true, desc = "Open duplicate resolver dialog", context = "Main Screen") {
+                root.openSimilarDialog()
             }
         }
     }
@@ -426,11 +488,11 @@ class MyApp : App(MainView::class, Styles::class) {
         }))
     }
 
-    private fun duplicatesShortcut(event: KeyEvent) {
+    private fun duplicatesShortcutUtil(inSelected: Boolean) {
         val menagerie = context?.menagerie ?: return
 
         val first = expandGroups(root.itemGrid.selected)
-        val second = if (event.isAltDown) expandGroups(menagerie.items) else first
+        val second = if (inSelected) first else expandGroups(menagerie.items)
 
         val progress =
             ProgressDialog(header = "Finding duplicates", message = "${first.size} against ${second.size} items")
@@ -501,17 +563,24 @@ class MyApp : App(MainView::class, Styles::class) {
         }))
     }
 
-    private fun deleteShortcut(shortcutDown: Boolean) {
+    private fun forgetShortcut() {
         val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
         if (del.isEmpty()) return
 
-        if (shortcutDown) {
+        runOnUIThread {
             root.root.confirm("Drop items?", "Drop these items from the database?\n(Does not delete files)") {
                 onConfirm = {
                     deleteItems(del)
                 }
             }
-        } else {
+        }
+    }
+
+    private fun deleteShortcut() {
+        val del: List<Item> = mutableListOf<Item>().apply { addAll(root.itemGrid.selected) }
+        if (del.isEmpty()) return
+
+        runOnUIThread {
             root.root.confirm("Delete items?", "Delete items and their files?\nWARNING: Deletes files!") {
                 onConfirm = {
                     deleteFiles(del)
@@ -520,28 +589,30 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun importShortcut(shiftDown: Boolean) {
+    private fun importFileShortcut() {
         runOnUIThread {
-            if (shiftDown) {
-                val dc = DirectoryChooser()
-                val dir = contextPrefs.general.downloadFolder.value
-                dc.initialDirectory = File(dir)
-                dc.title = "Import directory"
-                val folder = dc.showDialog(root.currentWindow)
-                if (folder != null) {
-                    contextPrefs.general.downloadFolder.value = folder.parent
-                    importFilesDialog(listOf(folder))
-                }
-            } else {
-                val fc = FileChooser()
-                val dir = contextPrefs.general.downloadFolder.value
-                fc.initialDirectory = File(dir)
-                fc.title = "Import files"
-                val files = fc.showOpenMultipleDialog(root.currentWindow)
-                if (!files.isNullOrEmpty()) {
-                    contextPrefs.general.downloadFolder.value = files.first().parent
-                    importFilesDialog(files)
-                }
+            val fc = FileChooser()
+            val dir = contextPrefs.general.downloadFolder.value
+            fc.initialDirectory = File(dir)
+            fc.title = "Import files"
+            val files = fc.showOpenMultipleDialog(root.currentWindow)
+            if (!files.isNullOrEmpty()) {
+                contextPrefs.general.downloadFolder.value = files.first().parent
+                importFilesDialog(files)
+            }
+        }
+    }
+
+    private fun importFolderShortcut() {
+        runOnUIThread {
+            val dc = DirectoryChooser()
+            val dir = contextPrefs.general.downloadFolder.value
+            dc.initialDirectory = File(dir)
+            dc.title = "Import directory"
+            val folder = dc.showDialog(root.currentWindow)
+            if (folder != null) {
+                contextPrefs.general.downloadFolder.value = folder.parent
+                importFilesDialog(listOf(folder))
             }
         }
     }
@@ -642,6 +713,28 @@ class MyApp : App(MainView::class, Styles::class) {
         } catch (e: IOException) {
             log.error("Exception while deleting file: ${item.file}", e)
         }
+    }
+
+    fun onItemAction(item: Item) {
+        if (item is GroupItem) {
+            navigateIntoGroup(item)
+        } else if (item is FileItem) {
+            Desktop.getDesktop().open(item.file)
+        }
+    }
+
+    private fun navigateIntoGroup(group: GroupItem) {
+        val filter = ElementOfFilter(group, false)
+        root.navigateForward(
+            MenagerieView(
+                group.menagerie,
+                filter.toString(),
+                descending = false,
+                shuffle = false,
+                filters = listOf(filter),
+                sortBy = groupElementSorter
+            )
+        )
     }
 
     override fun stop() {
@@ -799,4 +892,17 @@ class MyApp : App(MainView::class, Styles::class) {
 
 fun main(vararg args: String) {
     launch<MyApp>(*args)
+}
+
+fun Node.bindVisibleShortcut(
+    key: KeyCode,
+    ctrl: Boolean = false,
+    alt: Boolean = false,
+    shift: Boolean = false,
+    type: EventType<KeyEvent> = KeyEvent.KEY_PRESSED,
+    desc: String? = null,
+    context: String? = null,
+    handler: (event: KeyEvent) -> Unit
+): Shortcut {
+    return bindShortcut(key, ctrl, alt, shift, type, desc, context, handler).also { MyApp.shortcuts.add(it) }
 }

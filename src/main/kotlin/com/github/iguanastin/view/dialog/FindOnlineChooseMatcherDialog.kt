@@ -3,11 +3,11 @@ package com.github.iguanastin.view.dialog
 import com.github.iguanastin.app.menagerie.duplicates.remote.IQDBMatchFinder
 import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNAOMatchFinder
+import com.github.iguanastin.view.bindShortcut
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import tornadofx.*
 
@@ -67,14 +67,11 @@ class FindOnlineChooseMatcherDialog(private val matches: List<OnlineMatchSet>, v
             }
         }
 
-        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.DIGIT1) {
-                sauceNAOButton.fire()
-                event.consume()
-            } else if (event.code == KeyCode.DIGIT2) {
-                iqdbButton.fire()
-                event.consume()
-            }
+        bindShortcut(KeyCode.DIGIT1) {
+            sauceNAOButton.fire()
+        }
+        bindShortcut(KeyCode.DIGIT2) {
+            iqdbButton.fire()
         }
     }
 

@@ -1,10 +1,10 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.view.bindShortcut
 import com.github.iguanastin.view.nodes.TopEnabledStackPane
 import javafx.event.EventHandler
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import tornadofx.*
 
 class ConfirmStackDialog(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", var onConfirm: () -> Unit = {}, var onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
@@ -47,11 +47,8 @@ class ConfirmStackDialog(header: String, message: String, confirmText: String = 
             }
         }
 
-        addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.ENTER) {
-                event.consume()
-                confirmButton.fire()
-            }
+        bindShortcut(KeyCode.ENTER) {
+            confirmButton.fire()
         }
     }
 
