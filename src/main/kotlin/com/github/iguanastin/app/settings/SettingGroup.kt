@@ -64,12 +64,14 @@ class APISettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
 
     val enabled: BoolSetting
     val port: IntSetting
+    val pageSize: IntSetting
 
     init {
         settings = mutableListOf()
 
         enabled = BoolSetting("api", "Host HTTP API server", false, prefs).also { settings.add(it) }
         port = IntSetting("api_port", "HTTP API port", 54321, prefs, min = 0, max = 65536).also { settings.add(it) }
+        pageSize = IntSetting("api_pagesize", "Number of items per page", 100, prefs, 10, 1000).also { settings.add(it) }
     }
 
 }

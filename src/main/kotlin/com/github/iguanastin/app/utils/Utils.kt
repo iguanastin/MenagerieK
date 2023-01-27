@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.utils
 
+import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Tag
@@ -30,7 +31,13 @@ fun expandGroups(items: List<Item>, includeGroupItems: Boolean = false): List<It
 }
 
 fun bytesToPrettyString(bytes: Long): String {
-    return if (bytes > 1024 * 1024 * 1024) String.format("%.2fGB", bytes / 1024.0 / 1024 / 1024) else if (bytes > 1024 * 1024) String.format("%.2fMB", bytes / 1024.0 / 1024) else if (bytes > 1024) String.format("%.2fKB", bytes / 1024.0) else String.format("%dB", bytes)
+    return if (bytes > 1024 * 1024 * 1024) String.format(
+        "%.2fGB",
+        bytes / 1024.0 / 1024 / 1024
+    ) else if (bytes > 1024 * 1024) String.format("%.2fMB", bytes / 1024.0 / 1024) else if (bytes > 1024) String.format(
+        "%.2fKB",
+        bytes / 1024.0
+    ) else String.format("%dB", bytes)
 }
 
 fun Item.copyTagsToClipboard() {
@@ -39,14 +46,14 @@ fun Item.copyTagsToClipboard() {
     log.info("Copied tags to clipboard: $tagString")
 }
 
-fun Item.pasteTagsFromClipboard() {
+fun Item.pasteTagsFromClipboard(context: MenagerieContext?) {
     val tagString: String = Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as String
-    val added = mutableListOf<Tag>()
+    val add = mutableListOf<Tag>()
     for (t in tagString.split(",")) {
         if (t.isEmpty()) continue
-        val tag = this.menagerie.getTag(t) ?: Tag(menagerie.reserveTagID(), t).also { menagerie.addTag(it) }
-        addTag(tag)
-        added.add(tag)
+        val tag = this.menagerie.getOrMakeTag(t)
+        add.add(tag)
     }
-    log.info("Pasted tags from clipboard: ${added.joinToString { it.name }}")
+    context?.tagEdit(listOf(this), add)
+    log.info("Pasted tags from clipboard: ${add.joinToString { it.name }}")
 }

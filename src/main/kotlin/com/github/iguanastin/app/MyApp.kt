@@ -1,7 +1,7 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.app.context.Edit
 import com.github.iguanastin.app.context.MenagerieContext
-import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
@@ -57,7 +57,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private val uiPrefs: WindowSettings = WindowSettings()
     private val contextPrefs: AppSettings = AppSettings()
 
-    private var context: MenagerieContext? = null
+    var context: MenagerieContext? = null
 
     /**
      * Inter-process communicator to avoid having two instances of the app and to enable importing from the browser.
@@ -294,10 +294,7 @@ class MyApp : App(MainView::class, Styles::class) {
             if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@EventHandler // Do nothing if there are no viable tag edits
 
             // Apply tag edits
-            TagEdit(items, tagsToAdd, tagsToRemove).apply {
-                applyEdit()
-                context?.tagEdits?.push(this)
-            }
+            context?.tagEdit(items, tagsToAdd, tagsToRemove)
 
             root.editTagsPane.hide()
             event.consume()
@@ -382,7 +379,13 @@ class MyApp : App(MainView::class, Styles::class) {
             bindVisibleShortcut(KeyCode.T, ctrl = true, desc = "Display all tags", context = "Main Screen") {
                 root.displayTagsDialog()
             }
-            bindVisibleShortcut(KeyCode.D, ctrl = true, shift = true, desc = "Open duplicate resolver dialog", context = "Main Screen") {
+            bindVisibleShortcut(
+                KeyCode.D,
+                ctrl = true,
+                shift = true,
+                desc = "Open duplicate resolver dialog",
+                context = "Main Screen"
+            ) {
                 root.openSimilarDialog()
             }
         }
@@ -393,15 +396,18 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun undoLastEdit() {
-        if (context?.tagEdits?.isEmpty() == true) return
-        val peek = context?.tagEdits?.peek() ?: return // Return if there are no tag edits in the stack
+        if (context?.edits?.isEmpty() == true) return
+        val peek = context?.edits?.peek() ?: return // Return if there are no edits in the stack
 
         root.root.confirm(
-            "Undo tag edit",
-            peek.addedHistory.entries.joinToString("\n") { "'${it.key.name}' added to ${it.value.size} items" } + "\n\n" + peek.removedHistory.entries.joinToString(
-                "\n"
-            ) { "'${it.key.name}' removed from ${it.value.size} items" }).onConfirm = {
-            context?.tagEdits?.pop()?.undoEdit()
+            "Undo edit",
+            peek.toString()
+        ).onConfirm = {
+            val edit = context?.undoLastEdit()
+            if (edit?.state != Edit.State.Undone) {
+                context?.edits?.push(edit)
+                root.root.confirm("Error", "Failed to undo last edit")
+            }
         }
     }
 
@@ -514,7 +520,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
                 runOnUIThread {
                     progress.close()
-                    root.root.add(DuplicateResolverDialog(pairs.asObservable()))
+                    root.root.add(DuplicateResolverDialog(pairs.asObservable(), context))
                 }
             } catch (e: Exception) {
                 log.error("Error while finding duplicates", e)
@@ -555,7 +561,7 @@ class MyApp : App(MainView::class, Styles::class) {
         if (group !is GroupItem) return
 
         root.root.add(TextInputDialog(header = "Rename group", text = group.title, onAccept = {
-            group.title = it
+            context?.groupRenameEdit(group, it)
         }))
     }
 

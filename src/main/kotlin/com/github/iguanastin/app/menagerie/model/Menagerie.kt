@@ -85,8 +85,6 @@ class Menagerie {
     }
 
     fun removeItem(item: Item): Boolean {
-        // TODO invalidate item
-        // TODO remove tags or decrement their frequencies
         return _items.remove(item)
     }
 

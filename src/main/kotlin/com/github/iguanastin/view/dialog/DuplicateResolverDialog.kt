@@ -1,6 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.SimilarPair
@@ -23,7 +24,7 @@ import javafx.scene.input.MouseEvent
 import javafx.util.Callback
 import tornadofx.*
 
-class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : StackDialog() {
+class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val context: MenagerieContext?) : StackDialog() {
 
     val displayingProperty: ObjectProperty<SimilarPair<Item>> = SimpleObjectProperty()
     var displaying: SimilarPair<Item>?
@@ -322,7 +323,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             item("Paste Tags") {
                 onAction = EventHandler { event ->
                     event.consume()
-                    displaying?.obj1?.pasteTagsFromClipboard()
+                    displaying?.obj1?.pasteTagsFromClipboard(context)
                 }
             }
             separator()
@@ -349,7 +350,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>) : St
             item("Paste Tags") {
                 onAction = EventHandler { event ->
                     event.consume()
-                    displaying?.obj2?.pasteTagsFromClipboard()
+                    displaying?.obj2?.pasteTagsFromClipboard(context)
                 }
             }
             separator()

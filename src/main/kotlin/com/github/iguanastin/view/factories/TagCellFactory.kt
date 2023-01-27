@@ -46,7 +46,7 @@ object TagCellFactory {
                 contextmenu {
                     item("", graphic = TagColorPicker { color ->
                         hide()
-                        item.color = color
+                        item.color = color // TODO: Make this an undoable edit, if it's not too much hassle to get a context
                     })
                 }
             }

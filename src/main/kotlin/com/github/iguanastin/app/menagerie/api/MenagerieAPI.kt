@@ -202,7 +202,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
             }
 
             val edit = TagEdit(listOf(item), add, remove)
-            if (!edit.applyEdit()) {
+            if (!edit.perform()) {
                 sendErrorResponse(exchange, 500, "Failed tag edit", "Edit was not applied")
             }
         }

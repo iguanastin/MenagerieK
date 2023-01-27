@@ -19,7 +19,7 @@ class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) 
         get() = frequencyProperty.get()
         set(value) = frequencyProperty.set(value)
 
-    // TODO tag notes
+    // TODO tag notes exist in database but aren't implemented. Throw them out?
 
     val changeListeners: MutableSet<(TagChange) -> Unit> = mutableSetOf()
 

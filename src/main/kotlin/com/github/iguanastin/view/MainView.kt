@@ -264,7 +264,7 @@ class MainView : View("Menagerie") {
     }
 
     fun openSimilarDialog() {
-        this.add(DuplicateResolverDialog(similar).apply {
+        this.add(DuplicateResolverDialog(similar, myApp.context).apply {
             onClose = {
                 if (similar.isNotEmpty()) {
                     val menagerie = similar.first().obj1.menagerie
@@ -522,7 +522,7 @@ class MainView : View("Menagerie") {
                 item("Paste Tags") {
                     onAction = EventHandler { event ->
                         event.consume()
-                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard()
+                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard(myApp.context)
                     }
                 }
                 separator()
