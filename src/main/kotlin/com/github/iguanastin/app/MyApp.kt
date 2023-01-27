@@ -64,7 +64,7 @@ class MyApp : App(MainView::class, Styles::class) {
      */
     private lateinit var rmi: MenagerieRMI
 
-    private lateinit var root: MainView
+    lateinit var root: MainView
 
     /**
      * Queue of urls collected before the Menagerie has fully loaded.
@@ -151,6 +151,11 @@ class MyApp : App(MainView::class, Styles::class) {
 
             log.info("Flushing ${preLoadImportQueue.size} urls from pre-load import queue")
             preLoadImportQueue.forEach { rmi.communicator.importUrl(it) }
+
+            if (context.prefs.hidden.tourOnLaunch.value) {
+                root.startTour()
+                context.prefs.hidden.tourOnLaunch.value = false
+            }
         }
     }
 
@@ -304,7 +309,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initItemGridKeyHandler() {
         root.itemGrid.apply {
             bindVisibleShortcut(KeyCode.H, ctrl = true, desc = "Open help", context = "Main Screen") {
-                root.root.helpDialog()
+                root.root.helpDialog(app = this@MyApp)
             }
             bindVisibleShortcut(KeyCode.I, ctrl = true, desc = "Import file(s)", context = "Main Screen") {
                 importFileShortcut()

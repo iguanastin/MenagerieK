@@ -31,6 +31,7 @@ import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
+import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.stage.Popup
 import javafx.stage.PopupWindow
@@ -49,6 +50,7 @@ class MainView : View("Menagerie") {
     lateinit var applyTagEdit: Button
     lateinit var editTags: TextField
     lateinit var editTagsPane: BorderPane
+    lateinit var searchModifiersHbox: HBox
 
     private lateinit var searchTextField: TextField
     private lateinit var backButton: Button
@@ -125,7 +127,7 @@ class MainView : View("Menagerie") {
                                 }
                                 borderpane {
                                     left {
-                                        hbox(5.0) {
+                                        searchModifiersHbox = hbox(5.0) {
                                             alignment = Pos.CENTER_LEFT
                                             descendingToggle = togglebutton(selectFirst = true) {
                                                 graphic = ImageView(
@@ -239,6 +241,108 @@ class MainView : View("Menagerie") {
         initSimilarButton()
 
         Platform.runLater { itemGrid.requestFocus() }
+    }
+
+    fun startTour() {
+        Tour(currentStage!!).apply {
+            addStop(
+                TourStop(
+                    null,
+                    "Welcome to Menagerie!\n\n Use the left and right arrow keys to take a tour, or press Escape to exit the tour. You can always restart the tour from the help menu (Ctrl+H)"
+                )
+            )
+            addStop(
+                TourStop(
+                    null, "To get started, import some files by:\n\n" +
+                            "Dragging and dropping files/folders from the file explorer, or the web\n" +
+                            "or, pressing Ctrl+I to import individual files\n" +
+                            "or, pressing Ctrl+Shift+I to import all files in a folder"
+                )
+            )
+            addStop(
+                TourStop(
+                    backButton,
+                    "Navigate back to previous search"
+                )
+            )
+            addStop(
+                TourStop(
+                    searchTextField,
+                    "Filter by space-separated tags and types. Exclude search terms by prepending with a \"-\".\n\n" +
+                            "E.g:\n" +
+                            "    warm_color background person -is:video\n\n" +
+                            "While typing a search term, press Ctrl+Space to quickly autocomplete the tag name/term",
+                    TourStop.TextPos.BOTTOM_LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    searchModifiersHbox,
+                    "Toggle descending order, whether to exclude group elements from search, and shuffle results"
+                )
+            )
+            addStop(
+                TourStop(
+                    selectedCountLabel,
+                    "Number of items selected/number of items in search",
+                    TourStop.TextPos.BOTTOM_LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    searchButton,
+                    "Apply filters and order/etc.",
+                    TourStop.TextPos.BOTTOM_LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    itemGrid,
+                    "The filtered results will appear here, where you can select and modify them with the context menu, or by using keyboard shortcuts\n\n" +
+                            "Select one/multiple items and right click to see actions to perform on those items",
+                    TourStop.TextPos.LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    importsButton,
+                    "Imported files will be queued here as they are added",
+                    TourStop.TextPos.TOP_LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    similarButton,
+                    "As files are imported, they are checked to see if they are similar or duplicates of files that have already been imported\n\n" +
+                            "These cases are cleared when the app closes, so be sure to resolve them first",
+                    TourStop.TextPos.TOP_LEFT
+                )
+            )
+            addStop(
+                TourStop(
+                    itemDisplay,
+                    "When you select an item, it will be displayed here\n\n" +
+                            "Images can be dragged and zoomed; click once to reset zoom or zoom to 1:1 pixel scale\n\n" +
+                            "Click the info text in the bottom corner to toggle more details about the item",
+                    TourStop.TextPos.RIGHT
+                )
+            )
+            addStop(
+                TourStop(
+                    tagView,
+                    "Tags of the current item are listed here, where you can change their color by right clicking them",
+                    TourStop.TextPos.RIGHT
+                )
+            )
+            addStop(
+                TourStop(
+                    null,
+                    "That's it\n\nMake sure to check out the help menu (Ctrl+H) for general help, app information, and keyboard shortcuts\n\nEnjoy!"
+                )
+            )
+
+            start()
+        }
     }
 
     private fun initSimilarButton() {

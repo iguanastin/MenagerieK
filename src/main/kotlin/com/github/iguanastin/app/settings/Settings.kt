@@ -20,16 +20,18 @@ class AppSettings: BaseSettings("iguanastin/MenagerieK/context") {
     val database: DatabaseSettingGroup
     val duplicate: DuplicateSettingGroup
     val api: APISettingGroup
+    val hidden: HiddenSettingGroup
 
     override val groups: List<SettingGroup>
 
     init {
         groups = mutableListOf()
 
-        general = GeneralSettingGroup("General", prefs).also { groups.add(it) }
-        database = DatabaseSettingGroup("Database", prefs).also { groups.add(it) }
-        duplicate = DuplicateSettingGroup("Duplicates", prefs).also { groups.add(it) }
-        api = APISettingGroup("HTTP API", prefs).also { groups.add(it) }
+        general = GeneralSettingGroup(prefs).also { groups.add(it) }
+        database = DatabaseSettingGroup(prefs).also { groups.add(it) }
+        duplicate = DuplicateSettingGroup(prefs).also { groups.add(it) }
+        api = APISettingGroup(prefs).also { groups.add(it) }
+        hidden = HiddenSettingGroup(prefs).also { groups.add(it) }
     }
 
 }

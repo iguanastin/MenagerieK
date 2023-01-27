@@ -18,7 +18,6 @@ class FilterFactory private constructor() {
                 val exclude = str.startsWith('-')
                 val word = if (exclude) str.substring(1) else str
 
-                // TODO refactor this to be more modular. Each filter type parses its own string?
                 if (word.startsWith(ElementOfFilter.prefix, true)) {
                     // Items in group filter
                     filters.add(ElementOfFilter.fromSearchQuery(word, exclude, menagerie))

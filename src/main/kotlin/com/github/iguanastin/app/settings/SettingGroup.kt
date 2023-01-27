@@ -2,15 +2,31 @@ package com.github.iguanastin.app.settings
 
 import java.util.prefs.Preferences
 
-abstract class SettingGroup(val title: String) {
+abstract class SettingGroup(val title: String, val hidden: Boolean = false) {
+
     abstract val settings: List<Setting<out Any>>
 
     fun resetToDefaults() {
         settings.forEach { it.resetToDefault() }
     }
+
 }
 
-class GeneralSettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
+class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = true) {
+
+    override val settings: List<Setting<out Any>>
+
+    val tourOnLaunch: BoolSetting
+
+    init {
+        settings = mutableListOf()
+
+        tourOnLaunch = BoolSetting("launch-tour", "Start tour of app on next launch", default = true, prefs).also { settings.add(it) }
+    }
+
+}
+
+class GeneralSettingGroup(prefs: Preferences) : SettingGroup("General") {
 
     override val settings: List<Setting<out Any>>
 
@@ -24,7 +40,7 @@ class GeneralSettingGroup(title: String, prefs: Preferences) : SettingGroup(titl
 
 }
 
-class DatabaseSettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
+class DatabaseSettingGroup(prefs: Preferences) : SettingGroup("Database") {
 
     override val settings: List<Setting<out Any>>
 
@@ -42,7 +58,7 @@ class DatabaseSettingGroup(title: String, prefs: Preferences) : SettingGroup(tit
 
 }
 
-class DuplicateSettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
+class DuplicateSettingGroup(prefs: Preferences) : SettingGroup("Duplicates") {
 
     override val settings: List<Setting<out Any>>
 
@@ -58,7 +74,7 @@ class DuplicateSettingGroup(title: String, prefs: Preferences) : SettingGroup(ti
 
 }
 
-class APISettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
+class APISettingGroup(prefs: Preferences) : SettingGroup("HTTP API") {
 
     override val settings: List<Setting<out Any>>
 

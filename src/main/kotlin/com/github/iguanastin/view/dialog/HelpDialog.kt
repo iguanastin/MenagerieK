@@ -10,7 +10,7 @@ import tornadofx.*
 import java.awt.Desktop
 import java.net.URI
 
-class HelpDialog(onClose: () -> Unit = {}) : StackDialog(onClose) {
+class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose) {
 
     init {
         root.graphic = tabpane {
@@ -91,10 +91,19 @@ class HelpDialog(onClose: () -> Unit = {}) : StackDialog(onClose) {
             scrollpane(fitToWidth = true) {
                 padding = insets(5.0)
                 // TODO write up an introduction and overview
-                label("This is a test sentence that is hopefully going to be long enough to cause a wrap because I need to test that feature\n" +
-                        "\n" +
-                        "Plus newlines :)") {
-                    isWrapText = true
+                vbox(spacing = 10.0) {
+                    label("This is a test sentence that is hopefully going to be long enough to cause a wrap because I need to test that feature\n" +
+                            "\n" +
+                            "Plus newlines :)") {
+                        isWrapText = true
+                    }
+                    button("Take a tour") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            this@HelpDialog.close()
+                            app.root.startTour()
+                        }
+                    }
                 }
             }
         }
@@ -102,4 +111,4 @@ class HelpDialog(onClose: () -> Unit = {}) : StackDialog(onClose) {
 
 }
 
-fun TopEnabledStackPane.helpDialog(op: HelpDialog.() -> Unit = {}) = HelpDialog().attachTo(this, op)
+fun TopEnabledStackPane.helpDialog(onClose: () -> Unit = {}, app: MyApp, op: HelpDialog.() -> Unit = {}) = HelpDialog(onClose, app).attachTo(this, op)

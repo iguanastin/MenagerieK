@@ -89,6 +89,8 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
 
     private fun EventTarget.initSettingNodes() {
         prefs.groups.forEach { group ->
+            if (group.hidden) return@forEach
+
             vbox {
                 padding = insets(5.0)
 

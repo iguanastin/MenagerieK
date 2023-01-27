@@ -3,6 +3,7 @@ package com.github.iguanastin.app
 import javafx.scene.Cursor
 import javafx.scene.effect.DropShadow
 import javafx.scene.layout.BorderStrokeStyle
+import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import tornadofx.*
@@ -18,6 +19,9 @@ class Styles : Stylesheet() {
         val dragDropDialog by cssclass()
         val multiSelectButton by cssclass()
         val tagListCell by cssclass()
+        val tourOutline by cssclass()
+        val tourText by cssclass()
+        val bastardTourParentPane by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -113,6 +117,20 @@ class Styles : Stylesheet() {
             and(blueBase) {
                 baseColor = c("#4e98a8")
             }
+        }
+        tourOutline {
+            backgroundColor += Color.TRANSPARENT
+            borderColor += box(Color.WHITE)
+            borderStyle += BorderStrokeStyle.DASHED
+            borderRadius += box(5.px)
+            borderWidth += box(5.px)
+        }
+        tourText {
+            backgroundColor += c(0, 0, 0, 0.75)
+            backgroundRadius += box(5.px)
+        }
+        bastardTourParentPane {
+            backgroundColor += Color.TRANSPARENT
         }
     }
 }
