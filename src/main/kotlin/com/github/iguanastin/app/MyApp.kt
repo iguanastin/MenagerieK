@@ -49,7 +49,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.0.2" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.0.3" // When updating version, update it in pom.xml as well
 
         val shortcuts: MutableList<Shortcut> = mutableListOf()
     }
@@ -309,7 +309,7 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initItemGridKeyHandler() {
         root.itemGrid.apply {
             bindVisibleShortcut(KeyCode.H, ctrl = true, desc = "Open help", context = "Main Screen") {
-                root.root.helpDialog(app = this@MyApp)
+                openHelpDialog()
             }
             bindVisibleShortcut(KeyCode.I, ctrl = true, desc = "Import file(s)", context = "Main Screen") {
                 importFileShortcut()
@@ -394,6 +394,10 @@ class MyApp : App(MainView::class, Styles::class) {
                 root.openSimilarDialog()
             }
         }
+    }
+
+    fun openHelpDialog() {
+        root.root.helpDialog(app = this@MyApp)
     }
 
     fun findOnlineShortcut() {

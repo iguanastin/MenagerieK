@@ -272,7 +272,7 @@ class MainView : View("Menagerie") {
                             "E.g:\n" +
                             "    warm_color background person -is:video\n\n" +
                             "While typing a search term, press Ctrl+Space to quickly autocomplete the tag name/term",
-                    TourStop.TextPos.BOTTOM_LEFT
+                    TourStop.TextPos.BOTTOM_RIGHT
                 )
             )
             addStop(
@@ -340,6 +340,10 @@ class MainView : View("Menagerie") {
                     "That's it\n\nMake sure to check out the help menu (Ctrl+H) for general help, app information, and keyboard shortcuts\n\nEnjoy!"
                 )
             )
+
+            onEnd = {
+                myApp.openHelpDialog()
+            }
 
             start()
         }

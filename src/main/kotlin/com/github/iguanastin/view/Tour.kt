@@ -4,6 +4,7 @@ import com.github.iguanastin.app.Styles
 import javafx.application.Platform
 import javafx.event.Event
 import javafx.event.EventHandler
+import javafx.geometry.Bounds
 import javafx.scene.Node
 import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
@@ -21,11 +22,10 @@ class Tour(val stage: Stage) {
 
     private val stops: MutableList<TourStop> = mutableListOf()
     private var currentStop: TourStop? = null
-    private var currentPopup: Popup? = null
 
     private val stageFocusListener = ChangeListener<Boolean> { _, _, new ->
-        if (!new) currentPopup?.hide()
-        else currentPopup?.show(stage)
+        if (!new) currentStop?.hide()
+        else currentStop?.show(stage)
     }
 
     private val keyEventHandler = EventHandler<KeyEvent> { event ->
@@ -69,21 +69,25 @@ class Tour(val stage: Stage) {
         stage.removeEventFilter(Event.ANY, eventFilter)
         stage.focusedProperty().removeListener(stageFocusListener)
 
-        currentPopup?.hide()
+        currentStop?.hide()
         currentStop = null
 
         onEnd()
     }
 
     private fun showStop(stop: TourStop) {
-        currentPopup?.hide()
-        currentPopup = stop.show(stage)
+        currentStop?.hide()
         currentStop = stop
+        stop.show(stage)
     }
 
 }
 
 class TourStop(val node: Node?, val message: String, val pos: TextPos = TextPos.BOTTOM_RIGHT) {
+
+    companion object {
+        private const val pad = 10.0
+    }
 
     enum class TextPos {
         LEFT,
@@ -94,53 +98,83 @@ class TourStop(val node: Node?, val message: String, val pos: TextPos = TextPos.
         BOTTOM_RIGHT
     }
 
-    fun show(stage: Stage): Popup {
-        return Popup().apply {
-            anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
-            isAutoHide = false
-            isHideOnEscape = false
-
-            val pad = 10.0
-            val bounds = node?.localToScreen(node.boundsInLocal)
-            if (node != null) {
-                content.add(Region().apply {
-                    addClass(Styles.tourOutline)
-                    isMouseTransparent = true
-                    prefWidth = bounds!!.width + (pad * 2)
-                    prefHeight = bounds.height + (pad * 2)
-                })
+    private val highlightPopup: Popup = Popup().apply {
+        anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
+        isAutoHide = false
+        isHideOnEscape = false
+        content.add(Region().apply {
+            addClass(Styles.tourOutline)
+            isMouseTransparent = true
+            val targetBounds = node?.localToScreen(node.boundsInLocal)
+            if (targetBounds != null) {
+                prefWidth = targetBounds.width + (pad * 2)
+                prefHeight = targetBounds.height + (pad * 2)
             }
-            content.add(Label(message).apply {
-                addClass(Styles.tourText)
-                isWrapText = true
-                maxWidth = 300.0
-                padding = insets(pad)
-                Platform.runLater { parent.addClass(Styles.bastardTourParentPane) } // Popup contains its elements in a Pane which isn't exposed and will automatically give itself a background color, and I don't know why.
-                if (node != null) {
-                    when (pos) {
-                        TextPos.LEFT -> Platform.runLater { translateX = -width - pad }
-                        TextPos.RIGHT -> translateX = bounds!!.width + (pad * 3)
-                        TextPos.TOP_LEFT -> Platform.runLater {
-                            translateX = -width + pad + bounds!!.width
-                            translateY = -height - pad
-                        }
-                        TextPos.BOTTOM_LEFT -> Platform.runLater {
-                            translateX = -width + pad + bounds!!.width
-                            translateY = bounds.height + (pad * 3)
-                        }
-                        TextPos.TOP_RIGHT -> Platform.runLater { translateY = -height - pad }
-                        TextPos.BOTTOM_RIGHT -> translateY = bounds!!.height + (pad * 3)
-                    }
-                }
-            })
+            Platform.runLater { parent.addClass(Styles.bastardTourParentPane) } // Popup contains its elements in a Pane which isn't exposed and will automatically give itself a background color, and I don't know why.
+        })
+    }
 
-            if (node != null) {
-                show(node, bounds!!.minX - pad, bounds.minY - pad)
-            } else {
-                show(stage)
-                centerOnScreen()
+    private val messagePopup: Popup = Popup().apply {
+        anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
+        isAutoHide = false
+        isHideOnEscape = false
+
+        content.add(Label(message).apply {
+            addClass(Styles.tourText)
+            isWrapText = true
+            maxWidth = 300.0
+            padding = insets(pad)
+            layout()
+            Platform.runLater { parent.addClass(Styles.bastardTourParentPane) } // Popup contains its elements in a Pane which isn't exposed and will automatically give itself a background color, and I don't know why.
+        })
+    }
+
+    fun show(stage: Stage) {
+        if (node != null) {
+            val targetBounds = node.localToScreen(node.boundsInLocal)
+            highlightPopup.show(node, targetBounds.minX - pad, targetBounds.minY - pad)
+
+            showMessagePopup(targetBounds)
+            Platform.runLater { showMessagePopup(targetBounds) } // Run it again after a layout happens
+        } else {
+            messagePopup.centerOnScreen()
+            messagePopup.show(stage)
+        }
+    }
+
+    private fun showMessagePopup(targetBounds: Bounds) {
+        var x = targetBounds.minX
+        var y = targetBounds.minY
+
+        when (pos) {
+            TextPos.BOTTOM_RIGHT -> {
+                y += targetBounds.height + pad * 2
+            }
+            TextPos.LEFT -> {
+                x += -messagePopup.width - pad * 3
+            }
+            TextPos.RIGHT -> {
+                x += targetBounds.width + pad * 2
+            }
+            TextPos.TOP_LEFT -> {
+                x += targetBounds.width - messagePopup.width
+                y += -messagePopup.height - pad * 3
+            }
+            TextPos.BOTTOM_LEFT -> {
+                x += targetBounds.width - messagePopup.width
+                y += targetBounds.height + pad * 2
+            }
+            TextPos.TOP_RIGHT -> {
+                y += -messagePopup.height - pad * 3
             }
         }
+
+        messagePopup.show(node, x, y)
+    }
+
+    fun hide() {
+        highlightPopup.hide()
+        messagePopup.hide()
     }
 
 }
