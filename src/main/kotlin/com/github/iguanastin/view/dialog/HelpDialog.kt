@@ -1,6 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.MyApp
+import com.github.iguanastin.app.Styles
 import com.github.iguanastin.view.nodes.TopEnabledStackPane
 import javafx.event.EventHandler
 import javafx.geometry.Pos
@@ -90,18 +91,67 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
             isClosable = false
             scrollpane(fitToWidth = true) {
                 padding = insets(5.0)
-                // TODO write up an introduction and overview
                 vbox(spacing = 10.0) {
-                    label("This is a test sentence that is hopefully going to be long enough to cause a wrap because I need to test that feature\n" +
-                            "\n" +
-                            "Plus newlines :)") {
-                        isWrapText = true
-                    }
+                    label("New to Menagerie?")
                     button("Take a tour") {
                         onAction = EventHandler { event ->
                             event.consume()
                             this@HelpDialog.close()
                             app.root.startTour()
+                        }
+                    }
+
+                    separator()
+                    label("Overview") { addClass(Styles.helpHeader) }
+                    label(
+                        "something something something overview purpose and idk\n\n" +
+                                "A warning about using Menagerie:\n" +
+                                "Menagerie doesn't track file changes made outside of the app, so if files are moved or renamed, they won't be accessible from the app anymore."
+                    ) { isWrapText = true }
+
+                    separator()
+                    label("Importing") { addClass(Styles.helpHeader) }
+                    label(
+                        "Files can be imported from your local filesystem (Ctrl+I, Ctrl+Shift+I) or from the web (by dragging and dropping images or urls to images from the browser).\n\n" +
+                                "When importing from the local filesystem, files are left in place.\n" +
+                                "When importing from the web, files are downloaded into the folder specified in the settings, and the filename is automatically incremented if applicable.\n\n" +
+                                "Newly imported files are automatically checked for similar/duplicate files."
+                    ) { isWrapText = true }
+
+                    separator()
+                    label("Tagging") { addClass(Styles.helpHeader) }
+                    label("Tags cannot contain spaces. Separate tag adds/deletes with a space to do multiple edits at once. To remove a tag, prepend it with a dash (-)\n\n" +
+                            "E.g. remove 'tagme', add 'person' and 'landscape':\n" +
+                            "    -tagme person landscape\n\n" +
+                            "When editing or searching tags, an autocomplete will show the most common tags. Select the first option by pressing Ctrl+Space, or navigate to a specific option with the up/down arrow keys.") { isWrapText = true }
+
+                    separator()
+                    label("Searching") { addClass(Styles.helpHeader) }
+                    label("Searching also autocompletes tags, but additionally completes non-tag search terms.\n\n" +
+                            "Special search terms:") { isWrapText = true }
+                    gridpane {
+                        hgap = 10.0
+                        paddingLeft = 10.0
+                        row {
+                            label("in:[{ID}|any]")
+                            label("In a group with id {ID}, or any group") { isWrapText = true }
+                        }
+                        row {
+                            label("type:{TYPE}")
+                            label("Specific types (image, file, video, group)") { isWrapText = true }
+                        }
+                        row {
+                            label("time:(<|>){MILLIS}")
+                            label("Imported before (<), after (>), or at (no prefix) a given time in milliseconds since epoch") { isWrapText = true }
+                        }
+                        row {
+                            label("id:(<|>){ID}")
+                            label("IDs less than (<), greater than (>), or equal to (no prefix)") { isWrapText = true }
+                        }
+                    }
+                    label("Examples: -id:>4321 -id:123 time:<1674867225628 type:image -in:any") {
+                        style {
+                            paddingBottom = 100.0
                         }
                     }
                 }
@@ -111,4 +161,9 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
 
 }
 
-fun TopEnabledStackPane.helpDialog(onClose: () -> Unit = {}, app: MyApp, op: HelpDialog.() -> Unit = {}) = HelpDialog(onClose, app).attachTo(this, op)
+fun TopEnabledStackPane.helpDialog(
+    onClose: () -> Unit = {},
+    app: MyApp,
+    op: HelpDialog.() -> Unit = {}
+) =
+    HelpDialog(onClose, app).attachTo(this, op)

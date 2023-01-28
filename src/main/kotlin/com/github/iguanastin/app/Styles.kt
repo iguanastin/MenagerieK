@@ -22,6 +22,7 @@ class Styles : Stylesheet() {
         val tourOutline by cssclass()
         val tourText by cssclass()
         val bastardTourParentPane by cssclass()
+        val helpHeader by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -131,6 +132,10 @@ class Styles : Stylesheet() {
         }
         bastardTourParentPane {
             backgroundColor += Color.TRANSPARENT
+        }
+        helpHeader {
+            fontWeight = FontWeight.BOLD
+            fontSize = 1.5.em
         }
     }
 }
