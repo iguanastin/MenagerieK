@@ -32,9 +32,9 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
             private val finishedListener = ChangeListener<Boolean> { _, _, newValue ->
                 runOnUIThread {
                     if (newValue) {
-                        if (!hasClass(Styles.finished)) addClass(Styles.finished)
+                        if (!hasClass(Styles.importFinished)) addClass(Styles.importFinished)
                     } else {
-                        removeClass(Styles.finished)
+                        removeClass(Styles.importFinished)
                     }
                     cancelButton.isVisible = !newValue
                     progressBar.isVisible = !newValue
@@ -75,9 +75,9 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
                 super.updateItem(item, empty)
 
                 if (item?.isFinished == true) {
-                    if (!hasClass(Styles.finished)) addClass(Styles.finished)
+                    if (!hasClass(Styles.importFinished)) addClass(Styles.importFinished)
                 } else {
-                    removeClass(Styles.finished)
+                    removeClass(Styles.importFinished)
                 }
                 cancelButton.isVisible = !empty && item?.isFinished == false
                 progressBar.isVisible = !empty && item?.isFinished == false

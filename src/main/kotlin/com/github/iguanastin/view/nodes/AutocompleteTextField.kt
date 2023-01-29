@@ -156,10 +156,10 @@ private fun getPreviousWord(text: String, caret: Int): String {
 
 private fun updateSelected(vbox: VBox, selected: Int, above: Boolean) {
     vbox.children.forEachIndexed { i, node ->
-        node.removeClass(Styles.selected, Styles.softSelected)
+        node.removeClass(Styles.selected, Styles.autocompleteSoftSelected)
         if (selected < 0) {
             if ((above && i == vbox.children.size - 1) || (!above && i == 0)) {
-                node.addClass(Styles.softSelected)
+                node.addClass(Styles.autocompleteSoftSelected)
             }
         } else if (i == selected) {
             node.addClass(Styles.selected)
