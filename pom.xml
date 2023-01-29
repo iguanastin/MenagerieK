@@ -186,6 +186,43 @@
                 </executions>
             </plugin>
 
+<!--            <plugin>-->
+<!--                <groupId>org.panteleyev</groupId>-->
+<!--                <artifactId>jpackage-maven-plugin</artifactId>-->
+<!--                <version>1.6.0</version>-->
+<!--                <configuration>-->
+<!--                    <name>MenagerieK</name>-->
+<!--                    <input>jpackage/input</input>-->
+<!--                    <destination>target</destination>-->
+<!--                    <appVersion>${project.version}</appVersion>-->
+<!--                    <aboutUrl>https://github.com/iguanastin/menageriek</aboutUrl>-->
+<!--                    <modulePaths>-->
+<!--                        <modulePath>C:\Program Files\Java\javafx-jmods-19.0.2.1</modulePath>-->
+<!--                    </modulePaths>-->
+<!--                    <addModules>javafx.controls</addModules>-->
+<!--                    <description>Local media file organizer</description>-->
+<!--                    <icon>jpackage/menagerie.ico</icon>-->
+<!--                    <javaOptions>-->
+<!--                        <javaOption>&#45;&#45;module-path</javaOption>-->
+<!--                        <javaOption>C:\Program Files\Java\javafx-sdk-21\lib</javaOption>-->
+<!--                        <javaOption>&#45;&#45;add-modules</javaOption>-->
+<!--                        <javaOption>javafx.controls</javaOption>-->
+<!--                        <javaOption>&#45;&#45;add-opens=javafx.graphics/javafx.scene=ALL-UNNAMED</javaOption>-->
+<!--                    </javaOptions>-->
+<!--                    <launchers>-->
+<!--                        <launcher>-->
+<!--                            <name>menageriek-console</name>-->
+<!--                            <file>jpackage/consolelauncher.properties</file>-->
+<!--                        </launcher>-->
+<!--                    </launchers>-->
+<!--                    <mainJar>menageriek-${project.version}-jar-with-dependencies.jar</mainJar>-->
+<!--                    <verbose>true</verbose>-->
+<!--                    <winDirChooser>true</winDirChooser>-->
+<!--                    <winMenu>true</winMenu>-->
+<!--                    <winShortcutPrompt>true</winShortcutPrompt>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>

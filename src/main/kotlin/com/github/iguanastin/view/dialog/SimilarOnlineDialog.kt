@@ -91,7 +91,14 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
             override fun updateItem(item: OnlineMatch?, empty: Boolean) {
                 super.updateItem(item, empty)
 
-                thumbView.image = if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true, true)
+                // TODO item is being constantly updated (null, item, null, item, null, item, etc.)
+                // State is not changing unexpectedly, viewing property is not changing unexpectedly. It seems to be a graphics problem only
+                // It's the same cell being updated
+                // Loading a thumbnail in the background causes this issue somehow
+                // https://github.com/controlsfx/controlsfx/issues/1241 still present as of 11.1.2
+                // For now, load images synchronously (gross)
+
+                thumbView.image = if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true)
                 bottomLabel.text = item?.bottomText
                 topLabel.text = item?.topText
             }
