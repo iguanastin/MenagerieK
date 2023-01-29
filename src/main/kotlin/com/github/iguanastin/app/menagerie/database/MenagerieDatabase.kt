@@ -6,6 +6,7 @@ import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To
 import com.github.iguanastin.app.menagerie.database.updates.*
 import com.github.iguanastin.app.menagerie.model.*
 import javafx.collections.ListChangeListener
+import javafx.collections.SetChangeListener
 import mu.KotlinLogging
 import java.io.File
 import java.sql.*
@@ -193,11 +194,9 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         })
 
 
-        menagerie.knownNonDupes.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                change.removed.forEach { pair -> updateQueue.put(DatabaseDeleteNonDupe(pair)) }
-                change.addedSubList.forEach { pair -> updateQueue.put(DatabaseCreateNonDupe(pair)) }
-            }
+        menagerie.knownNonDupes.addListener(SetChangeListener { change ->
+            if (change.wasRemoved()) updateQueue.put(DatabaseDeleteNonDupe(change.elementRemoved))
+            if (change.wasAdded()) updateQueue.put(DatabaseCreateNonDupe(change.elementAdded))
         })
     }
 

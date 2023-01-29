@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.model
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.collections.ObservableSet
 import tornadofx.*
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -20,8 +21,8 @@ class Menagerie {
     private val nextItemID = AtomicInteger(0)
     private val files: MutableSet<File> = mutableSetOf()
 
-    private val _knownNonDupes: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
-    val knownNonDupes: ObservableList<SimilarPair<Item>> = _knownNonDupes.asUnmodifiable()
+    private val _knownNonDupes: ObservableSet<SimilarPair<Item>> = FXCollections.observableSet()
+    val knownNonDupes: ObservableSet<SimilarPair<Item>> = _knownNonDupes.asUnmodifiable()
 
 
     init {
