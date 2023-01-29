@@ -16,6 +16,6 @@ abstract class ItemDisplay: BorderPane() {
             itemProperty.set(value)
         }
 
-    abstract fun canDisplay(item: Item): Boolean
+    abstract fun canDisplay(item: Item?): Boolean
 
 }

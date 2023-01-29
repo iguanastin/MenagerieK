@@ -634,6 +634,12 @@ class MainView : View("Menagerie") {
                     }
                 }
                 separator()
+                val open = item("Open") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        myApp.onItemAction(itemGrid.selected.singleOrNull() ?: return@EventHandler)
+                    }
+                }
                 val showInExplorer = item("Show in Explorer") {
                     onAction = EventHandler { event ->
                         event.consume()
@@ -717,6 +723,7 @@ class MainView : View("Menagerie") {
                     ungroup.isVisible = onlyOne && first is GroupItem
                     group.isVisible = !onlyOne
                     dupesGroup.isVisible = itemGrid.selected.size > 0
+                    open.isVisible = onlyOne
                 }
                 itemGrid.selected.addListener(InvalidationListener {
                     hide()

@@ -6,6 +6,7 @@ import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.InvalidationListener
 import javafx.beans.value.ChangeListener
+import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.effect.DropShadow
@@ -73,8 +74,10 @@ class GroupDisplay : ItemDisplay() {
         }
     }
 
-    override fun canDisplay(item: Item): Boolean {
+    override fun canDisplay(item: Item?): Boolean {
         return item is GroupItem
     }
 
 }
+
+fun EventTarget.groupdisplay(op: GroupDisplay.() -> Unit = {}) = GroupDisplay().attachTo(this, op)
