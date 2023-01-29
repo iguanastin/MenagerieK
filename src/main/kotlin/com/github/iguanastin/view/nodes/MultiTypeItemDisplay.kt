@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.nodes
 
+import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.model.Item
@@ -13,12 +14,10 @@ import javafx.beans.property.SimpleObjectProperty
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
-import javafx.scene.effect.DropShadow
 import javafx.scene.input.MouseButton
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
 import javafx.scene.text.TextAlignment
 import mu.KotlinLogging
 import tornadofx.*
@@ -37,7 +36,7 @@ class MultiTypeItemDisplay : StackPane() {
 
     private val infoPadding: Double = 5.0
 
-    val infoRightProperty: BooleanProperty = SimpleBooleanProperty(false).apply {
+    private val infoRightProperty: BooleanProperty = SimpleBooleanProperty(false).apply {
         addListener { _, _, new ->
             runOnUIThread {
                 infoLabel.apply {
@@ -54,7 +53,7 @@ class MultiTypeItemDisplay : StackPane() {
             }
         }
     }
-    var infoRight: Boolean
+    private var infoRight: Boolean
         set(value) = infoRightProperty.set(value)
         get() = infoRightProperty.get()
 
@@ -63,7 +62,7 @@ class MultiTypeItemDisplay : StackPane() {
             runOnUIThread { updateInfo(item) }
         }
     }
-    var expandedInfo: Boolean
+    private var expandedInfo: Boolean
         set(value) = expandedInfoProperty.set(value)
         get() = expandedInfoProperty.get()
 
@@ -90,7 +89,7 @@ class MultiTypeItemDisplay : StackPane() {
         anchorpane {
             isPickOnBounds = false
             infoLabel = label {
-                effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
+                addClass(Styles.infoLabel)
                 alignment = Pos.BOTTOM_LEFT
                 anchorpaneConstraints {
                     leftAnchor = infoPadding
@@ -126,27 +125,28 @@ class MultiTypeItemDisplay : StackPane() {
     }
 
     private fun updateInfo(new: Item?) {
-        if (new != null) {
-            val time =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(
-                    ZoneId.systemDefault()
-                ).format(Date(new.added).toInstant())
-            infoLabel.text = if (expandedInfo) "ID: ${new.id}\n$time\n" else ""
+        infoLabel.text = null
+        if (new == null) return
 
-            if (new is ImageItem) {
-                imageDisplay.trueImage?.afterLoaded {
-                    val fileSize = bytesToPrettyString(new.file.length())
-                    val resolution = "${width.toInt()}x${height.toInt()}"
+        val time =
+            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).withZone(
+                ZoneId.systemDefault()
+            ).format(Date(new.added).toInstant())
+        infoLabel.text = if (expandedInfo) "ID: ${new.id}\n$time\n" else ""
 
-                    runOnUIThread {
-                        if (item == new) infoLabel.text += if (expandedInfo) "$fileSize\n" +
-                                "$resolution\n" +
-                                "${new.file.path}" else resolution
-                    }
+        if (new is ImageItem) {
+            imageDisplay.trueImage?.afterLoaded {
+                val fileSize = bytesToPrettyString(new.file.length())
+                val resolution = "${width.toInt()}x${height.toInt()}"
+
+                runOnUIThread {
+                    if (item == new) infoLabel.text += if (expandedInfo) "$fileSize\n" +
+                            "$resolution\n" +
+                            new.file.path else resolution
                 }
-            } else if (new is GroupItem) {
-                infoLabel.text += if (expandedInfo) "Size: ${new.items.size}" else "ID: ${new.id}"
             }
+        } else if (new is GroupItem) {
+            infoLabel.text += if (expandedInfo) "Size: ${new.items.size}" else "ID: ${new.id}"
         }
     }
 

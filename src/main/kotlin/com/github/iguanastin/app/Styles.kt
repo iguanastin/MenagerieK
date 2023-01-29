@@ -23,6 +23,7 @@ class Styles : Stylesheet() {
         val tourText by cssclass()
         val bastardTourParentPane by cssclass()
         val helpHeader by cssclass()
+        val infoLabel by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -136,6 +137,14 @@ class Styles : Stylesheet() {
         helpHeader {
             fontWeight = FontWeight.BOLD
             fontSize = 1.5.em
+        }
+
+        infoLabel {
+            cursor = Cursor.HAND
+            and(hover) {
+                backgroundColor += c(0, 0, 0, 0.25)
+            }
+            effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
         }
     }
 }
