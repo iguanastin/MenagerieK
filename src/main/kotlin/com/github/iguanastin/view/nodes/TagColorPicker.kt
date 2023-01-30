@@ -23,6 +23,7 @@ class TagColorPicker(onChoose: (String?) -> Unit): HBox(5.0) {
                     event.consume()
                     onChoose(color)
                 }
+                tooltip(color)
             }
         }
 
@@ -40,6 +41,7 @@ class TagColorPicker(onChoose: (String?) -> Unit): HBox(5.0) {
                 onChoose(null)
             }
             graphic = ImageView(Image(TagColorPicker::class.java.getResource("/imgs/resetcolor.png")?.toExternalForm()))
+            tooltip("Reset")
         }
     }
 

@@ -8,7 +8,6 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.app.settings.AppSettings
-import javafx.beans.value.ChangeListener
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -17,12 +16,12 @@ class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter
     val edits: Stack<Edit> = Stack()
 
     val api = MenagerieAPI(this, prefs.api.pageSize.value)
-    private val apiPageSizeListener = ChangeListener { _, _, new ->
+    private val apiPageSizeListener = { new: Int ->
         api.pageSize = new
     }
 
     init {
-        prefs.api.pageSize.property.addListener(apiPageSizeListener)
+        prefs.api.pageSize.changeListeners.add(apiPageSizeListener)
     }
 
     fun close() {
@@ -32,7 +31,7 @@ class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter
             e.printStackTrace()
         }
 
-        prefs.api.pageSize.property.removeListener(apiPageSizeListener)
+        prefs.api.pageSize.changeListeners.remove(apiPageSizeListener)
         api.stop()
 
         thread(start = true, name = "Database Shutdown") {

@@ -1,22 +1,24 @@
 package com.github.iguanastin.app.settings
 
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.ReadOnlyObjectProperty
-import javafx.beans.property.SimpleObjectProperty
+import com.github.iguanastin.app.menagerie.model.Tag
 import java.util.prefs.Preferences
 
 abstract class Setting<T>(val key: String, val label: String?, val default: T, private val prefs: Preferences) {
-    private val _property: ObjectProperty<T> = SimpleObjectProperty()
-    val property: ReadOnlyObjectProperty<T> = _property
+
     var value: T
-        get() = stringToObject(prefs.get(key, default.toString()))
+        get() = stringToObject(prefs.get(key, objectToString(default)))
         set(value) {
-            prefs.put(key, filterValue(value).toString())
+            prefs.put(key, objectToString(filterValue(value)))
         }
 
+    val changeListeners: MutableList<(T) -> Unit> = mutableListOf()
+
     init {
-        prefs.addPreferenceChangeListener {
-            if (it.key == key) _property.value = stringToObject(it.newValue)
+        prefs.addPreferenceChangeListener { change ->
+            if (change.key == key) {
+                val obj = stringToObject(change.newValue)
+                changeListeners.forEach { listener -> listener.invoke(obj) }
+            }
         }
     }
 
@@ -30,9 +32,66 @@ abstract class Setting<T>(val key: String, val label: String?, val default: T, p
 
     protected abstract fun stringToObject(string: String): T
 
+    protected open fun objectToString(obj: T): String {
+        return obj.toString()
+    }
+
 }
 
-class StringSetting(key: String, label: String? = null, default: String, prefs: Preferences, val type: Type = Type.PLAIN_TEXT) :
+class TagColorizerSetting(
+    key: String,
+    label: String? = null,
+    default: List<TagColorRule> = listOf(),
+    prefs: Preferences
+) :
+    Setting<List<TagColorRule>>(key, label, default, prefs) {
+
+    override fun stringToObject(string: String): List<TagColorRule> {
+        return mutableListOf<TagColorRule>().apply {
+            if (string.isBlank()) return@apply
+            string.split(";").forEach { add(TagColorRule.fromString(it)) }
+        }
+    }
+
+    override fun objectToString(obj: List<TagColorRule>): String {
+        return obj.joinToString(";")
+    }
+
+    fun testAndApply(tag: Tag): Boolean {
+        for (rule in value) {
+            if (rule.regex.containsMatchIn(tag.name)) {
+                tag.color = rule.color
+                return true
+            }
+        }
+
+        return false
+    }
+
+}
+
+class TagColorRule(val regex: Regex, val color: String) {
+
+    override fun toString(): String {
+        return "${regex.pattern} $color"
+    }
+
+    companion object {
+        fun fromString(str: String): TagColorRule {
+            val split = str.split(" ")
+            return TagColorRule(Regex(split[0], RegexOption.IGNORE_CASE), split[1])
+        }
+    }
+
+}
+
+class StringSetting(
+    key: String,
+    label: String? = null,
+    default: String,
+    prefs: Preferences,
+    val type: Type = Type.PLAIN_TEXT
+) :
     Setting<String>(key, label, default, prefs) {
 
     enum class Type {
@@ -53,7 +112,14 @@ class BoolSetting(key: String, label: String? = null, default: Boolean, prefs: P
     }
 }
 
-class IntSetting(key: String, label: String? = null, default: Int, prefs: Preferences, val min: Int = Int.MIN_VALUE, val max: Int = Int.MAX_VALUE) :
+class IntSetting(
+    key: String,
+    label: String? = null,
+    default: Int,
+    prefs: Preferences,
+    val min: Int = Int.MIN_VALUE,
+    val max: Int = Int.MAX_VALUE
+) :
     Setting<Int>(key, label, default, prefs) {
     override fun stringToObject(string: String): Int {
         return string.toInt()
@@ -64,7 +130,14 @@ class IntSetting(key: String, label: String? = null, default: Int, prefs: Prefer
     }
 }
 
-class DoubleSetting(key: String, label: String? = null, default: Double, prefs: Preferences, val min: Double = Double.MIN_VALUE, val max: Double = Double.MAX_VALUE) :
+class DoubleSetting(
+    key: String,
+    label: String? = null,
+    default: Double,
+    prefs: Preferences,
+    val min: Double = Double.MIN_VALUE,
+    val max: Double = Double.MAX_VALUE
+) :
     Setting<Double>(key, label, default, prefs) {
     override fun stringToObject(string: String): Double {
         return string.toDouble()

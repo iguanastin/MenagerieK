@@ -92,6 +92,20 @@ class APISettingGroup(prefs: Preferences) : SettingGroup("HTTP API") {
 
 }
 
+class TagSettingGroup(prefs: Preferences) : SettingGroup("Tags") {
+
+    override val settings: List<Setting<out Any>>
+
+    val autoColorTags: TagColorizerSetting
+
+    init {
+        settings = mutableListOf()
+
+        autoColorTags = TagColorizerSetting("tag-colorize", "Colorize tags", prefs = prefs).also { settings.add(it) }
+    }
+
+}
+
 class UISettingGroup(title: String, prefs: Preferences) : SettingGroup(title) {
 
     override val settings: List<Setting<out Any>>

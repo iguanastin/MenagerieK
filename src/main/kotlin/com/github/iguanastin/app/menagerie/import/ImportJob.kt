@@ -80,12 +80,7 @@ open class ImportJob(val file: File, val addTags: List<Tag>? = null) {
     }
 
     private fun initTags(menagerie: Menagerie) {
-        var tagme = menagerie.getTag("tagme")
-        if (tagme == null) {
-            tagme = Tag(menagerie.reserveTagID(), "tagme")
-            menagerie.addTag(tagme)
-        }
-        item?.addTag(tagme)
+        item?.addTag(menagerie.getOrMakeTag("tagme"))
         addTags?.forEach { item?.addTag(it) }
     }
 

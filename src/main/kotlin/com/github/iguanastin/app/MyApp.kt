@@ -292,7 +292,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue // Ignore tags that don't exist
                     tagsToRemove.add(tag)
                 } else {
-                    tagsToAdd.add(menagerie.getOrMakeTag(name))
+                    tagsToAdd.add(menagerie.getOrMakeTag(name)) // TODO: check newly created tag against TagColorRule settings. Needs to happen elsewhere, I think.
                 }
             }
 

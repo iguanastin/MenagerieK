@@ -21,6 +21,7 @@ class AppSettings: BaseSettings("iguanastin/MenagerieK/context") {
     val duplicate: DuplicateSettingGroup
     val api: APISettingGroup
     val hidden: HiddenSettingGroup
+    val tags: TagSettingGroup
 
     override val groups: List<SettingGroup>
 
@@ -31,6 +32,7 @@ class AppSettings: BaseSettings("iguanastin/MenagerieK/context") {
         database = DatabaseSettingGroup(prefs).also { groups.add(it) }
         duplicate = DuplicateSettingGroup(prefs).also { groups.add(it) }
         api = APISettingGroup(prefs).also { groups.add(it) }
+        tags = TagSettingGroup(prefs).also { groups.add(it) }
         hidden = HiddenSettingGroup(prefs).also { groups.add(it) }
     }
 
