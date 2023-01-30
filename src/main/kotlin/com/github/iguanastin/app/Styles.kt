@@ -25,6 +25,7 @@ class Styles : Stylesheet() {
         val helpHeader by cssclass()
         val infoLabel by cssclass()
         val focusableTagList by cssclass()
+        val tempTag by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -170,6 +171,13 @@ class Styles : Stylesheet() {
             and(hover) {
                 backgroundColor += c(0, 0, 0, 0.25)
             }
+        }
+
+        tempTag {
+            backgroundColor += c("#330e17")
+        }
+        tempTag and odd {
+            backgroundColor += c("#330e17").brighter()
         }
     }
 }

@@ -101,8 +101,8 @@ class Menagerie {
         return null
     }
 
-    fun getOrMakeTag(name: String): Tag {
-        return getTag(name) ?: Tag(reserveTagID(), name).also { addTag(it) }
+    fun getOrMakeTag(name: String, temporaryIfNew: Boolean = false): Tag {
+        return getTag(name) ?: Tag(reserveTagID(), name, this, temporary = temporaryIfNew).also { addTag(it) }
     }
 
     fun hasTag(id: Int): Boolean {

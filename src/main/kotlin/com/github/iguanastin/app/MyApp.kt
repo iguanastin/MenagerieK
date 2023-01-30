@@ -188,7 +188,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 val sanitizedUrl = splitString[0]
 
                 val tags: List<Tag> =
-                    splitString.subList(1, splitString.size).mapNotNull { context!!.menagerie.getTag(it) }
+                    splitString.subList(1, splitString.size).map { context!!.menagerie.getOrMakeTag(it, temporaryIfNew = true) }
 
                 runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
             } else {

@@ -8,10 +8,12 @@ import javafx.beans.value.ChangeListener
 import javafx.scene.control.Label
 import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
+import javafx.scene.input.MouseButton
+import javafx.scene.input.MouseEvent
 import javafx.util.Callback
 import tornadofx.*
 
-open class TagCellFactory :
+open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
     Callback<ListView<Tag>, ListCell<Tag>> {
 
     override fun call(listView: ListView<Tag>?): ListCell<Tag> {
@@ -27,7 +29,7 @@ open class TagCellFactory :
                     freqLabel.textFill = color
                 }
             }
-            val freqListener: ChangeListener<Number> = tornadofx.ChangeListener { _, _, newValue ->
+            val freqListener: ChangeListener<Number> = ChangeListener { _, _, newValue ->
                 runOnUIThread {
                     freqLabel.text = "$newValue"
                 }
@@ -41,6 +43,17 @@ open class TagCellFactory :
                     }
                     right {
                         freqLabel = label()
+                    }
+
+                    addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
+                        if (item != null && event.button == MouseButton.PRIMARY) {
+                            event.consume()
+                            if (item.temporary) {
+                                promoteTemporaryTag(item)
+                            } else {
+                                onTagClick?.invoke(item)
+                            }
+                        }
                     }
                 }
 
@@ -62,6 +75,12 @@ open class TagCellFactory :
                 item?.colorProperty?.addListener(colorListener)
                 item?.frequencyProperty?.addListener(freqListener)
 
+                if (item?.temporary == true) {
+                    addClass(Styles.tempTag)
+                } else {
+                    removeClass(Styles.tempTag)
+                }
+
                 val color = c(item?.color ?: "white")
                 nameLabel.apply {
                     text = item?.name
@@ -69,7 +88,7 @@ open class TagCellFactory :
                 }
                 freqLabel.apply {
                     text = if (item != null) {
-                        "${item.frequency}"
+                        if (item.temporary) "TEMP" else "${item.frequency}"
                     } else {
                         null
                     }
@@ -77,6 +96,20 @@ open class TagCellFactory :
                 }
             }
 
+        }
+    }
+
+    private fun promoteTemporaryTag(tag: Tag) {
+        tag.menagerie.removeTag(tag)
+
+        val newTag = Tag(tag.menagerie.reserveTagID(), tag.name, tag.menagerie, tag.color)
+        tag.menagerie.addTag(newTag)
+
+        tag.menagerie.items.forEach {
+            if (tag in it.tags) {
+                it.removeTag(tag)
+                it.addTag(newTag)
+            }
         }
     }
 

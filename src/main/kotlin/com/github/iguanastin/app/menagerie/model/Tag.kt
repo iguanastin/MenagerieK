@@ -5,7 +5,7 @@ import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 
-class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) {
+class Tag(val id: Int, name: String, val menagerie: Menagerie, color: String? = null, frequency: Int = 0, val temporary: Boolean = false) {
 
     val name: String = name.lowercase()
 
@@ -18,8 +18,6 @@ class Tag(val id: Int, name: String, color: String? = null, frequency: Int = 0) 
     var frequency: Int
         get() = frequencyProperty.get()
         set(value) = frequencyProperty.set(value)
-
-    // TODO tag notes exist in database but aren't implemented. Throw them out?
 
     val changeListeners: MutableSet<(TagChange) -> Unit> = mutableSetOf()
 

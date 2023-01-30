@@ -14,7 +14,7 @@ open class DatabaseCreateItem(val item: Item): DatabaseUpdate() {
         var updates = ps.executeUpdate()
 
         for (tag in item.tags) {
-            updates += DatabaseTagItem(item, tag).sync(db)
+            if (!tag.temporary) updates += DatabaseTagItem(item, tag).sync(db)
         }
 
         return updates

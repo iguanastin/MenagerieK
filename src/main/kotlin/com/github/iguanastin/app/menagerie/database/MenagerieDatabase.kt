@@ -133,7 +133,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 }
                 is ItemChange -> {
                     if (!change.tagsAdded.isNullOrEmpty()) change.tagsAdded.forEach {
-                        updateQueue.put(
+                        if (!it.temporary) updateQueue.put(
                             DatabaseTagItem(
                                 change.item,
                                 it
@@ -141,7 +141,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                         )
                     }
                     if (!change.tagsRemoved.isNullOrEmpty()) change.tagsRemoved.forEach {
-                        updateQueue.put(
+                        if (!it.temporary) updateQueue.put(
                             DatabaseUntagItem(change.item, it)
                         )
                     }
@@ -175,7 +175,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
 
         val tagChangeListener = { change: TagChange ->
-            if (change.color != null) updateQueue.put(DatabaseSetTagColor(change.tag, change.color.new))
+            if (!change.tag.temporary && change.color != null) updateQueue.put(DatabaseSetTagColor(change.tag, change.color.new))
         }
         for (tag in menagerie.tags) {
             tag.changeListeners.add(tagChangeListener)
@@ -183,12 +183,16 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         menagerie.tags.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { tag ->
-                    updateQueue.put(DatabaseDeleteTag(tag))
-                    tag.changeListeners.add(tagChangeListener)
+                    if (!tag.temporary) {
+                        updateQueue.put(DatabaseDeleteTag(tag))
+                        tag.changeListeners.add(tagChangeListener)
+                    }
                 }
                 change.addedSubList.forEach { tag ->
-                    updateQueue.put(DatabaseCreateTag(tag))
-                    tag.changeListeners.add(tagChangeListener)
+                    if (!tag.temporary) {
+                        updateQueue.put(DatabaseCreateTag(tag))
+                        tag.changeListeners.add(tagChangeListener)
+                    }
                 }
             }
         })
@@ -259,7 +263,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         var i = 0
         genericStatement.executeQuery("SELECT * FROM tags;").use { rs: ResultSet ->
             while (rs.next()) {
-                menagerie.addTag(Tag(rs.getInt("id"), rs.getNString("name"), color = rs.getNString("color")))
+                menagerie.addTag(Tag(rs.getInt("id"), rs.getNString("name"), menagerie, color = rs.getNString("color")))
                 i++
 
                 if (System.currentTimeMillis() - timeSinceStatus > 100) {

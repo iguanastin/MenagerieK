@@ -2,7 +2,7 @@ package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.Tag
-import com.github.iguanastin.view.factories.ClickableTagCellFactory
+import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
@@ -79,7 +79,9 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}, o
                 tagList = listview {
                     addClass(Styles.focusableTagList)
                     vgrow = Priority.ALWAYS
-                    cellFactory = ClickableTagCellFactory(onClick)
+                    cellFactory = TagCellFactory().apply {
+                        onTagClick = onClick
+                    }
                     addEventFilter(KeyEvent.KEY_PRESSED) { event ->
                         if (event.code == KeyCode.ESCAPE) {
                             event.consume()

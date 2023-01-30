@@ -16,8 +16,8 @@ import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.dialog.TagSearchDialog
-import com.github.iguanastin.view.factories.ClickableTagCellFactory
 import com.github.iguanastin.view.factories.ItemCellFactory
+import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
@@ -95,13 +95,15 @@ class MainView : View("Menagerie") {
                         center {
                             tagView = listview {
                                 isFocusTraversable = false
-                                cellFactory = ClickableTagCellFactory() {
-                                    robotSearch(
-                                        text = it.name,
-                                        descending = true,
-                                        expandGroups = false,
-                                        shuffled = false
-                                    )
+                                cellFactory = TagCellFactory().apply {
+                                    onTagClick = {
+                                        robotSearch(
+                                            text = it.name,
+                                            descending = true,
+                                            expandGroups = false,
+                                            shuffled = false
+                                        )
+                                    }
                                 }
                                 maxWidth = 200.0
                                 minWidth = 200.0
