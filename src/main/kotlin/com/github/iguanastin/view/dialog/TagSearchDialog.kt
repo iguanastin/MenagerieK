@@ -1,17 +1,22 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.Tag
-import com.github.iguanastin.view.factories.TagCellFactory
+import com.github.iguanastin.view.factories.ClickableTagCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
+import javafx.scene.control.TextField
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Priority
 import tornadofx.*
 
-class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}) : StackDialog(onClose) {
+class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}, onClick: (Tag) -> Unit = {}) : StackDialog(onClose) {
 
     private lateinit var tagList: ListView<Tag>
+    private lateinit var searchTextField: TextField
 
     private enum class OrderBy {
         Name,
@@ -37,7 +42,7 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}) :
                     hgrow = Priority.ALWAYS
 
                     label("Search Tags")
-                    textfield {
+                    searchTextField = textfield {
                         hgrow = Priority.ALWAYS
                         promptText = "Any"
 
@@ -72,8 +77,15 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}) :
             }
             center {
                 tagList = listview {
-                    cellFactory = TagCellFactory.factory
+                    addClass(Styles.focusableTagList)
                     vgrow = Priority.ALWAYS
+                    cellFactory = ClickableTagCellFactory(onClick)
+                    addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+                        if (event.code == KeyCode.ESCAPE) {
+                            event.consume()
+                            close()
+                        }
+                    }
                 }
             }
         }
@@ -110,6 +122,10 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}) :
                 addAll(filtered)
             }
         }
+    }
+
+    override fun requestFocus() {
+        searchTextField.requestFocus()
     }
 
 }

@@ -21,7 +21,6 @@ import javafx.scene.control.*
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
-import javafx.util.Callback
 import tornadofx.*
 
 class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val context: MenagerieContext?) : StackDialog() {
@@ -45,41 +44,45 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
     private lateinit var rightTags: ListView<Tag>
     private lateinit var topPane: SplitPane
 
-    private val leftTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
-        val cell = TagCellFactory.factory.call(it)
-        cell.contextmenu {
-            item("Clone to Other") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj2?.addTag(cell.item)
-                }
-            }
-            item("Remove") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj1?.removeTag(cell.item)
+    private val leftTagCellFactory = object: TagCellFactory() {
+        override fun call(listView: ListView<Tag>?): ListCell<Tag> {
+            return super.call(listView).apply {
+                contextmenu {
+                    item("Clone to Other") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            displaying?.obj2?.addTag(item)
+                        }
+                    }
+                    item("Remove") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            displaying?.obj1?.removeTag(item)
+                        }
+                    }
                 }
             }
         }
-        cell
     }
-    private val rightTagCellFactory = Callback<ListView<Tag>, ListCell<Tag>> {
-        val cell = TagCellFactory.factory.call(it)
-        cell.contextmenu {
-            item("Clone to Other") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj1?.addTag(cell.item)
-                }
-            }
-            item("Remove") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj2?.removeTag(cell.item)
+    private val rightTagCellFactory = object: TagCellFactory() {
+        override fun call(listView: ListView<Tag>?): ListCell<Tag> {
+            return super.call(listView).apply {
+                contextmenu {
+                    item("Clone to Other") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            displaying?.obj1?.addTag(item)
+                        }
+                    }
+                    item("Remove") {
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            displaying?.obj2?.removeTag(item)
+                        }
+                    }
                 }
             }
         }
-        cell
     }
 
     init {

@@ -24,6 +24,7 @@ class Styles : Stylesheet() {
         val bastardTourParentPane by cssclass()
         val helpHeader by cssclass()
         val infoLabel by cssclass()
+        val focusableTagList by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -75,10 +76,15 @@ class Styles : Stylesheet() {
             }
         }
 
-        tagListCell {
-            and(hover) {
-                backgroundColor += c("#194070")
+        focusableTagList {
+            tagListCell and focused {
+                backgroundColor += c("#194070").darker()
             }
+        }
+
+        tagListCell and hover {
+            backgroundColor += c("#194070")
+            cursor = Cursor.HAND
         }
 
         itemGridView {
@@ -87,10 +93,13 @@ class Styles : Stylesheet() {
 
         itemGridCell {
             backgroundColor += c("#606467")
-            and(selected) {
-                backgroundColor += c("#4e98a8")
-            }
             backgroundRadius += box(3.px)
+        }
+        itemGridCell and selected {
+            backgroundColor += c("#4e98a8")
+        }
+        itemGridCell and hover {
+            cursor = Cursor.HAND
         }
 
         dialogPane {
@@ -123,7 +132,7 @@ class Styles : Stylesheet() {
         }
 
         button {
-            padding = box(5.px, 10.px)
+            padding = box(5.px, 10.px) // TODO: This seems unnecessary
             and(multiSelectButton) {
                 prefHeight = 100.px
                 padding = box(25.px)
@@ -157,10 +166,10 @@ class Styles : Stylesheet() {
 
         infoLabel {
             cursor = Cursor.HAND
+            effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
             and(hover) {
                 backgroundColor += c(0, 0, 0, 0.25)
             }
-            effect = DropShadow(5.0, Color.BLACK).apply { spread = 0.5 }
         }
     }
 }

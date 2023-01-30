@@ -92,7 +92,7 @@ class MainView : View("Menagerie") {
                         center {
                             tagView = listview {
                                 isFocusTraversable = false
-                                cellFactory = ClickableTagCellFactory.factory {
+                                cellFactory = ClickableTagCellFactory() {
                                     robotSearch(
                                         text = it.name,
                                         descending = true,
@@ -780,7 +780,14 @@ class MainView : View("Menagerie") {
 
     fun displayTagsDialog() {
         val tags = currentSearch?.menagerie?.tags
-        if (tags != null) root.add(TagSearchDialog(tags))
+        if (tags != null) {
+            var dialog: TagSearchDialog? = null
+            dialog = TagSearchDialog(tags) {
+                dialog?.close()
+                robotSearch(it.name)
+            }
+            root.add(dialog)
+        }
     }
 
     fun focusSearchField() {

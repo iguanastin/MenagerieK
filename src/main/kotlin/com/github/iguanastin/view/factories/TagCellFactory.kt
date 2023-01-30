@@ -11,10 +11,11 @@ import javafx.scene.control.ListView
 import javafx.util.Callback
 import tornadofx.*
 
-object TagCellFactory {
+open class TagCellFactory :
+    Callback<ListView<Tag>, ListCell<Tag>> {
 
-    val factory = Callback<ListView<Tag>, ListCell<Tag>> {
-        object : ListCell<Tag>() {
+    override fun call(listView: ListView<Tag>?): ListCell<Tag> {
+        return object : ListCell<Tag>() {
 
             private lateinit var nameLabel: Label
             private lateinit var freqLabel: Label
@@ -46,7 +47,8 @@ object TagCellFactory {
                 contextmenu {
                     item("", graphic = TagColorPicker { color ->
                         hide()
-                        item.color = color // TODO: Make this an undoable edit, if it's not too much hassle to get a context
+                        item.color =
+                            color // TODO: Make this a reversible edit, if it's not too much hassle to get a context
                     })
                 }
             }
