@@ -1,21 +1,17 @@
 package com.github.iguanastin.view.dialog
 
-import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.settings.*
-import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.Node
 import javafx.scene.control.*
-import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Priority
 import javafx.scene.text.FontWeight
 import javafx.stage.DirectoryChooser
 import javafx.stage.FileChooser
 import javafx.stage.Window
-import javafx.util.Callback
 import tornadofx.*
 import java.io.File
 
@@ -24,76 +20,6 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
     private lateinit var cancelButton: Button
 
     private val settingNodeMap: MutableMap<Setting<out Any>, Node> = mutableMapOf()
-
-    private val tagColorizerCellFactory = Callback<ListView<TagColorRule>, ListCell<TagColorRule>?> {
-        object : ListCell<TagColorRule>() {
-            private val regexField: TextField
-            private val colorField: TextField
-
-            init {
-                editableProperty().bind(itemProperty().isNotNull)
-                graphic = HBox(5.0).apply {
-                    hgrow = Priority.ALWAYS
-                    regexField = textfield {
-                        hgrow = Priority.ALWAYS
-                        textFormatter = TextFormatter<String> { change ->
-                            if (change.text == " ") change.text = ""
-                            return@TextFormatter change
-                        }
-                        promptText = "Regex of tag name"
-                        editableWhen(editingProperty())
-                        visibleWhen(itemProperty().isNotNull)
-                    }
-                    colorField = textfield {
-                        hgrow = Priority.ALWAYS
-                        textFormatter = TextFormatter<String> { change ->
-                            if (change.text == " ") change.text = ""
-                            return@TextFormatter change
-                        }
-                        promptText = "Color to apply"
-                        editableWhen(editingProperty())
-                        visibleWhen(itemProperty().isNotNull)
-                    }
-                    button {
-                        textProperty().bind(editingProperty().map { editing -> if (editing) "Apply" else "Edit" })
-                        visibleWhen(itemProperty().isNotNull)
-                        editingProperty().addListener { _, _, new ->
-                            if (new) {
-                                addClass(Styles.blueBase)
-                            } else {
-                                removeClass(Styles.blueBase)
-                            }
-                        }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            if (isEditing) {
-                                commitEdit(TagColorRule(Regex(regexField.text), colorField.text))
-                            } else {
-                                startEdit()
-                            }
-                        }
-                    }
-                    button("x") {
-                        visibleWhen(itemProperty().isNotNull)
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            cancelEdit()
-                            it.items.remove(item)
-                        }
-                    }
-                }
-
-                editingProperty().addListener { _, _, new -> if (new) Platform.runLater { regexField.requestFocus() } }
-            }
-
-            override fun updateItem(item: TagColorRule?, empty: Boolean) {
-                super.updateItem(item, empty)
-
-                regexField.text = item?.regex?.pattern
-                colorField.text = item?.color
-            }
-        }
-    }
 
     init {
         root.graphic = borderpane {
@@ -189,7 +115,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
         when (setting) {
             is TagColorizerSetting -> {
                 val field = listview<TagColorRule> {
-                    cellFactory = tagColorizerCellFactory
+                    cellFactory = TagColorRuleCellFactory()
                     items = observableListOf(setting.value)
                     isEditable = true
                     prefHeight = 100.0

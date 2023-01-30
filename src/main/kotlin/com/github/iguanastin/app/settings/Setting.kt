@@ -57,7 +57,7 @@ class TagColorizerSetting(
         return obj.joinToString(";")
     }
 
-    fun testAndApply(tag: Tag): Boolean {
+    fun applyRulesTo(tag: Tag): Boolean {
         for (rule in value) {
             if (rule.regex.containsMatchIn(tag.name)) {
                 tag.color = rule.color

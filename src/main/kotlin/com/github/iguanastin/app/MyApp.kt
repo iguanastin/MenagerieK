@@ -137,6 +137,15 @@ class MyApp : App(MainView::class, Styles::class) {
         purgeUnusedTags(context.menagerie)
         initImporterListeners(context)
 
+        context.menagerie.tags.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                val colorRules = context.prefs.tags.autoColorTags
+                change.addedSubList.forEach {
+                    colorRules.applyRulesTo(it)
+                }
+            }
+        })
+
         runOnUIThread {
             // Initial search
             root.navigateForward(
