@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.search.filters
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 
 class TagFilter(val tag: Tag, exclude: Boolean): SearchFilter(exclude) {
 
@@ -20,7 +21,8 @@ class TagFilter(val tag: Tag, exclude: Boolean): SearchFilter(exclude) {
 
     companion object {
         fun fromSearchString(query: String, exclude: Boolean, menagerie: Menagerie): TagFilter {
-            return TagFilter(menagerie.getTag(query)!!, exclude)
+            val tag = menagerie.getTag(query) ?: throw FilterParseException("No such tag: $query")
+            return TagFilter(tag, exclude)
         }
     }
 

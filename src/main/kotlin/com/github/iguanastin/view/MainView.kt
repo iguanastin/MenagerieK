@@ -4,6 +4,7 @@ import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.bindVisibleShortcut
 import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.SearchHistory
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
@@ -37,6 +38,8 @@ import javafx.stage.Popup
 import javafx.stage.PopupWindow
 import mu.KotlinLogging
 import tornadofx.*
+import java.io.PrintWriter
+import java.io.StringWriter
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
@@ -503,7 +506,20 @@ class MainView : View("Menagerie") {
     private fun applySearch() {
         val view = currentSearch ?: return
         val text = searchTextField.text.trim()
-        val filters = FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
+        val filters = try {
+            FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
+        } catch (e: FilterParseException) {
+            log.severe {
+                val sw = StringWriter()
+                sw.append("Likely because no tag with given name exists\n")
+                val pw = PrintWriter(sw)
+                e.printStackTrace(pw)
+                pw.close()
+                return@severe sw.toString()
+            }
+            information("Error while parsing filters", e.message, ButtonType.OK, owner = currentWindow) // TODO: better error message?
+            return
+        }
 
         navigateForward(
             MenagerieSearch(

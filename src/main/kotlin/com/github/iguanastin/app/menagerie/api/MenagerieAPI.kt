@@ -5,6 +5,7 @@ import com.github.iguanastin.app.context.TagEdit
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
 import com.github.iguanastin.app.menagerie.search.filters.SearchFilter
@@ -356,7 +357,12 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         val expandTags = "1".equals(query["expand_tags"], ignoreCase = true)
         val expandGroups = "1".equals(query["expand_groups"], ignoreCase = true)
 
-        val filters: MutableList<SearchFilter> = FilterFactory.parseFilters(terms, context.menagerie, !ungrouped)
+        val filters: MutableList<SearchFilter> = try {
+            FilterFactory.parseFilters(terms, context.menagerie, !ungrouped)
+        } catch (e: FilterParseException) {
+            sendErrorResponse(exchange, 400, "Failed to parse filters", e.message ?: "No message")
+            return
+        }
 
         val search = MenagerieSearch(context.menagerie, terms, descending, false, filters)
         search.bindTo(observableListOf())
