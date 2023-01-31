@@ -49,9 +49,18 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.0.3" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.0.4" // When updating version, update it in pom.xml as well
 
         val shortcuts: MutableList<Shortcut> = mutableListOf()
+
+        val displayTagSorter: (Tag, Tag) -> Int = { t1, t2 ->
+            val r = t1.temporary.compareTo(t2.temporary)
+            if (r == 0) {
+                t1.name.compareTo(t2.name)
+            } else {
+                r
+            }
+        }
     }
 
     private val uiPrefs: WindowSettings = WindowSettings()

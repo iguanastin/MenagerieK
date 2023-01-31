@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.FileItem
@@ -268,7 +269,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 leftTags.items.apply {
                     removeAll(change.removed.toSet())
                     addAll(change.addedSubList)
-                    sortBy { it.name }
+                    sortWith(MyApp.displayTagSorter)
                 }
             }
         }
@@ -278,7 +279,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 rightTags.items.apply {
                     removeAll(change.removed.toSet())
                     addAll(change.addedSubList)
-                    sortBy { it.name }
+                    sortWith(MyApp.displayTagSorter)
                 }
             }
         }
@@ -293,11 +294,11 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
             if (newValue != null) {
                 leftTags.items.apply {
                     addAll(newValue.obj1.tags)
-                    sortBy { it.name }
+                    sortWith(MyApp.displayTagSorter)
                 }
                 rightTags.items.apply {
                     addAll(newValue.obj2.tags)
-                    sortBy { it.name }
+                    sortWith(MyApp.displayTagSorter)
                 }
                 newValue.obj1.tags.addListener(leftTagsListener)
                 newValue.obj2.tags.addListener(rightTagsListener)

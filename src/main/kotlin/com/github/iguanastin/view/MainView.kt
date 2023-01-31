@@ -519,7 +519,12 @@ class MainView : View("Menagerie") {
                 pw.close()
                 return@severe sw.toString()
             }
-            information("Error while parsing filters", e.message, ButtonType.OK, owner = currentWindow) // TODO: better error message?
+            information(
+                "Error while parsing filters",
+                e.message,
+                ButtonType.OK,
+                owner = currentWindow
+            ) // TODO: better error message?
             return
         }
 
@@ -822,7 +827,7 @@ class MainView : View("Menagerie") {
         runOnUIThread {
             tagView.items.apply {
                 clear()
-                addAll(item?.tags?.sortedBy { it.name } ?: return@apply)
+                addAll(item?.tags?.sorted(MyApp.displayTagSorter) ?: return@apply)
             }
         }
     }
