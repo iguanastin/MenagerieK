@@ -33,7 +33,11 @@ class MenagerieImporter(val menagerie: Menagerie) {
                     log.info("Importing: ${job.file}")
                     beforeEach.forEach { it(job) }
                     job.onStart.forEach { it(job) }
-                    val item = job.import(menagerie)
+                    val item = try {
+                        job.import(menagerie)
+                    } catch (e: ImportFileAlreadyExistsException) {
+                        continue
+                    }
                     menagerie.addItem(item)
                     job.onFinish.forEach { it(item) }
                     afterEach.forEach { it(job) }
