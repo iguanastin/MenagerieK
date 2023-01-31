@@ -63,6 +63,8 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
                         item?.color =
                             color // TODO: Make this a reversible edit, if it's not too much hassle to get a context
                     })
+
+                    disableWhen(itemProperty().isNull)
                 }
             }
 
