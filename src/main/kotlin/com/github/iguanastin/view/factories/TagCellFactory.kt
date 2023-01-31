@@ -60,7 +60,7 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
                 contextmenu {
                     item("", graphic = TagColorPicker { color ->
                         hide()
-                        item.color =
+                        item?.color =
                             color // TODO: Make this a reversible edit, if it's not too much hassle to get a context
                     })
                 }

@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.model.*
 import jcuda.Pointer
 import jcuda.Sizeof
 import jcuda.driver.*
+import java.io.File
 import kotlin.math.ceil
 
 object CUDADuplicateFinder {
@@ -23,7 +24,12 @@ object CUDADuplicateFinder {
      * @param maxResults Maximum number of results to return
      * @return Set of similar pairs found with the given confidence
      */
-    fun findDuplicates(smallSet: List<Item>, largeSet: List<Item>, confidence: Float, maxResults: Int): List<SimilarPair<Item>> {
+    fun findDuplicates(
+        smallSet: List<Item>,
+        largeSet: List<Item>,
+        confidence: Float,
+        maxResults: Int
+    ): List<SimilarPair<Item>> {
 
         // TODO find exact hash duplicates (CUDA only does histogram similarities)
         // Probably need another kernel for this
@@ -62,16 +68,63 @@ object CUDADuplicateFinder {
         val dResultsid2 = CUdeviceptr()
         val dResultssimilarity = CUdeviceptr()
         val dResultcount = CUdeviceptr()
-        allocateAndCopyToDevice(maxResults, n1, n2, data1, data2, confs1, confs2, ids1, ids2, dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
+        allocateAndCopyToDevice(
+            maxResults,
+            n1,
+            n2,
+            data1,
+            data2,
+            confs1,
+            confs2,
+            ids1,
+            ids2,
+            dData1,
+            dData2,
+            dConfs1,
+            dConfs2,
+            dIds1,
+            dIds2,
+            dResultsid1,
+            dResultsid2,
+            dResultssimilarity,
+            dResultcount
+        )
 
         // Launch kernel
-        launchKernel(maxResults, function, n1, n2, dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
+        launchKernel(
+            maxResults,
+            function,
+            n1,
+            n2,
+            dData1,
+            dData2,
+            dConfs1,
+            dConfs2,
+            dIds1,
+            dIds2,
+            dResultsid1,
+            dResultsid2,
+            dResultssimilarity,
+            dResultcount
+        )
 
         // Get results from device
-        val results: List<SimilarPair<Item>> = getResultsFromDevice(largeSet[0].menagerie, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
+        val results: List<SimilarPair<Item>> =
+            getResultsFromDevice(largeSet[0].menagerie, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
 
         // Free device memory
-        freeDeviceMemory(dData1, dData2, dConfs1, dConfs2, dIds1, dIds2, dResultsid1, dResultsid2, dResultssimilarity, dResultcount)
+        freeDeviceMemory(
+            dData1,
+            dData2,
+            dConfs1,
+            dConfs2,
+            dIds1,
+            dIds2,
+            dResultsid1,
+            dResultsid2,
+            dResultssimilarity,
+            dResultcount
+        )
 
         return results
     }
@@ -111,8 +164,9 @@ object CUDADuplicateFinder {
         JCudaDriver.cuCtxCreate(context, 0, device)
 
         // Load CUDA module
+        val ptx = if (File(PTX).exists()) PTX else "app/$PTX"
         val module = CUmodule()
-        JCudaDriver.cuModuleLoad(module, PTX)
+        JCudaDriver.cuModuleLoad(module, ptx)
 
         // Get function reference
         val function = CUfunction()
@@ -120,7 +174,13 @@ object CUDADuplicateFinder {
         return function
     }
 
-    private fun getResultsFromDevice(menagerie: Menagerie, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr): List<SimilarPair<Item>> {
+    private fun getResultsFromDevice(
+        menagerie: Menagerie,
+        d_resultsID1: CUdeviceptr,
+        d_resultsID2: CUdeviceptr,
+        d_resultsSimilarity: CUdeviceptr,
+        d_resultCount: CUdeviceptr
+    ): List<SimilarPair<Item>> {
         // Get result count from device
         val resultCountArr = IntArray(1)
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultCountArr), d_resultCount, Sizeof.INT.toLong())
@@ -131,7 +191,11 @@ object CUDADuplicateFinder {
         val resultsSimilarity = FloatArray(resultCount)
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsID1), d_resultsID1, resultCount * Sizeof.INT.toLong())
         JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsID2), d_resultsID2, resultCount * Sizeof.INT.toLong())
-        JCudaDriver.cuMemcpyDtoH(Pointer.to(resultsSimilarity), d_resultsSimilarity, resultCount * Sizeof.FLOAT.toLong())
+        JCudaDriver.cuMemcpyDtoH(
+            Pointer.to(resultsSimilarity),
+            d_resultsSimilarity,
+            resultCount * Sizeof.FLOAT.toLong()
+        )
         val results: MutableList<SimilarPair<Item>> = mutableListOf()
         for (i in 0 until resultCount) {
             val i1 = menagerie.getItem(resultsID1[i])
@@ -144,22 +208,37 @@ object CUDADuplicateFinder {
         return results
     }
 
-    private fun launchKernel(maxResults: Int, function: CUfunction, N1: Int, N2: Int, d_data1: CUdeviceptr, d_data2: CUdeviceptr, d_confs1: CUdeviceptr, d_confs2: CUdeviceptr, d_ids1: CUdeviceptr, d_ids2: CUdeviceptr, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr) {
+    private fun launchKernel(
+        maxResults: Int,
+        function: CUfunction,
+        N1: Int,
+        N2: Int,
+        d_data1: CUdeviceptr,
+        d_data2: CUdeviceptr,
+        d_confs1: CUdeviceptr,
+        d_confs2: CUdeviceptr,
+        d_ids1: CUdeviceptr,
+        d_ids2: CUdeviceptr,
+        d_resultsID1: CUdeviceptr,
+        d_resultsID2: CUdeviceptr,
+        d_resultsSimilarity: CUdeviceptr,
+        d_resultCount: CUdeviceptr
+    ) {
         // Set up kernel parameters
         val kernelParameters = Pointer.to(
-                Pointer.to(d_data1),
-                Pointer.to(d_data2),
-                Pointer.to(d_confs1),
-                Pointer.to(d_confs2),
-                Pointer.to(d_ids1),
-                Pointer.to(d_ids2),
-                Pointer.to(d_resultsID1),
-                Pointer.to(d_resultsID2),
-                Pointer.to(d_resultsSimilarity),
-                Pointer.to(d_resultCount),
-                Pointer.to(intArrayOf(N1)),
-                Pointer.to(intArrayOf(N2)),
-                Pointer.to(intArrayOf(maxResults))
+            Pointer.to(d_data1),
+            Pointer.to(d_data2),
+            Pointer.to(d_confs1),
+            Pointer.to(d_confs2),
+            Pointer.to(d_ids1),
+            Pointer.to(d_ids2),
+            Pointer.to(d_resultsID1),
+            Pointer.to(d_resultsID2),
+            Pointer.to(d_resultsSimilarity),
+            Pointer.to(d_resultCount),
+            Pointer.to(intArrayOf(N1)),
+            Pointer.to(intArrayOf(N2)),
+            Pointer.to(intArrayOf(maxResults))
         )
 
         // Launch kernel
@@ -167,7 +246,27 @@ object CUDADuplicateFinder {
         JCudaDriver.cuCtxSynchronize()
     }
 
-    private fun allocateAndCopyToDevice(maxResults: Int, N1: Int, N2: Int, data1: FloatArray, data2: FloatArray, confs1: FloatArray, confs2: FloatArray, ids1: IntArray, ids2: IntArray, d_data1: CUdeviceptr, d_data2: CUdeviceptr, d_confs1: CUdeviceptr, d_confs2: CUdeviceptr, d_ids1: CUdeviceptr, d_ids2: CUdeviceptr, d_resultsID1: CUdeviceptr, d_resultsID2: CUdeviceptr, d_resultsSimilarity: CUdeviceptr, d_resultCount: CUdeviceptr) {
+    private fun allocateAndCopyToDevice(
+        maxResults: Int,
+        N1: Int,
+        N2: Int,
+        data1: FloatArray,
+        data2: FloatArray,
+        confs1: FloatArray,
+        confs2: FloatArray,
+        ids1: IntArray,
+        ids2: IntArray,
+        d_data1: CUdeviceptr,
+        d_data2: CUdeviceptr,
+        d_confs1: CUdeviceptr,
+        d_confs2: CUdeviceptr,
+        d_ids1: CUdeviceptr,
+        d_ids2: CUdeviceptr,
+        d_resultsID1: CUdeviceptr,
+        d_resultsID2: CUdeviceptr,
+        d_resultsSimilarity: CUdeviceptr,
+        d_resultCount: CUdeviceptr
+    ) {
         var bytes: Long = N1.toLong() * Histogram.BIN_SIZE * Histogram.NUM_CHANNELS * Sizeof.FLOAT
         JCudaDriver.cuMemAlloc(d_data1, bytes)
         JCudaDriver.cuMemcpyHtoD(d_data1, Pointer.to(data1), bytes)

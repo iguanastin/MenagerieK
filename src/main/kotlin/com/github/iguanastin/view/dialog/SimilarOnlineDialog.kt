@@ -80,8 +80,6 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
 
                 addEventHandler(MouseEvent.MOUSE_PRESSED) { event ->
                     if (event.button == MouseButton.PRIMARY) {
-                        // TODO open in WebView
-                    } else {
                         if (item != null) Desktop.getDesktop().browse(URI(item!!.sourceUrl))
                     }
                     event.consume()

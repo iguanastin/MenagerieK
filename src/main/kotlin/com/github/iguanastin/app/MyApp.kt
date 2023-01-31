@@ -614,6 +614,7 @@ class MyApp : App(MainView::class, Styles::class) {
             val fc = FileChooser()
             val dir = contextPrefs.general.downloadFolder.value
             fc.initialDirectory = File(dir)
+            if (!fc.initialDirectory.exists() || !fc.initialDirectory.isDirectory) fc.initialDirectory = null
             fc.title = "Import files"
             val files = fc.showOpenMultipleDialog(root.currentWindow)
             if (!files.isNullOrEmpty()) {
