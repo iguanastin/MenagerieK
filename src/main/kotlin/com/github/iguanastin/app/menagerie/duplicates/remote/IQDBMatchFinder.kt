@@ -11,8 +11,6 @@ import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.mime.FormBodyPartBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.entity.mime.content.InputStreamBody
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.impl.client.HttpClientBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.awt.Graphics2D
@@ -28,15 +26,9 @@ import javax.imageio.ImageIO
 
 private val log = KotlinLogging.logger {}
 
-class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
+class IQDBMatchFinder : OnlineMatchFinder() {
 
     private val url = "https://iqdb.org"
-
-    private var client: CloseableHttpClient? = client
-        get() {
-            if (field == null) field = HttpClientBuilder.create().build()
-            return field
-        }
 
 
     override fun findMatches(set: OnlineMatchSet) {
@@ -117,7 +109,7 @@ class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder()
                         return Jsoup.parse(result)
                     }
                 } else {
-                    throw HttpResponseException(response.statusLine.statusCode, "Bad response code")
+                    throw HttpResponseException(response.statusLine.statusCode, response.statusLine.reasonPhrase)
                 }
             }
         }
@@ -158,11 +150,6 @@ class IQDBMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder()
         } else {
             return SwingFXUtils.fromFXImage(thumb.image, null)
         }
-    }
-
-    override fun close() {
-        client?.close()
-        super.close()
     }
 
 }

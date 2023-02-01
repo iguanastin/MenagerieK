@@ -11,8 +11,6 @@ import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.mime.FormBodyPartBuilder
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.entity.mime.content.InputStreamBody
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.impl.client.HttpClientBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.awt.Graphics2D
@@ -28,15 +26,9 @@ import javax.imageio.ImageIO
 
 private val log = KotlinLogging.logger {}
 
-class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFinder() {
+class SauceNAOMatchFinder : OnlineMatchFinder() {
 
     private val url = "https://saucenao.com"
-
-    private var client: CloseableHttpClient? = client
-        get() {
-            if (field == null) field = HttpClientBuilder.create().build()
-            return field
-        }
 
 
     override fun findMatches(set: OnlineMatchSet) {
@@ -168,11 +160,6 @@ class SauceNAOMatchFinder(client: CloseableHttpClient? = null) : OnlineMatchFind
         } else {
             return SwingFXUtils.fromFXImage(thumb.image, null)
         }
-    }
-
-    override fun close() {
-        client?.close()
-        super.close()
     }
 
 }

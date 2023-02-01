@@ -1,10 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatch
-import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchFinder
-import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
-import com.github.iguanastin.app.menagerie.duplicates.remote.SauceNAOMatchFinder
+import com.github.iguanastin.app.menagerie.duplicates.remote.*
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.utils.bytesToPrettyString
@@ -43,7 +40,10 @@ import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
 
-class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val matcher: OnlineMatchFinder = SauceNAOMatchFinder()) : StackDialog() {
+class SimilarOnlineDialog(
+    private val matches: List<OnlineMatchSet>,
+    private val matcher: OnlineMatchFinder = SauceNAOMatchFinder()
+) : StackDialog() {
 
     private val factory = Callback<GridView<OnlineMatch>, GridCell<OnlineMatch>> {
         object : GridCell<OnlineMatch>() {
@@ -51,6 +51,7 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
             private lateinit var thumbView: ImageView
             private lateinit var bottomLabel: Label
             private lateinit var topLabel: Label
+            private lateinit var tagButton: Button
 
             init {
                 graphic = stackpane {
@@ -66,15 +67,42 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                             }
                         }
                     }
-                    topLabel = label {
+                    stackpane {
                         padding = insets(5.0)
-                        stackpaneConstraints { alignment = Pos.TOP_LEFT }
-                        effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
-                    }
-                    bottomLabel = label {
-                        padding = insets(5.0)
-                        stackpaneConstraints { alignment = Pos.BOTTOM_RIGHT }
-                        effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
+                        topLabel = label {
+                            stackpaneConstraints { alignment = Pos.TOP_LEFT }
+                            effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
+                        }
+                        bottomLabel = label {
+                            stackpaneConstraints { alignment = Pos.BOTTOM_RIGHT }
+                            effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
+                        }
+                        tagButton = button {
+                            graphic = ImageView(
+                                Image(
+                                    SimilarOnlineDialog::class.java.getResource("/imgs/tag.png")?.toExternalForm(),
+                                    true
+                                )
+                            )
+                            stackpaneConstraints { alignment = Pos.TOP_RIGHT }
+                            onAction = EventHandler { event ->
+                                event.consume()
+                                val tags = SourceTagParser.getTags(item.sourceUrl, matcher.client!!)
+                                viewing?.apply {
+                                    tags.forEach {
+                                        val tag = item.menagerie.getOrMakeTag(it, true)
+                                        item.addTag(tag)
+                                    }
+                                    this@SimilarOnlineDialog.parent.add(
+                                        InfoStackDialog(
+                                            "Found ${tags.size} tags",
+                                            "Applied tags to item\n\nNew tags are applied as temporary tags"
+                                        )
+                                    )
+                                }
+                            }
+                            tooltip("Automatically tag item")
+                        }
                     }
                 }
 
@@ -96,9 +124,11 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                 // https://github.com/controlsfx/controlsfx/issues/1241 still present as of 11.1.2
                 // For now, load images synchronously (gross)
 
-                thumbView.image = if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true)
+                thumbView.image =
+                    if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true)
                 bottomLabel.text = item?.bottomText
                 topLabel.text = item?.topText
+                tagButton.isVisible = item != null && SourceTagParser.canGetTagsFrom(item.sourceUrl)
             }
 
         }
@@ -153,7 +183,10 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                     hgrow = Priority.ALWAYS
                 }
                 refreshButton = button {
-                    graphic = imageview(SimilarOnlineDialog::class.java.getResource("/imgs/refresh.png").toExternalForm(), true)
+                    graphic = imageview(
+                        SimilarOnlineDialog::class.java.getResource("/imgs/refresh.png").toExternalForm(),
+                        true
+                    )
                     onAction = EventHandler { event ->
                         event.consume()
                         val viewing = viewing
@@ -245,8 +278,15 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                     errorText.hide()
                 }
                 if (viewing?.state == OnlineMatchSet.State.FINISHED) matchGrid.items.addAll(viewing!!.matches)
-                if (viewing?.state in arrayOf(OnlineMatchSet.State.LOADING, OnlineMatchSet.State.WAITING)) loadingIndicator.show() else loadingIndicator.hide()
-                refreshButton.isDisable = viewing == null || viewing?.state in arrayOf(OnlineMatchSet.State.LOADING, OnlineMatchSet.State.WAITING)
+                if (viewing?.state in arrayOf(
+                        OnlineMatchSet.State.LOADING,
+                        OnlineMatchSet.State.WAITING
+                    )
+                ) loadingIndicator.show() else loadingIndicator.hide()
+                refreshButton.isDisable = viewing == null || viewing?.state in arrayOf(
+                    OnlineMatchSet.State.LOADING,
+                    OnlineMatchSet.State.WAITING
+                )
             }
         }
 
@@ -265,7 +305,8 @@ class SimilarOnlineDialog(private val matches: List<OnlineMatchSet>, private val
                 thread(start = true, isDaemon = true) {
                     val img = image(item.file)
                     runOnUIThread {
-                        if (viewing == newValue) yourItemDetails.text = "${item.file.name}\n${img.width.toInt()}x${img.height.toInt()}\n${bytesToPrettyString(item.file.length())}"
+                        if (viewing == newValue) yourItemDetails.text =
+                            "${item.file.name}\n${img.width.toInt()}x${img.height.toInt()}\n${bytesToPrettyString(item.file.length())}"
                     }
                 }
 

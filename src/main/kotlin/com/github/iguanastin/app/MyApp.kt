@@ -49,7 +49,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.0.4" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.1.4" // When updating version, update it in pom.xml as well
 
         val shortcuts: MutableList<Shortcut> = mutableListOf()
 
