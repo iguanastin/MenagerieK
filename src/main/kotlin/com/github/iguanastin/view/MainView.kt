@@ -802,15 +802,12 @@ class MainView : View("Menagerie") {
     }
 
     fun displayTagsDialog() {
-        val tags = currentSearch?.menagerie?.tags
-        if (tags != null) {
-            var dialog: TagSearchDialog? = null
-            dialog = TagSearchDialog(tags) {
-                dialog?.close()
-                robotSearch(it.name)
-            }
-            root.add(dialog)
+        var dialog: TagSearchDialog? = null
+        dialog = TagSearchDialog(currentSearch?.menagerie ?: return) {
+            dialog?.close()
+            robotSearch(it.name)
         }
+        root.add(dialog)
     }
 
     fun focusSearchField() {

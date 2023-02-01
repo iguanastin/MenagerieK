@@ -1,10 +1,11 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.runOnUIThread
-import javafx.collections.ObservableList
+import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
@@ -13,7 +14,7 @@ import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Priority
 import tornadofx.*
 
-class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}, onClick: (Tag) -> Unit = {}) : StackDialog(onClose) {
+class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClick: (Tag) -> Unit = {}) : StackDialog(onClose) {
 
     private lateinit var tagList: ListView<Tag>
     private lateinit var searchTextField: TextField
@@ -90,6 +91,26 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}, o
                     }
                 }
             }
+            bottom {
+                button("Purge") {
+                    borderpaneConstraints { alignment = Pos.CENTER }
+                    tooltip("Purge temporary and unused tags")
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        val toDelete = mutableListOf<Tag>()
+                        menagerie.tags.forEach { tag ->
+                            if (tag.temporary || tag.frequency == 0) toDelete.add(tag)
+                        }
+
+                        toDelete.forEach { tag ->
+                            menagerie.items.forEach { item -> item.removeTag(tag) }
+                            menagerie.removeTag(tag)
+                        }
+
+                        this@TagSearchDialog.parent.add(InfoStackDialog("Purged tags", "Purged ${toDelete.size} tags"))
+                    }
+                }
+            }
         }
 
         runOnUIThread { filterTags() }
@@ -98,7 +119,7 @@ class TagSearchDialog(val tags: ObservableList<Tag>, onClose: () -> Unit = {}, o
     private fun filterTags() {
         val filtered = mutableListOf<Tag>()
 
-        tags.forEach {
+        menagerie.tags.forEach {
             if (search.isBlank() || it.name.contains(search)) filtered.add(it)
         }
 
