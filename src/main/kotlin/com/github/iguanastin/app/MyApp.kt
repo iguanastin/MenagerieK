@@ -55,7 +55,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.1.4" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.1.0" // When updating version, update it in pom.xml as well
         private const val githubRoot = "/iguanastin/menageriek"
         const val githubURL = "https://github.com$githubRoot"
         const val githubReleasesURL = "$githubURL/releases/latest"
@@ -123,7 +123,17 @@ class MyApp : App(MainView::class, Styles::class) {
             onMenagerieLoaded(context)
 
             thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
+
+            val v = contextPrefs.hidden.lastLaunchVersion.value
+            if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
+                showPatchNotesDialog()
+            }
+            contextPrefs.hidden.lastLaunchVersion.value = VERSION
         }
+    }
+
+    fun showPatchNotesDialog() {
+        runOnUIThread { root.root.add(InfoStackDialog("Patch Notes v$VERSION", PatchNotes.get(VERSION))) }
     }
 
     private fun checkGithubForNewRelease() {

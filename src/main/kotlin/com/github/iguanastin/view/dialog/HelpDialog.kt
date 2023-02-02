@@ -82,6 +82,12 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                         ) Desktop.getDesktop().browse(URI(text))
                     }
                 }
+                hyperlink("Patch Notes") {
+                    onAction = EventHandler { event ->
+                        event.consume()
+                        app.showPatchNotesDialog()
+                    }
+                }
             }
         }
     }

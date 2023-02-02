@@ -6,7 +6,7 @@
 
     <groupId>com.github.iguanastin.menageriek</groupId>
     <artifactId>menageriek</artifactId>
-    <version>1.1.4</version> <!--  When updating version, update it in MyApp.kt as well  -->
+    <version>1.1.0</version> <!--  When updating version, update it in MyApp.kt as well  -->
     <packaging>jar</packaging>
 
     <properties>
