@@ -45,6 +45,21 @@ class SimilarOnlineDialog(
     private val matcher: OnlineMatchFinder = SauceNAOMatchFinder()
 ) : StackDialog() {
 
+    companion object {
+        private val tagIcon = Image(
+            SimilarOnlineDialog::class.java.getResource("/imgs/tag.png")?.toExternalForm(),
+            true
+        )
+        private val loadingIcon = Image(
+            SimilarOnlineDialog::class.java.getResource("/imgs/loading.png")?.toExternalForm(),
+            true
+        )
+        private val finishedIcon = Image(
+            SimilarOnlineDialog::class.java.getResource("/imgs/check.png")?.toExternalForm(),
+            true
+        )
+    }
+
     private val factory = Callback<GridView<OnlineMatch>, GridCell<OnlineMatch>> {
         object : GridCell<OnlineMatch>() {
 
@@ -78,27 +93,40 @@ class SimilarOnlineDialog(
                             effect = DropShadow(5.0, c("black")).apply { spread = 0.5 }
                         }
                         tagButton = button {
-                            graphic = ImageView(
-                                Image(
-                                    SimilarOnlineDialog::class.java.getResource("/imgs/tag.png")?.toExternalForm(),
-                                    true
-                                )
-                            )
+                            graphic = ImageView(tagIcon)
                             stackpaneConstraints { alignment = Pos.TOP_RIGHT }
                             onAction = EventHandler { event ->
                                 event.consume()
-                                val tags = SourceTagParser.getTags(item.sourceUrl, matcher.client!!)
-                                viewing?.apply {
-                                    tags.forEach {
-                                        val tag = item.menagerie.getOrMakeTag(it, true)
-                                        item.addTag(tag)
+                                val match = item ?: return@EventHandler
+                                val set = viewing ?: return@EventHandler
+                                if (!SourceTagParser.canGetTagsFrom(match.sourceUrl)) return@EventHandler
+
+                                (graphic as ImageView).image = loadingIcon
+                                isDisable = true
+
+                                thread(start = true, isDaemon = true, name = "Online auto tagger") {
+                                    val tags = SourceTagParser.getTags(match.sourceUrl, matcher.client!!)
+
+                                    set.apply {
+                                        tags.forEach {
+                                            val tag = item.menagerie.getOrMakeTag(it, true)
+                                            item.addTag(tag)
+                                        }
                                     }
-                                    this@SimilarOnlineDialog.parent.add(
-                                        InfoStackDialog(
-                                            "Found ${tags.size} tags",
-                                            "Applied tags to item\n\nNew tags are applied as temporary tags"
-                                        )
-                                    )
+
+                                    if (scene != null && item == match) {
+                                        runOnUIThread {
+                                            (graphic as ImageView).image = if (tags.isNotEmpty()) finishedIcon else tagIcon
+                                            isDisable = tags.isNotEmpty()
+
+//                                            this@SimilarOnlineDialog.parent.add(
+//                                                InfoStackDialog(
+//                                                    "Found ${tags.size} tags",
+//                                                    "Applied tags to item\n\nNew tags are applied as temporary tags"
+//                                                )
+//                                            )
+                                        }
+                                    }
                                 }
                             }
                             tooltip("Automatically tag item")
@@ -128,7 +156,9 @@ class SimilarOnlineDialog(
                     if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true)
                 bottomLabel.text = item?.bottomText
                 topLabel.text = item?.topText
+                (tagButton.graphic as ImageView).image = tagIcon
                 tagButton.isVisible = item != null && SourceTagParser.canGetTagsFrom(item.sourceUrl)
+                tagButton.isDisable = false
             }
 
         }

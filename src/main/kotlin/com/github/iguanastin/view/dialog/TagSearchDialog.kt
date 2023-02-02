@@ -13,9 +13,14 @@ import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Priority
+import mu.KotlinLogging
 import tornadofx.*
+import kotlin.concurrent.thread
 
-class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClick: (Tag) -> Unit = {}) : StackDialog(onClose) {
+private val log = KotlinLogging.logger {}
+
+class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClick: (Tag) -> Unit = {}) :
+    StackDialog(onClose) {
 
     private lateinit var tagList: ListView<Tag>
     private lateinit var searchTextField: TextField
@@ -31,7 +36,7 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
     private var order: OrderBy = OrderBy.Name
     private var descending: Boolean = false
 
-    private val tagListener= ListChangeListener<Tag> { change ->
+    private val tagListener = ListChangeListener<Tag> { change ->
         while (change.next()) {
             filterTags()
         }
@@ -104,17 +109,44 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
                     tooltip("Purge temporary and unused tags")
                     onAction = EventHandler { event ->
                         event.consume()
-                        val toDelete = mutableListOf<Tag>()
-                        menagerie.tags.forEach { tag ->
-                            if (tag.temporary || tag.frequency == 0) toDelete.add(tag)
-                        }
+                        val progress = ProgressDialog(
+                            "Purging tags",
+                            "Purging unused and temporary tags"
+                        ).also { this@TagSearchDialog.parent.add(it) }
 
-                        toDelete.forEach { tag ->
-                            menagerie.items.forEach { item -> item.removeTag(tag) }
-                            menagerie.removeTag(tag)
-                        }
+                        thread(start = true, isDaemon = true, name = "Tag purger thread") {
+                            log.info("Purging unused/temporary tags")
+                            val toDelete = mutableListOf<Tag>()
+                            menagerie.tags.forEach { tag ->
+                                if (tag.temporary || tag.frequency == 0) toDelete.add(tag)
+                            }
 
-                        this@TagSearchDialog.parent.add(InfoStackDialog("Purged tags", "Purged ${toDelete.size} tags"))
+                            var t = System.currentTimeMillis()
+                            val size = toDelete.size
+                            toDelete.forEachIndexed { i, tag ->
+                                menagerie.items.forEach { item -> item.removeTag(tag) }
+                                menagerie.removeTag(tag)
+
+                                if (System.currentTimeMillis() - t >= 100) {
+                                    runOnUIThread { progress.progress = i.toDouble() / size.toDouble() }
+                                    t = System.currentTimeMillis()
+                                }
+                            }
+
+                            log.info("Purged ${toDelete.size} unused/temporary tags")
+                            log.debug { "Purged unused/temporary tags" + toDelete.joinToString(", ") }
+
+                            runOnUIThread {
+                                progress.close()
+
+                                this@TagSearchDialog.parent.add(
+                                    InfoStackDialog(
+                                        "Purged tags",
+                                        "Purged ${toDelete.size} tags"
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
