@@ -24,6 +24,7 @@ import com.github.iguanastin.view.Shortcut
 import com.github.iguanastin.view.bindShortcut
 import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
+import com.sun.jna.platform.FileUtils
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.collections.SetChangeListener
@@ -801,7 +802,12 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun deleteFile(item: FileItem) {
         try {
             log.info("Deleting file: ${item.file}")
-            item.file.delete()
+            val fileUtils = FileUtils.getInstance()
+            if (fileUtils.hasTrash()) {
+                fileUtils.moveToTrash(item.file)
+            } else {
+                item.file.delete()
+            }
         } catch (e: IOException) {
             log.error("Exception while deleting file: ${item.file}", e)
         }

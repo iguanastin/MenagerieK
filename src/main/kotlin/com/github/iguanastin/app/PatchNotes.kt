@@ -10,6 +10,7 @@ object PatchNotes {
                 "- Purge temporary and unused tags from tag dialog\n" +
                 "- Notify user of new version available on startup\n" +
                 "- This patch notes dialog!\n" +
+                "- Send files to trash instead of permanently deleting them\n" +
                 "\n" +
                 "Bug fixes:\n" +
                 "- Tag list dialog reacts to tag changes properly"

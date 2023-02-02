@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
+import com.sun.jna.platform.FileUtils
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
@@ -72,7 +73,12 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
         md5 = with.md5
         file = with.file
 
-        oldFile.delete()
+        val fu = FileUtils.getInstance()
+        if (fu.hasTrash()) {
+            fu.moveToTrash(oldFile)
+        } else {
+            oldFile.delete()
+        }
 
         return true
     }

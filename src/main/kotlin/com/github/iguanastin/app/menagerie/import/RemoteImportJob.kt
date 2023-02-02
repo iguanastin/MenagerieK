@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.import
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.sun.jna.platform.FileUtils
 import mu.KotlinLogging
 import java.io.File
 import java.io.FileOutputStream
@@ -100,7 +101,14 @@ class RemoteImportJob private constructor(val url: String, file: File, tags: Lis
     override fun cleanupAfterError(e: Exception) {
         super.cleanupAfterError(e)
 
-        if (file.exists()) file.delete()
+        if (file.exists()) {
+            val fu = FileUtils.getInstance()
+            if (fu.hasTrash()) {
+                fu.moveToTrash(file)
+            } else {
+                file.delete()
+            }
+        }
     }
 
 }
