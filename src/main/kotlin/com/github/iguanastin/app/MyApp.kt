@@ -124,53 +124,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
             thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
 
-            val v = contextPrefs.hidden.lastLaunchVersion.value
-            if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
-                showPatchNotesDialog()
-            }
-            contextPrefs.hidden.lastLaunchVersion.value = VERSION
-        }
-    }
-
-    fun showPatchNotesDialog() {
-        runOnUIThread { root.root.add(InfoStackDialog("Patch Notes v$VERSION", PatchNotes.get(VERSION))) }
-    }
-
-    private fun checkGithubForNewRelease() {
-        try {
-            HttpClientBuilder.create().build().use { client ->
-                client.execute(HttpGet(githubAPIReleaseURL)).use { response ->
-                    if (response.statusLine.statusCode != 200) {
-                        log.error("Failed to get github API release, HTTP code: ${response.statusLine.statusCode} - ${response.statusLine.reasonPhrase}")
-                        return@use
-                    }
-
-                    response.entity.content.use { content ->
-                        val json = loadJsonObject(
-                            BufferedReader(InputStreamReader(content)).lines().collect(Collectors.joining("\n"))
-                        )
-
-                        val newVersion = json.getString("tag_name")
-                            .removePrefix("v") // Get name of latest release tag from JSON API response
-
-                        if (Versioning.compare(VERSION, newVersion) < 0) {
-                            runOnUIThread {
-                                root.root.add(
-                                    InfoStackDialog(
-                                        "Update available",
-                                        "There is an update available:\n$VERSION -> $newVersion",
-                                        url = githubReleasesURL
-                                    )
-                                )
-                            }
-                        } else {
-                            log.info("App is up to date. Current: $VERSION, fetched: $newVersion")
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            log.error("Error caught trying to fetch latest release info", e)
+            checkLastLaunchedVersion()
         }
     }
 
@@ -328,6 +282,56 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             }
         })
+    }
+
+    private fun checkLastLaunchedVersion() {
+        val v = contextPrefs.hidden.lastLaunchVersion.value
+        if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
+            showPatchNotesDialog()
+        }
+        contextPrefs.hidden.lastLaunchVersion.value = VERSION
+    }
+
+    fun showPatchNotesDialog() {
+        runOnUIThread { root.root.add(InfoStackDialog("Patch Notes v$VERSION", PatchNotes.get(VERSION))) }
+    }
+
+    private fun checkGithubForNewRelease() {
+        try {
+            HttpClientBuilder.create().build().use { client ->
+                client.execute(HttpGet(githubAPIReleaseURL)).use { response ->
+                    if (response.statusLine.statusCode != 200) {
+                        log.error("Failed to get github API release, HTTP code: ${response.statusLine.statusCode} - ${response.statusLine.reasonPhrase}")
+                        return@use
+                    }
+
+                    response.entity.content.use { content ->
+                        val json = loadJsonObject(
+                            BufferedReader(InputStreamReader(content)).lines().collect(Collectors.joining("\n"))
+                        )
+
+                        val newVersion = json.getString("tag_name")
+                            .removePrefix("v") // Get name of latest release tag from JSON API response
+
+                        if (Versioning.compare(VERSION, newVersion) < 0) {
+                            runOnUIThread {
+                                root.root.add(
+                                    InfoStackDialog(
+                                        "Update available",
+                                        "There is an update available:\n$VERSION -> $newVersion",
+                                        url = githubReleasesURL
+                                    )
+                                )
+                            }
+                        } else {
+                            log.info("App is up to date. Current: $VERSION, fetched: $newVersion")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            log.error("Error caught trying to fetch latest release info", e)
+        }
     }
 
     private fun purgeUnusedTags(menagerie: Menagerie) {

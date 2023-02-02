@@ -14,6 +14,7 @@ object SourceTagParser {
     private val gelRegex = Regex("^https://gelbooru\\.com/.+page=post.+")
     private val danRegex = Regex("^https://danbooru\\.donmai\\.us/posts?/.+")
     private val yanRegex = Regex("^https://yande\\.re/post/.+")
+    private val sanRegex = Regex("^https://chan\\.sankakucomplex\\.com/post/.+")
 
     private const val artistPrefix = "a:"
     private const val characterPrefix = "c:"
@@ -21,7 +22,7 @@ object SourceTagParser {
 
 
     fun canGetTagsFrom(url: String): Boolean {
-        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url)
+        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url) || sanRegex.matches(url)
     }
 
     fun getTags(url: String, client: CloseableHttpClient): List<String> {
@@ -33,9 +34,44 @@ object SourceTagParser {
             parseDanTags(get(url, client))
         } else if (yanRegex.matches(url)) {
             parseYanTags(get(url, client))
+        } else if (sanRegex.matches(url)) {
+            parseSanTags(get(url, client))
         } else {
             emptyList()
         }
+    }
+
+    private fun parseSanTags(doc: Document): List<String> {
+        if (doc.selectFirst("#post-view") == null) return emptyList()
+
+        val tags = mutableListOf<String>()
+        doc.apply {
+            select(".tag-type-artist > a").forEach {
+                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-character > a").forEach {
+                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-copyright > a").forEach {
+                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-general > a").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-medium > a").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-meta > a").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".tag-type-genre > a").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+        }
+        return tags
     }
 
     private fun parseYanTags(doc: Document): List<String> {
@@ -118,6 +154,7 @@ object SourceTagParser {
 
     private fun get(url: String, client: CloseableHttpClient): Document {
         val get = HttpGet(url)
+        get.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
         client.execute(get).use { response ->
             if (response.statusLine.statusCode != 200) {
                 throw HttpResponseException(response.statusLine.statusCode, response.statusLine.reasonPhrase)

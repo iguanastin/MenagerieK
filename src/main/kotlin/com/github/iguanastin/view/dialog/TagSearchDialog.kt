@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.runOnUIThread
+import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
@@ -29,6 +30,12 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
     private var search: String = ""
     private var order: OrderBy = OrderBy.Name
     private var descending: Boolean = false
+
+    private val tagListener= ListChangeListener<Tag> { change ->
+        while (change.next()) {
+            filterTags()
+        }
+    }
 
     init {
         root.graphic = borderpane {
@@ -113,6 +120,8 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
             }
         }
 
+        menagerie.tags.addListener(tagListener)
+
         runOnUIThread { filterTags() }
     }
 
@@ -149,6 +158,11 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
 
     override fun requestFocus() {
         searchTextField.requestFocus()
+    }
+
+    override fun close() {
+        menagerie.tags.removeListener(tagListener)
+        super.close()
     }
 
 }
