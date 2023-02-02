@@ -74,7 +74,7 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                 }
                 label("Local file organizer")
                 label("Version: ${MyApp.VERSION}")
-                hyperlink("https://github.com/iguanastin/menageriek") {
+                hyperlink(MyApp.githubURL) {
                     onAction = EventHandler { event ->
                         event.consume()
                         if (Desktop.isDesktopSupported() && Desktop.getDesktop()

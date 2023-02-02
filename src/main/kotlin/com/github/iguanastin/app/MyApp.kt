@@ -16,6 +16,7 @@ import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.settings.AppSettings
 import com.github.iguanastin.app.settings.WindowSettings
+import com.github.iguanastin.app.utils.Versioning
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.view.MainView
@@ -37,10 +38,15 @@ import javafx.stage.DirectoryChooser
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import mu.KotlinLogging
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.impl.client.HttpClientBuilder
 import tornadofx.*
 import java.awt.Desktop
+import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
+import java.io.InputStreamReader
+import java.util.stream.Collectors
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -50,6 +56,10 @@ class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
         const val VERSION = "1.1.4" // When updating version, update it in pom.xml as well
+        private const val githubRoot = "/iguanastin/menageriek"
+        const val githubURL = "https://github.com$githubRoot"
+        const val githubReleasesURL = "$githubURL/releases/latest"
+        private const val githubAPIReleaseURL = "https://api.github.com/repos$githubRoot/releases/latest"
 
         val shortcuts: MutableList<Shortcut> = mutableListOf()
 
@@ -111,6 +121,46 @@ class MyApp : App(MainView::class, Styles::class) {
             contextPrefs.database.pass.value
         ) { context ->
             onMenagerieLoaded(context)
+
+            thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
+        }
+    }
+
+    private fun checkGithubForNewRelease() {
+        try {
+            HttpClientBuilder.create().build().use { client ->
+                client.execute(HttpGet(githubAPIReleaseURL)).use { response ->
+                    if (response.statusLine.statusCode != 200) {
+                        log.error("Failed to get github API release, HTTP code: ${response.statusLine.statusCode} - ${response.statusLine.reasonPhrase}")
+                        return@use
+                    }
+
+                    response.entity.content.use { content ->
+                        val json = loadJsonObject(
+                            BufferedReader(InputStreamReader(content)).lines().collect(Collectors.joining("\n"))
+                        )
+
+                        val newVersion = json.getString("tag_name")
+                            .removePrefix("v") // Get name of latest release tag from JSON API response
+
+                        if (Versioning.compare(VERSION, newVersion) < 0) {
+                            runOnUIThread {
+                                root.root.add(
+                                    InfoStackDialog(
+                                        "Update available",
+                                        "There is an update available:\n$VERSION -> $newVersion",
+                                        url = githubReleasesURL
+                                    )
+                                )
+                            }
+                        } else {
+                            log.info("App is up to date. Current: $VERSION, fetched: $newVersion")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            log.error("Error caught trying to fetch latest release info", e)
         }
     }
 
@@ -197,7 +247,8 @@ class MyApp : App(MainView::class, Styles::class) {
                 val sanitizedUrl = splitString[0]
 
                 val tags: List<Tag> =
-                    splitString.subList(1, splitString.size).map { context!!.menagerie.getOrMakeTag(it, temporaryIfNew = true) }
+                    splitString.subList(1, splitString.size)
+                        .map { context!!.menagerie.getOrMakeTag(it, temporaryIfNew = true) }
 
                 runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
             } else {
