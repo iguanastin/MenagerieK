@@ -5,7 +5,7 @@ import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.runOnUIThread
-import javafx.collections.ListChangeListener
+import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
@@ -36,10 +36,8 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
     private var order: OrderBy = OrderBy.Name
     private var descending: Boolean = false
 
-    private val tagListener = ListChangeListener<Tag> { change ->
-        while (change.next()) {
-            filterTags()
-        }
+    private val tagListener = SetChangeListener<Tag> {
+        filterTags()
     }
 
     init {
@@ -116,15 +114,17 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
 
                         thread(start = true, isDaemon = true, name = "Tag purger thread") {
                             log.info("Purging unused/temporary tags")
-                            val toDelete = mutableListOf<Tag>()
+                            val toDelete = mutableSetOf<Tag>()
                             menagerie.tags.forEach { tag ->
                                 if (tag.temporary || tag.frequency == 0) toDelete.add(tag)
                             }
 
                             var t = System.currentTimeMillis()
                             val size = toDelete.size
+                            menagerie.items.forEach { item -> item.removeTags(toDelete) }
+
+                            menagerie.tags.removeListener(tagListener) // Remove tag listener to stop updating tag list
                             toDelete.forEachIndexed { i, tag ->
-                                menagerie.items.forEach { item -> item.removeTag(tag) }
                                 menagerie.removeTag(tag)
 
                                 if (System.currentTimeMillis() - t >= 100) {
@@ -132,12 +132,15 @@ class TagSearchDialog(val menagerie: Menagerie, onClose: () -> Unit = {}, onClic
                                     t = System.currentTimeMillis()
                                 }
                             }
+                            menagerie.tags.addListener(tagListener) // Add tag listener bag to keep updating like normal
 
                             log.info("Purged ${toDelete.size} unused/temporary tags")
                             log.debug { "Purged unused/temporary tags" + toDelete.joinToString(", ") }
 
                             runOnUIThread {
                                 progress.close()
+
+                                filterTags() // Gotta filter once to clear out the removed tags
 
                                 this@TagSearchDialog.parent.add(
                                     InfoStackDialog(

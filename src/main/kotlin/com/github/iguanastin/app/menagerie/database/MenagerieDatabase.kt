@@ -132,18 +132,16 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                     )
                 }
                 is ItemChange -> {
-                    if (!change.tagsAdded.isNullOrEmpty()) change.tagsAdded.forEach {
-                        if (!it.temporary) updateQueue.put(
+                    if (change.tagAdded != null && !change.tagAdded.temporary) {
+                        updateQueue.put(
                             DatabaseTagItem(
                                 change.item,
-                                it
+                                change.tagAdded
                             )
                         )
                     }
-                    if (!change.tagsRemoved.isNullOrEmpty()) change.tagsRemoved.forEach {
-                        if (!it.temporary) updateQueue.put(
-                            DatabaseUntagItem(change.item, it)
-                        )
+                    if (change.tagRemoved != null && !change.tagRemoved.temporary) {
+                        DatabaseUntagItem(change.item, change.tagRemoved)
                     }
                 }
             }
@@ -175,25 +173,24 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
 
         val tagChangeListener = { change: TagChange ->
-            if (!change.tag.temporary && change.color != null) updateQueue.put(DatabaseSetTagColor(change.tag, change.color.new))
+            if (!change.tag.temporary && change.color != null) updateQueue.put(
+                DatabaseSetTagColor(
+                    change.tag,
+                    change.color.new
+                )
+            )
         }
         for (tag in menagerie.tags) {
             tag.changeListeners.add(tagChangeListener)
         }
-        menagerie.tags.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                change.removed.forEach { tag ->
-                    if (!tag.temporary) {
-                        updateQueue.put(DatabaseDeleteTag(tag))
-                        tag.changeListeners.add(tagChangeListener)
-                    }
-                }
-                change.addedSubList.forEach { tag ->
-                    if (!tag.temporary) {
-                        updateQueue.put(DatabaseCreateTag(tag))
-                        tag.changeListeners.add(tagChangeListener)
-                    }
-                }
+        menagerie.tags.addListener(SetChangeListener { change ->
+            if (change.wasRemoved() && !change.elementRemoved.temporary) {
+                updateQueue.put(DatabaseDeleteTag(change.elementRemoved))
+                change.elementRemoved.changeListeners.remove(tagChangeListener)
+            }
+            if (change.wasAdded() && !change.elementAdded.temporary) {
+                updateQueue.put(DatabaseCreateTag(change.elementAdded))
+                change.elementAdded.changeListeners.add(tagChangeListener)
             }
         })
 

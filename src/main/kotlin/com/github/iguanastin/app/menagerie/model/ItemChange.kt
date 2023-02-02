@@ -6,7 +6,7 @@ class Change<T>(val old: T, val new: T)
 
 open class ItemChangeBase(val item: Item)
 
-open class ItemChange(item: Item, val tagsAdded: List<Tag>? = null, val tagsRemoved: List<Tag>? = null): ItemChangeBase(item)
+open class ItemChange(item: Item, val tagAdded: Tag? = null, val tagRemoved: Tag? = null): ItemChangeBase(item)
 
 open class FileItemChange(item: Item, val md5: Change<String>? = null, val file: Change<File>? = null, val elementOf: Change<GroupItem?>? = null) : ItemChangeBase(item)
 

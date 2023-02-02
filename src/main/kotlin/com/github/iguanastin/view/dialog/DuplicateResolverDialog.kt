@@ -14,8 +14,8 @@ import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
-import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
@@ -24,7 +24,8 @@ import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
 import tornadofx.*
 
-class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val context: MenagerieContext?) : StackDialog() {
+class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val context: MenagerieContext?) :
+    StackDialog() {
 
     val displayingProperty: ObjectProperty<SimilarPair<Item>> = SimpleObjectProperty()
     var displaying: SimilarPair<Item>?
@@ -45,7 +46,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
     private lateinit var rightTags: ListView<Tag>
     private lateinit var topPane: SplitPane
 
-    private val leftTagCellFactory = object: TagCellFactory() {
+    private val leftTagCellFactory = object : TagCellFactory() {
         override fun call(listView: ListView<Tag>?): ListCell<Tag> {
             return super.call(listView).apply {
                 contextmenu {
@@ -65,7 +66,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
             }
         }
     }
-    private val rightTagCellFactory = object: TagCellFactory() {
+    private val rightTagCellFactory = object : TagCellFactory() {
         override fun call(listView: ListView<Tag>?): ListCell<Tag> {
             return super.call(listView).apply {
                 contextmenu {
@@ -264,23 +265,20 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         }
 
         @Suppress("RemoveExplicitTypeArguments")
-        val leftTagsListener = ListChangeListener<Tag> { change ->
-            while (change.next()) {
-                leftTags.items.apply {
-                    removeAll(change.removed.toSet())
-                    addAll(change.addedSubList)
-                    sortWith(MyApp.displayTagSorter)
-                }
+        val leftTagsListener = SetChangeListener<Tag> { change ->
+            leftTags.items.apply {
+                if (change.wasRemoved()) remove(change.elementRemoved)
+                if (change.wasAdded()) add(change.elementAdded)
+                sortWith(MyApp.displayTagSorter)
             }
         }
+
         @Suppress("RemoveExplicitTypeArguments")
-        val rightTagsListener = ListChangeListener<Tag> { change ->
-            while (change.next()) {
-                rightTags.items.apply {
-                    removeAll(change.removed.toSet())
-                    addAll(change.addedSubList)
-                    sortWith(MyApp.displayTagSorter)
-                }
+        val rightTagsListener = SetChangeListener<Tag> { change ->
+            rightTags.items.apply {
+                if (change.wasRemoved()) remove(change.elementRemoved)
+                if (change.wasAdded()) add(change.elementAdded)
+                sortWith(MyApp.displayTagSorter)
             }
         }
         displayingProperty.addListener { _, oldValue, newValue ->

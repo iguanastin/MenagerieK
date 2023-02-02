@@ -824,7 +824,7 @@ class MainView : View("Menagerie") {
         runOnUIThread {
             tagView.items.apply {
                 clear()
-                addAll(item?.tags?.sorted(MyApp.displayTagSorter) ?: return@apply)
+                addAll(item?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@apply)
             }
         }
     }

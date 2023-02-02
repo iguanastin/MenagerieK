@@ -1,8 +1,8 @@
 package com.github.iguanastin.app.menagerie.model
 
 import javafx.collections.FXCollections
-import javafx.collections.ListChangeListener
-import javafx.collections.ObservableList
+import javafx.collections.ObservableSet
+import javafx.collections.SetChangeListener
 import javafx.scene.image.Image
 import tornadofx.*
 import java.lang.ref.SoftReference
@@ -12,11 +12,18 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     companion object {
         private const val defaultThumbPath: String = "/imgs/default-thumb.png"
         const val thumbnailSize: Double = 150.0
-        val defaultThumbnail: Image = Image(Item::class.java.getResource(defaultThumbPath).toExternalForm(), thumbnailSize, thumbnailSize, true, true, true)
+        val defaultThumbnail: Image = Image(
+            Item::class.java.getResource(defaultThumbPath).toExternalForm(),
+            thumbnailSize,
+            thumbnailSize,
+            true,
+            true,
+            true
+        )
     }
 
-    private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
-    val tags: ObservableList<Tag> = _tags.asUnmodifiable()
+    private val _tags: ObservableSet<Tag> = FXCollections.observableSet()
+    val tags: ObservableSet<Tag> = _tags.asUnmodifiable()
 
     val changeListeners: MutableSet<(ItemChangeBase) -> Unit> = mutableSetOf()
 
@@ -27,23 +34,23 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
     private var thumbnailCache: SoftReference<Thumbnail> = SoftReference(null)
 
     init {
-        tags.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                change.removed.forEach { tag -> tag.frequency-- }
-                change.addedSubList.forEach { tag -> tag.frequency++ }
+        tags.addListener(SetChangeListener { change ->
+            if (change.wasRemoved()) change.elementRemoved.frequency--
+            if (change.wasAdded()) change.elementAdded.frequency++
 
-                val itemChange = ItemChange(this, if (change.wasAdded()) {
-                    change.addedSubList
+            val itemChange = ItemChange(
+                this, if (change.wasAdded()) {
+                    change.elementAdded
                 } else {
                     null
                 }, if (change.wasRemoved()) {
-                    change.removed
+                    change.elementRemoved
                 } else {
                     null
-                })
-                changeListeners.forEach { listener ->
-                    listener(itemChange)
                 }
+            )
+            changeListeners.forEach { listener ->
+                listener(itemChange)
             }
         })
     }
@@ -100,6 +107,10 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
 
     fun removeTag(tag: Tag): Boolean {
         return !invalidated && _tags.remove(tag)
+    }
+
+    fun removeTags(tags: Collection<Tag>): Boolean {
+        return !invalidated && _tags.removeAll(tags)
     }
 
     open fun invalidate() {

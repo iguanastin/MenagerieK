@@ -26,6 +26,7 @@ import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
+import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
 import javafx.event.EventType
 import javafx.scene.Node
@@ -160,13 +161,9 @@ class MyApp : App(MainView::class, Styles::class) {
         purgeUnusedTags(context.menagerie)
         initImporterListeners(context)
 
-        context.menagerie.tags.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                val colorRules = context.prefs.tags.autoColorTags
-                change.addedSubList.forEach {
-                    colorRules.applyRulesTo(it)
-                }
-            }
+        context.menagerie.tags.addListener(SetChangeListener { change ->
+            val colorRules = context.prefs.tags.autoColorTags
+            if (change.wasAdded()) colorRules.applyRulesTo(change.elementAdded)
         })
 
         runOnUIThread {

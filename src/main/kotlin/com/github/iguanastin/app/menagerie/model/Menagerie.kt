@@ -1,17 +1,14 @@
 package com.github.iguanastin.app.menagerie.model
 
-import javafx.collections.FXCollections
-import javafx.collections.ListChangeListener
-import javafx.collections.ObservableList
-import javafx.collections.ObservableSet
+import javafx.collections.*
 import tornadofx.*
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 class Menagerie {
 
-    private val _tags: ObservableList<Tag> = FXCollections.observableArrayList()
-    val tags: ObservableList<Tag> = _tags.asUnmodifiable()
+    private val _tags: ObservableSet<Tag> = FXCollections.observableSet()
+    val tags: ObservableSet<Tag> = _tags.asUnmodifiable()
     private val tagIdMap: MutableMap<Int, Tag> = mutableMapOf()
     private val nextTagID = AtomicInteger(0)
 
@@ -42,11 +39,9 @@ class Menagerie {
                 }
             }
         })
-        tags.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                change.removed.forEach { tagIdMap.remove(it.id) }
-                change.addedSubList.forEach { tagIdMap[it.id] = it }
-            }
+        tags.addListener(SetChangeListener { change ->
+            if (change.wasRemoved()) tagIdMap.remove(change.elementRemoved.id)
+            if (change.wasAdded()) tagIdMap[change.elementAdded.id] = change.elementAdded
         })
     }
 
