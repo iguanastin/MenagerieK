@@ -141,7 +141,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                         )
                     }
                     if (change.tagRemoved != null && !change.tagRemoved.temporary) {
-                        DatabaseUntagItem(change.item, change.tagRemoved)
+                        updateQueue.put(DatabaseUntagItem(change.item, change.tagRemoved))
                     }
                 }
             }
