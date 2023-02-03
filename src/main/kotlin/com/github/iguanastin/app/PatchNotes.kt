@@ -13,7 +13,9 @@ object PatchNotes {
                 "- Send files to trash instead of permanently deleting them\n" +
                 "\n" +
                 "Bug fixes:\n" +
-                "- Tag list dialog reacts to tag changes properly"
+                "- Tag list dialog reacts to tag changes properly\n" +
+                "- Fix unreachable HTTP API server\n" +
+                "- Fix API server not reflecting changes to port setting"
     }
 
     fun get(version: String): String {

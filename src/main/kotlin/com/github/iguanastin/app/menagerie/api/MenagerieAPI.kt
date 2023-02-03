@@ -59,7 +59,7 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
         log.info("Starting API server on port: $port")
         this.port = port
         try {
-            server = HttpServer.create(InetSocketAddress(port), 0).apply {
+            server = HttpServer.create(InetSocketAddress(port), 128).apply {
                 executor = Executors.newCachedThreadPool()
                 createContext("/").handler = HttpHandler { exchange: HttpExchange -> handleRequest(exchange) }
                 start()
