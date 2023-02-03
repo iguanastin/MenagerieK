@@ -18,12 +18,14 @@ class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = tr
 
     val tourOnLaunch: BoolSetting
     val lastLaunchVersion: StringSetting
+    val dontRemindUpdate: StringSetting
 
     init {
         settings = mutableListOf()
 
         tourOnLaunch = BoolSetting("launch-tour", "Start tour of app on next launch", default = true, prefs).also { settings.add(it) }
         lastLaunchVersion = StringSetting("last-launch-version", "Version of the app that was last launched", default = "", prefs = prefs).also { settings.add(it) }
+        dontRemindUpdate = StringSetting("dont-remind-update", "Don't remind me of updates for this version", default = "", prefs = prefs).also { settings.add(it) }
     }
 
 }

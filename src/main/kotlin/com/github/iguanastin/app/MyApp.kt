@@ -124,9 +124,7 @@ class MyApp : App(MainView::class, Styles::class) {
         ) { context ->
             onMenagerieLoaded(context)
 
-            thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
-
-            checkLastLaunchedVersion()
+            checkVersionAndPatchNotes()
         }
     }
 
@@ -282,7 +280,13 @@ class MyApp : App(MainView::class, Styles::class) {
         })
     }
 
-    private fun checkLastLaunchedVersion() {
+    private fun checkVersionAndPatchNotes() {
+        // Check if Menagerie should fetch update info
+        if (contextPrefs.hidden.dontRemindUpdate.value != VERSION) {
+            thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
+        }
+
+        // Check if version was updated since last launch
         val v = contextPrefs.hidden.lastLaunchVersion.value
         if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
             showPatchNotesDialog()
@@ -314,10 +318,14 @@ class MyApp : App(MainView::class, Styles::class) {
                         if (Versioning.compare(VERSION, newVersion) < 0) {
                             runOnUIThread {
                                 root.root.add(
-                                    InfoStackDialog(
+                                    ConfirmStackDialog(
                                         "Update available",
                                         "There is an update available:\n$VERSION -> $newVersion",
-                                        url = githubReleasesURL
+                                        url = githubReleasesURL,
+                                        cancelText = "Don't remind me",
+                                        onCancel = {
+                                            contextPrefs.hidden.dontRemindUpdate.value = VERSION
+                                        }
                                     )
                                 )
                             }

@@ -6,8 +6,10 @@ import javafx.event.EventHandler
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
 import tornadofx.*
+import java.awt.Desktop
+import java.net.URI
 
-class ConfirmStackDialog(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", var onConfirm: () -> Unit = {}, var onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
+class ConfirmStackDialog(header: String, message: String, url: String? = null, confirmText: String = "Ok", cancelText: String = "Cancel", var onConfirm: () -> Unit = {}, var onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
 
     private lateinit var cancelButton: Button
     private lateinit var confirmButton: Button
@@ -24,6 +26,12 @@ class ConfirmStackDialog(header: String, message: String, confirmText: String = 
             }
             label(message) {
                 isWrapText = true
+            }
+            if (url != null) hyperlink(url) {
+                onAction = EventHandler { event ->
+                    event.consume()
+                    Desktop.getDesktop().browse(URI.create(url))
+                }
             }
             borderpane {
                 right {
