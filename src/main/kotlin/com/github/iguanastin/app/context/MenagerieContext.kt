@@ -19,9 +19,14 @@ class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter
     private val apiPageSizeListener = { new: Int ->
         api.pageSize = new
     }
+    private val apiPortListener = { new: Int ->
+        api.stop()
+        api.start(new)
+    }
 
     init {
         prefs.api.pageSize.changeListeners.add(apiPageSizeListener)
+        prefs.api.port.changeListeners.add(apiPortListener)
     }
 
     fun close() {
@@ -32,6 +37,7 @@ class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter
         }
 
         prefs.api.pageSize.changeListeners.remove(apiPageSizeListener)
+        prefs.api.port.changeListeners.remove(apiPortListener)
         api.stop()
 
         thread(start = true, name = "Database Shutdown") {
