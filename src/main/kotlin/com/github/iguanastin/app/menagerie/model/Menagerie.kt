@@ -105,17 +105,12 @@ class Menagerie {
     }
 
     fun addTag(tag: Tag): Boolean {
-        for (t in _tags) {
-            if (t.id == tag.id || t.name == tag.name) return false
-        }
-
-        _tags.add(tag)
-        nextTagID.getAndUpdate { it.coerceAtLeast(tag.id + 1) }
+        if (_tags.add(tag)) nextTagID.getAndUpdate { it.coerceAtLeast(tag.id + 1) }
         return true
     }
 
     fun removeTag(tag: Tag): Boolean {
-        // TODO invalidate tag
+        // TODO invalidate tag?
         return _tags.remove(tag)
     }
 

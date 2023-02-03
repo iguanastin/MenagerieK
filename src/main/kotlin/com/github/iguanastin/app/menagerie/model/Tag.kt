@@ -36,13 +36,9 @@ class Tag(val id: Int, name: String, val menagerie: Menagerie, color: String? = 
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (other !is Tag) return false
 
-        other as Tag
-
-        if (id != other.id) return false
-
-        return true
+        return id == other.id
     }
 
     override fun toString(): String {
