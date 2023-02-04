@@ -15,7 +15,8 @@ object PatchNotes {
                 "Bug fixes:\n" +
                 "- Tag list dialog reacts to tag changes properly\n" +
                 "- Fix unreachable HTTP API server\n" +
-                "- Fix API server not reflecting changes to port setting"
+                "- Fix API server not reflecting changes to port setting\n" +
+                "- Fix long tag names clipping the frequency of all tags"
     }
 
     fun get(version: String): String {

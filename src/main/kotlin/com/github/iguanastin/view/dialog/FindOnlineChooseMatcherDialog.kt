@@ -109,10 +109,10 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
             iqdbButton.fire()
         }
 
-        bindShortcut(KeyCode.DIGIT1, shift = true) {
+        bindShortcut(KeyCode.DIGIT1, ctrl = true) {
             sauceNAOAutoTagButton.fire()
         }
-        bindShortcut(KeyCode.DIGIT2, shift = true) {
+        bindShortcut(KeyCode.DIGIT2, ctrl = true) {
             iqdbAutoTagButton.fire()
         }
     }
@@ -121,11 +121,14 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         val parent = this@FindOnlineChooseMatcherDialog.parent
         close()
 
-        val progress = ProgressDialog(message = "Fetching tags").also { parent.add(it) }
+        val progress = ProgressDialog(header = "Fetching tags", "0/${items.size}").also { parent.add(it) }
         var i = 0
         AutoTagger(items, source, onFoundTagsForItem = {
             i++
-            runOnUIThread { progress.progress = i.toDouble() / items.size }
+            runOnUIThread {
+                progress.progress = i.toDouble() / items.size
+                progress.message = "$i/${items.size}"
+            }
         }, onFinished = {
             source.close()
             runOnUIThread { progress.close() }
