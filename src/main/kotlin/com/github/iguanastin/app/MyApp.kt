@@ -318,8 +318,8 @@ class MyApp : App(MainView::class, Styles::class) {
                             runOnUIThread {
                                 root.root.add(
                                     ConfirmStackDialog(
-                                        "Update available",
-                                        "There is an update available:\n$VERSION -> $newVersion",
+                                        header = "Update available",
+                                        message = "There is an update available:\n$VERSION -> $newVersion",
                                         url = githubReleasesURL,
                                         cancelText = "Don't remind me",
                                         onCancel = {
@@ -497,8 +497,8 @@ class MyApp : App(MainView::class, Styles::class) {
         val peek = context?.edits?.peek() ?: return // Return if there are no edits in the stack
 
         root.root.confirm(
-            "Undo edit",
-            peek.toString()
+            header = "Undo edit",
+            message = peek.toString()
         ).onConfirm = {
             val edit = context?.undoLastEdit()
             if (edit?.state != Edit.State.Undone) {

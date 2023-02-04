@@ -36,6 +36,7 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
             }
 
             init {
+                prefWidth = 0.0
                 addClass(Styles.tagListCell)
                 graphic = borderpane {
                     left {
@@ -66,6 +67,8 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
 
                     disableWhen(itemProperty().isNull)
                 }
+
+                tooltip = tooltip()
             }
 
             override fun updateItem(item: Tag?, empty: Boolean) {
@@ -76,6 +79,7 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
 
                 item?.colorProperty?.addListener(colorListener)
                 item?.frequencyProperty?.addListener(freqListener)
+                tooltip.text = item?.name
 
                 if (item?.temporary == true) {
                     addClass(Styles.tempTag)

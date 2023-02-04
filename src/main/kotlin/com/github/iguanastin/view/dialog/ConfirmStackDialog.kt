@@ -9,7 +9,16 @@ import tornadofx.*
 import java.awt.Desktop
 import java.net.URI
 
-class ConfirmStackDialog(header: String, message: String, url: String? = null, confirmText: String = "Ok", cancelText: String = "Cancel", var onConfirm: () -> Unit = {}, var onCancel: () -> Unit = {}, onClose: () -> Unit = {}): StackDialog(onClose) {
+class ConfirmStackDialog(
+    header: String,
+    message: String,
+    url: String? = null,
+    confirmText: String = "Ok",
+    cancelText: String = "Cancel",
+    var onConfirm: () -> Unit = {},
+    var onCancel: () -> Unit = {},
+    onClose: () -> Unit = {}
+) : StackDialog(onClose) {
 
     private lateinit var cancelButton: Button
     private lateinit var confirmButton: Button
@@ -66,4 +75,14 @@ class ConfirmStackDialog(header: String, message: String, url: String? = null, c
 
 }
 
-fun TopEnabledStackPane.confirm(header: String, message: String, confirmText: String = "Ok", cancelText: String = "Cancel", op: ConfirmStackDialog.() -> Unit = {}) = ConfirmStackDialog(header, message, confirmText, cancelText).attachTo(this, op)
+fun TopEnabledStackPane.confirm(
+    header: String,
+    message: String,
+    url: String? = null,
+    confirmText: String = "Ok",
+    cancelText: String = "Cancel",
+    onConfirm: () -> Unit = {},
+    onCancel: () -> Unit = {},
+    onClose: () -> Unit = {},
+    op: ConfirmStackDialog.() -> Unit = {}
+) = ConfirmStackDialog(header = header, message = message, confirmText = confirmText, cancelText = cancelText).attachTo(this, op)
