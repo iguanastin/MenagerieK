@@ -63,7 +63,7 @@ class IQDBMatchFinder : OnlineMatchFinder() {
             }
 
             val rows = element.select("tbody > tr")
-            if (rows.first()!!.selectFirst("th")!!.ownText() !in arrayOf("Possible match", "Best match")) continue
+            if (rows.first()!!.selectFirst("th")!!.ownText() !in arrayOf("Additional match", "Best match")) continue
 
             val sources = element.select("a").map { fixLink(it.attr("href")) }
             val thumbUrl = url + element.selectFirst("img")?.attr("src")
