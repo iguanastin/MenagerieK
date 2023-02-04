@@ -9,7 +9,7 @@ $icon = ".\menagerie.ico"
 $url = "https://github.com/iguanastin/menageriek"
 $modulePath = "C:\Program Files\Java\javafx-jmods-21"
 $modules = "javafx.controls,javafx.swing,java.logging,java.desktop,java.rmi,java.prefs,java.sql,jdk.httpserver,java.naming,jdk.crypto.cryptoki"
-$jvmoptions = "--add-opens=javafx.graphics/javafx.scene=ALL-UNNAMED"
+$jvmoptions = "--module-path "C:\Program Files\Java\javafx-sdk-21\lib" --add-modules javafx.controls --add-opens=javafx.graphics/javafx.scene=ALL-UNNAMED --add-opens=javafx.controls/javafx.scene.control.skin=ALL-UNNAMED --add-exports javafx.base/com.sun.javafx.runtime=ALL-UNNAMED"
 $jar = ".\menageriek-${version}-jar-with-dependencies.jar"
 
 rm .\input\menageriek-*-jar-with-dependencies.jar
