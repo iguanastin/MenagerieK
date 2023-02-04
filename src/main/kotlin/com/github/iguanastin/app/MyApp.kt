@@ -6,7 +6,6 @@ import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
 import com.github.iguanastin.app.menagerie.duplicates.local.CUDADuplicateFinder
-import com.github.iguanastin.app.menagerie.duplicates.remote.OnlineMatchSet
 import com.github.iguanastin.app.menagerie.import.ImportJob
 import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
 import com.github.iguanastin.app.menagerie.import.MenagerieImporter
@@ -490,7 +489,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     fun findOnlineShortcut() {
-        root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected).map { OnlineMatchSet(it) }))
+        root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected)))
     }
 
     private fun undoLastEdit() {

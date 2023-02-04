@@ -107,16 +107,15 @@ class SimilarOnlineDialog(
                                 thread(start = true, isDaemon = true, name = "Online auto tagger") {
                                     val tags = SourceTagParser.getTags(match.sourceUrl, matcher.client!!)
 
-                                    set.apply {
-                                        tags.forEach {
-                                            val tag = item.menagerie.getOrMakeTag(it, true)
-                                            item.addTag(tag)
-                                        }
+                                    tags.forEach {
+                                        val tag = set.item.menagerie.getOrMakeTag(it, true)
+                                        set.item.addTag(tag)
                                     }
 
                                     if (scene != null && item == match) {
                                         runOnUIThread {
-                                            (graphic as ImageView).image = if (tags.isNotEmpty()) finishedIcon else tagIcon
+                                            (graphic as ImageView).image =
+                                                if (tags.isNotEmpty()) finishedIcon else tagIcon
                                             isDisable = tags.isNotEmpty()
 
 //                                            this@SimilarOnlineDialog.parent.add(
@@ -151,7 +150,14 @@ class SimilarOnlineDialog(
                 // https://github.com/controlsfx/controlsfx/issues/1241 still present as of 11.1.2
 
                 thumbView.image =
-                    if (item == null) null else Image(item.thumbUrl, Item.thumbnailSize, Item.thumbnailSize, true, true, true)
+                    if (item == null) null else Image(
+                        item.thumbUrl,
+                        Item.thumbnailSize,
+                        Item.thumbnailSize,
+                        true,
+                        true,
+                        true
+                    )
                 bottomLabel.text = item?.bottomText
                 topLabel.text = item?.topText
                 (tagButton.graphic as ImageView).image = tagIcon

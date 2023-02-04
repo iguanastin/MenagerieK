@@ -2,8 +2,9 @@ package com.github.iguanastin.app.menagerie.duplicates.remote
 
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
+import java.io.Closeable
 
-abstract class OnlineMatchFinder {
+abstract class OnlineMatchFinder: Closeable {
 
     @Volatile
     var isClosed: Boolean = false
@@ -19,7 +20,7 @@ abstract class OnlineMatchFinder {
 
     abstract fun findMatches(set: OnlineMatchSet)
 
-    open fun close() {
+    override fun close() {
         client?.close()
         isClosed = true
     }
