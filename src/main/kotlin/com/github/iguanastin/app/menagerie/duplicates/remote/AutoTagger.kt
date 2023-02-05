@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.duplicates.remote
 
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.view.runOnUIThread
 import mu.KotlinLogging
 import org.apache.http.client.HttpResponseException
 
@@ -35,8 +36,10 @@ class AutoTagger(
                     val tags = SourceTagParser.getTags(match.sourceUrl, source.client!!)
                     if (closed) return
 
-                    tags.forEach { tag ->
-                        item.addTag(item.menagerie.getOrMakeTag(tag, true))
+                    runOnUIThread {
+                        tags.forEach { tag ->
+                            item.addTag(item.menagerie.getOrMakeTag(tag, true))
+                        }
                     }
                 } catch (e: HttpResponseException) {
                     log.error("Bad response from source", e)

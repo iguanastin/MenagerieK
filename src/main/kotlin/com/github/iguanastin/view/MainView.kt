@@ -9,6 +9,7 @@ import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.SearchHistory
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
+import com.github.iguanastin.app.utils.addSorted
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.expandGroups
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
@@ -26,6 +27,7 @@ import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
@@ -820,24 +822,27 @@ class MainView : View("Menagerie") {
         editTags.requestFocus()
     }
 
-    private fun applyPreviewTags(item: Item?) {
-        runOnUIThread {
-            tagView.items.apply {
-                clear()
-                addAll(item?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@apply)
+    private fun initTagsListener() {
+        // Listener is attached to currently displayed/previewed item
+        @Suppress("RemoveExplicitTypeArguments")
+        val displayTagChangeListener = SetChangeListener<Tag> { change ->
+            runOnUIThread {
+                if (change.wasRemoved()) tagView.items.remove(change.elementRemoved)
+                if (change.wasAdded()) tagView.items.addSorted(change.elementAdded, MyApp.displayTagSorter)
             }
         }
-    }
 
-    private fun initTagsListener() {
-        val displayTagsListener = InvalidationListener {
-            applyPreviewTags(itemDisplay.item)
-        }
-        // Listener is attached to currently displayed/previewed item
+        // Update display tags and tag listeners when displayed item changes
         itemDisplay.itemProperty.addListener(ChangeListener { _, old, new ->
-            old?.tags?.removeListener(displayTagsListener)
-            new?.tags?.addListener(displayTagsListener)
-            applyPreviewTags(new)
+            old?.tags?.removeListener(displayTagChangeListener)
+            new?.tags?.addListener(displayTagChangeListener)
+
+            runOnUIThread {
+                tagView.items.apply {
+                    clear()
+                    addAll(new?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@apply)
+                }
+            }
         })
     }
 

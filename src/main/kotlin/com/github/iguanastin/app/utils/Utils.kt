@@ -11,6 +11,18 @@ import java.awt.datatransfer.StringSelection
 
 private val log = KotlinLogging.logger {}
 
+
+fun <E> MutableList<E>.addSorted(e: E, sortWith: (E, E) -> Int) {
+    var put = 0
+    forEachIndexed { index, element ->
+        if (sortWith(e, element) > 0) {
+            put = index + 1
+            return@forEachIndexed
+        }
+    }
+    add(put, e)
+}
+
 fun <T> Pair<T, T>.contains(item: T): Boolean {
     return first == item || second == item
 }
