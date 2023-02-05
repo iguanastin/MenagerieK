@@ -14,18 +14,27 @@ class AutoTagger(
 ) :
     Thread("Auto tagger") {
 
+    @Volatile
+    private var closed = false
+
     init {
         isDaemon = true
     }
 
     override fun run() {
         items.forEach { item ->
+            if (closed) return
+
             val set = OnlineMatchSet(item)
             source.findMatches(set)
 
             set.matches.forEach { match ->
+                if (closed) return
+
                 try {
                     val tags = SourceTagParser.getTags(match.sourceUrl, source.client!!)
+                    if (closed) return
+
                     tags.forEach { tag ->
                         item.addTag(item.menagerie.getOrMakeTag(tag, true))
                     }
@@ -38,6 +47,10 @@ class AutoTagger(
         }
 
         onFinished()
+    }
+
+    fun close() {
+        closed = true
     }
 
 }

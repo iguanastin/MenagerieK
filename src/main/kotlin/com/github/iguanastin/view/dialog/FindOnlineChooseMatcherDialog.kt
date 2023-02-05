@@ -46,27 +46,6 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
 
             vbox(10.0) {
                 hbox(5.0) {
-                    sauceNAOButton = button("SauceNAO") {
-                        maxWidth = Double.MAX_VALUE
-                        hgrow = Priority.ALWAYS
-                        style { padding = box(10.px) }
-                        onAction = EventHandler { event ->
-                            val parent = this@FindOnlineChooseMatcherDialog.parent
-                            event.consume()
-                            close()
-                            parent.add(SimilarOnlineDialog(matchSets, SauceNAOMatchFinder()))
-                        }
-                    }
-                    sauceNAOAutoTagButton = button {
-                        graphic = ImageView(tagIcon)
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            autoTag(SauceNAOMatchFinder())
-                        }
-                        prefHeightProperty().bind(sauceNAOButton.heightProperty())
-                    }
-                }
-                hbox(5.0) {
                     iqdbButton = button("IQDB") {
                         maxWidth = Double.MAX_VALUE
                         hgrow = Priority.ALWAYS
@@ -88,6 +67,27 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
                         prefHeightProperty().bind(iqdbButton.heightProperty())
                     }
                 }
+                hbox(5.0) {
+                    sauceNAOButton = button("SauceNAO") {
+                        maxWidth = Double.MAX_VALUE
+                        hgrow = Priority.ALWAYS
+                        style { padding = box(10.px) }
+                        onAction = EventHandler { event ->
+                            val parent = this@FindOnlineChooseMatcherDialog.parent
+                            event.consume()
+                            close()
+                            parent.add(SimilarOnlineDialog(matchSets, SauceNAOMatchFinder()))
+                        }
+                    }
+                    sauceNAOAutoTagButton = button {
+                        graphic = ImageView(tagIcon)
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            autoTag(SauceNAOMatchFinder())
+                        }
+                        prefHeightProperty().bind(sauceNAOButton.heightProperty())
+                    }
+                }
             }
 
             hbox {
@@ -103,17 +103,17 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         }
 
         bindShortcut(KeyCode.DIGIT1) {
-            sauceNAOButton.fire()
+            iqdbButton.fire()
         }
         bindShortcut(KeyCode.DIGIT2) {
-            iqdbButton.fire()
+            sauceNAOButton.fire()
         }
 
         bindShortcut(KeyCode.DIGIT1, ctrl = true) {
-            sauceNAOAutoTagButton.fire()
+            iqdbAutoTagButton.fire()
         }
         bindShortcut(KeyCode.DIGIT2, ctrl = true) {
-            iqdbAutoTagButton.fire()
+            sauceNAOAutoTagButton.fire()
         }
     }
 
@@ -122,8 +122,9 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         close()
 
         val progress = ProgressDialog(header = "Fetching tags", "0/${items.size}").also { parent.add(it) }
+
         var i = 0
-        AutoTagger(items, source, onFoundTagsForItem = {
+        val tagger = AutoTagger(items, source, onFoundTagsForItem = {
             i++
             runOnUIThread {
                 progress.progress = i.toDouble() / items.size
@@ -132,7 +133,11 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         }, onFinished = {
             source.close()
             runOnUIThread { progress.close() }
-        }).start()
+        }).apply { start() }
+
+        progress.onClose = {
+            tagger.close()
+        }
     }
 
 }
