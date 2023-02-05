@@ -29,8 +29,18 @@ class AutoTagger(
             val set = OnlineMatchSet(item)
             source.findMatches(set)
 
+            val sourcesUsed = mutableSetOf<String>()
+
             set.matches.forEach { match ->
                 if (closed) return
+                @Suppress("LABEL_NAME_CLASH")
+                if (!SourceTagParser.canGetTagsFrom(match.sourceUrl)) return@forEach
+
+                // Only get tags from source if it hasn't been searched for this item yet
+                val sourceName = match.sourceUrl.substring(0, match.sourceUrl.indexOf("/", match.sourceUrl.indexOf("//") + 2))
+                @Suppress("LABEL_NAME_CLASH")
+                if (sourcesUsed.contains(sourceName)) return@forEach
+                sourcesUsed.add(sourceName)
 
                 try {
                     val tags = SourceTagParser.getTags(match.sourceUrl, source.client!!)
