@@ -29,16 +29,23 @@ object SourceTagParser {
     fun getTags(url: String, client: CloseableHttpClient): List<String> {
         if (!canGetTagsFrom(url)) return emptyList()
 
+        val doc = try {
+            get(url, client)
+        } catch (e: HttpResponseException) {
+            if (e.statusCode == 451) return emptyList()
+            throw e
+        }
+
         return if (gelRegex.matches(url)) {
-            parseGelTags(get(url, client))
+            parseGelTags(doc)
         } else if (danRegex.matches(url)) {
-            parseDanTags(get(url, client))
+            parseDanTags(doc)
         } else if (yanRegex.matches(url)) {
-            parseYanTags(get(url, client))
+            parseYanTags(doc)
         } else if (sanRegex.matches(url)) {
-            parseSanTags(get(url, client))
+            parseSanTags(doc)
         } else if (e62Regex.matches(url)) {
-            parseE62Tags(get(url, client))
+            parseE62Tags(doc)
         } else {
             emptyList()
         }
