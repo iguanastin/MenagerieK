@@ -382,11 +382,11 @@ class MyApp : App(MainView::class, Styles::class) {
 
                 if (name.startsWith('-')) {
                     if (name.length == 1) continue // Ignore a '-' by itself
-                    val tag: Tag = context.menagerie.getTag(context.prefs.tags.tagAliases.apply(name.substring(1)))
+                    val tag: Tag = context.menagerie.getTag(name.substring(1))
                         ?: continue // Ignore tags that don't exist
                     tagsToRemove.add(tag)
                 } else {
-                    tagsToAdd.add(context.menagerie.getOrMakeTag(context.prefs.tags.tagAliases.apply(name)))
+                    tagsToAdd.add(context.menagerie.getOrMakeTag(name))
                 }
             }
 
