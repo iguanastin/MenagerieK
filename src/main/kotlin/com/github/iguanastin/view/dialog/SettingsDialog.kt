@@ -1,6 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.settings.*
+import com.github.iguanastin.view.factories.StringPairCellFactory
 import javafx.event.EventHandler
 import javafx.event.EventTarget
 import javafx.geometry.Pos
@@ -113,21 +114,23 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
 
     private fun Pane.createFieldForSetting(setting: Setting<out Any>) =
         when (setting) {
-            is TagColorizerSetting -> {
-                val field = listview<TagColorRule> {
-                    cellFactory = TagColorRuleCellFactory()
+            is StringPairListSetting -> {
+                val field = listview<Pair<String, String>> {
+                    cellFactory = StringPairCellFactory(setting.firstPrompt, setting.secondPrompt)
                     items = observableListOf(setting.value)
                     isEditable = true
-                    prefHeight = 100.0
-                    placeholder = Label("No tag color rules defined")
+                    prefHeight = 150.0
+                    placeholder = Label("None")
                 }
 
                 button("+") {
                     onAction = EventHandler { event ->
                         event.consume()
-                        val rule = TagColorRule(Regex(""), "")
+                        val rule = Pair("", "")
                         field.items.add(rule)
-                        field.edit(field.items.indexOf(rule))
+                        val i = field.items.indexOf(rule)
+                        field.edit(i)
+                        field.scrollTo(i)
                     }
                 }
 
@@ -195,7 +198,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
                 is IntSetting -> setting.value = (settingNodeMap[setting] as Spinner<Int>).value
                 is DoubleSetting -> setting.value = (settingNodeMap[setting] as Spinner<Double>).value
                 is BoolSetting -> setting.value = (settingNodeMap[setting] as CheckBox).isSelected
-                is TagColorizerSetting -> setting.value = (settingNodeMap[setting] as ListView<TagColorRule>).items
+                is StringPairListSetting -> setting.value = (settingNodeMap[setting] as ListView<Pair<String, String>>).items
             }
         }
     }

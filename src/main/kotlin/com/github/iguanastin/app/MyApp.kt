@@ -207,7 +207,12 @@ class MyApp : App(MainView::class, Styles::class) {
 
                 val tags: List<Tag> =
                     splitString.subList(1, splitString.size)
-                        .map { context!!.menagerie.getOrMakeTag(it, temporaryIfNew = true) }
+                        .map {
+                            context!!.menagerie.getOrMakeTag(
+                                contextPrefs.tags.tagAliases.apply(it),
+                                temporaryIfNew = true
+                            )
+                        }
 
                 runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
             } else {
@@ -370,24 +375,25 @@ class MyApp : App(MainView::class, Styles::class) {
             val tagsToAdd = mutableListOf<Tag>()
             val tagsToRemove = mutableListOf<Tag>()
 
-            val menagerie = context?.menagerie ?: return@EventHandler // Do nothing if there is no menagerie context
+            val context = context ?: return@EventHandler // Do nothing if there is no context
 
             for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
                 if (name.isBlank()) continue // Ignore empty and blank additions
 
                 if (name.startsWith('-')) {
                     if (name.length == 1) continue // Ignore a '-' by itself
-                    val tag: Tag = menagerie.getTag(name.substring(1)) ?: continue // Ignore tags that don't exist
+                    val tag: Tag = context.menagerie.getTag(context.prefs.tags.tagAliases.apply(name.substring(1)))
+                        ?: continue // Ignore tags that don't exist
                     tagsToRemove.add(tag)
                 } else {
-                    tagsToAdd.add(menagerie.getOrMakeTag(name)) // TODO: check newly created tag against TagColorRule settings. Needs to happen elsewhere, I think.
+                    tagsToAdd.add(context.menagerie.getOrMakeTag(context.prefs.tags.tagAliases.apply(name)))
                 }
             }
 
             if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@EventHandler // Do nothing if there are no viable tag edits
 
             // Apply tag edits
-            context?.tagEdit(items, tagsToAdd, tagsToRemove)
+            this.context?.tagEdit(items, tagsToAdd, tagsToRemove)
 
             root.editTagsPane.hide()
             event.consume()
@@ -489,7 +495,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     fun findOnlineShortcut() {
-        root.root.add(FindOnlineChooseMatcherDialog(expandGroups(root.itemGrid.selected)))
+        root.root.add(FindOnlineChooseMatcherDialog(context ?: return, expandGroups(root.itemGrid.selected)))
     }
 
     private fun undoLastEdit() {

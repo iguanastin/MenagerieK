@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.duplicates.remote
 
+import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.runOnUIThread
 import mu.KotlinLogging
@@ -8,6 +9,7 @@ import org.apache.http.client.HttpResponseException
 private val log = KotlinLogging.logger {}
 
 class AutoTagger(
+    private val context: MenagerieContext,
     private val items: List<Item>,
     private val source: OnlineMatchFinder,
     private val onFoundTagsForItem: (Item) -> Unit = {},
@@ -54,7 +56,7 @@ class AutoTagger(
 
                     runOnUIThread {
                         tags.forEach { tag ->
-                            item.addTag(item.menagerie.getOrMakeTag(tag, true))
+                            item.addTag(item.menagerie.getOrMakeTag(context.prefs.tags.tagAliases.apply(tag), true))
                         }
                     }
                 } catch (e: HttpResponseException) {

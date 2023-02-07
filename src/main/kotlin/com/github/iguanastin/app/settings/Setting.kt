@@ -38,29 +38,62 @@ abstract class Setting<T>(val key: String, val label: String?, val default: T, p
 
 }
 
+open class StringPairListSetting(
+    key: String,
+    label: String? = null,
+    val firstPrompt: String? = null,
+    val secondPrompt: String? = null,
+    default: List<Pair<String, String>> = listOf(),
+    prefs: Preferences
+) : Setting<List<Pair<String, String>>>(key, label, default, prefs) {
+
+    override fun stringToObject(string: String): List<Pair<String, String>> {
+        val split = string.split(" ")
+        val list = mutableListOf<Pair<String, String>>()
+
+        split.forEachIndexed { i, s ->
+            if (i % 2 == 1) list.add(Pair(split[i - 1], s))
+        }
+
+        return list
+    }
+
+    override fun objectToString(obj: List<Pair<String, String>>): String {
+        return obj.joinToString(" ") { "${it.first} ${it.second}" }
+    }
+
+}
+
+class TagAliasSetting(
+    key: String,
+    label: String? = null,
+    default: List<Pair<String, String>> = listOf(),
+    prefs: Preferences
+) :
+    StringPairListSetting(key, label, firstPrompt = "Alias", secondPrompt = "Target tag", default = default, prefs = prefs) {
+
+    fun apply(tag: String): String {
+        value.forEach {
+            if (it.first.lowercase() == tag) return it.second.lowercase()
+        }
+
+        return tag
+    }
+
+}
+
 class TagColorizerSetting(
     key: String,
     label: String? = null,
-    default: List<TagColorRule> = listOf(),
+    default: List<Pair<String, String>> = listOf(),
     prefs: Preferences
 ) :
-    Setting<List<TagColorRule>>(key, label, default, prefs) {
-
-    override fun stringToObject(string: String): List<TagColorRule> {
-        return mutableListOf<TagColorRule>().apply {
-            if (string.isBlank()) return@apply
-            string.split(";").forEach { add(TagColorRule.fromString(it)) }
-        }
-    }
-
-    override fun objectToString(obj: List<TagColorRule>): String {
-        return obj.joinToString(";")
-    }
+    StringPairListSetting(key, label, "Tag regex", "Color", default, prefs) {
 
     fun applyRulesTo(tag: Tag): Boolean {
         for (rule in value) {
-            if (rule.regex.containsMatchIn(tag.name)) {
-                tag.color = rule.color
+            if (Regex(rule.first).containsMatchIn(tag.name)) {
+                tag.color = rule.second
                 return true
             }
         }

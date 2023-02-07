@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.dialog
 
+import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.duplicates.remote.*
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.bindShortcut
@@ -17,7 +18,7 @@ import tornadofx.*
 
 private val log = KotlinLogging.logger {}
 
-class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel: () -> Unit = {}): StackDialog() {
+class FindOnlineChooseMatcherDialog(private val context: MenagerieContext, private val items: List<Item>, var onCancel: () -> Unit = {}): StackDialog() {
 
     private lateinit var sauceNAOButton: Button
     private lateinit var sauceNAOAutoTagButton: Button
@@ -127,7 +128,7 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         val progress = ProgressDialog(header = "Fetching tags", "0/${items.size}").also { parent.add(it) }
 
         var i = 0
-        val tagger = AutoTagger(items, source, onFoundTagsForItem = {
+        val tagger = AutoTagger(context, items, source, onFoundTagsForItem = {
             i++
             runOnUIThread {
                 progress.progress = i.toDouble() / items.size

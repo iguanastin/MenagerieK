@@ -101,11 +101,13 @@ class TagSettingGroup(prefs: Preferences) : SettingGroup("Tags") {
     override val settings: List<Setting<out Any>>
 
     val autoColorTags: TagColorizerSetting
+    val tagAliases: TagAliasSetting
 
     init {
         settings = mutableListOf()
 
-        autoColorTags = TagColorizerSetting("tag-colorize", "Colorize tags", prefs = prefs).also { settings.add(it) }
+        autoColorTags = TagColorizerSetting("tag-colorizes", "Colorize tags", prefs = prefs).also { settings.add(it) }
+        tagAliases = TagAliasSetting("tag-aliases", "Tag aliases", prefs = prefs).also { settings.add(it) }
     }
 
 }

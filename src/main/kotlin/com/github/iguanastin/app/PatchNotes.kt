@@ -6,7 +6,8 @@ object PatchNotes {
 
     init {
         notes["1.1.0"] = "Features:\n" +
-                "- Auto tagger implemented for gelbooru, danbooru, and yande.re, sankakucomplex\n" +
+                "- Auto tagger implemented for some online sources\n" +
+                "- Tag aliasing for new tags\n" +
                 "- Purge temporary and unused tags from tag dialog\n" +
                 "- Notify user of new version available on startup\n" +
                 "- This patch notes dialog!\n" +
