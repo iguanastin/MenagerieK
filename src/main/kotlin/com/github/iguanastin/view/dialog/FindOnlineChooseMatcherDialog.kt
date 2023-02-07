@@ -12,7 +12,10 @@ import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
+import mu.KotlinLogging
 import tornadofx.*
+
+private val log = KotlinLogging.logger {}
 
 class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel: () -> Unit = {}): StackDialog() {
 
@@ -133,6 +136,9 @@ class FindOnlineChooseMatcherDialog(private val items: List<Item>, var onCancel:
         }, onFinished = {
             source.close()
             runOnUIThread { progress.close() }
+        }, onError = { error ->
+            log.error("Auto tagger error", error)
+            runOnUIThread { parent.add(InfoStackDialog(header = "Auto tagger error", message = error.message ?: "Unknown error")) }
         }).apply { start() }
 
         progress.onClose = {

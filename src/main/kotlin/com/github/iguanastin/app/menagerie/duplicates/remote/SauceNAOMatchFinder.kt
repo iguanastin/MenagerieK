@@ -30,11 +30,18 @@ class SauceNAOMatchFinder : OnlineMatchFinder() {
 
     private val url = "https://saucenao.com"
 
+    private var lastSearch: Long = 0
+    private val cooldown: Long = 30000
+    private val perCooldown = 3
+    private var searchesSinceLastCooldown = 0
+
 
     override fun findMatches(set: OnlineMatchSet) {
         try {
             set.reset()
             set.state = OnlineMatchSet.State.LOADING
+
+            checkCooldown()
 
             val doc = post(set.item as FileItem)
             if (doc == null) {
@@ -50,6 +57,16 @@ class SauceNAOMatchFinder : OnlineMatchFinder() {
             set.error = t
             set.state = OnlineMatchSet.State.FAILED
         }
+    }
+
+    private fun checkCooldown() {
+        // Sleep if it there are no searches available
+        if (searchesSinceLastCooldown >= perCooldown) {
+            Thread.sleep((cooldown - (System.currentTimeMillis() - lastSearch)).coerceAtLeast(0))
+            searchesSinceLastCooldown = 0
+        }
+        searchesSinceLastCooldown++
+        lastSearch = System.currentTimeMillis()
     }
 
     private fun findMatchesInDocument(doc: Document): List<OnlineMatch> {

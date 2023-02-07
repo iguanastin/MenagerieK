@@ -15,6 +15,7 @@ object SourceTagParser {
     private val danRegex = Regex("^https://danbooru\\.donmai\\.us/posts?/.+")
     private val yanRegex = Regex("^https://yande\\.re/post/.+")
     private val sanRegex = Regex("^https://chan\\.sankakucomplex\\.com/post/.+")
+    private val e62Regex = Regex("^https://e621\\.net/post/.+")
 
     private const val artistPrefix = "a:"
     private const val characterPrefix = "c:"
@@ -22,7 +23,7 @@ object SourceTagParser {
 
 
     fun canGetTagsFrom(url: String): Boolean {
-        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url) || sanRegex.matches(url)
+        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url) || sanRegex.matches(url) || e62Regex.matches(url)
     }
 
     fun getTags(url: String, client: CloseableHttpClient): List<String> {
@@ -36,6 +37,8 @@ object SourceTagParser {
             parseYanTags(get(url, client))
         } else if (sanRegex.matches(url)) {
             parseSanTags(get(url, client))
+        } else if (e62Regex.matches(url)) {
+            parseE62Tags(get(url, client))
         } else {
             emptyList()
         }
@@ -92,6 +95,36 @@ object SourceTagParser {
                 tags.add(it.ownText().replace(" ", "_"))
             }
             select(".tag-type-general > a:nth-child(2)").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+        }
+        return tags
+    }
+
+    private fun parseE62Tags(doc: Document): List<String> {
+        if (doc.selectFirst("#image") == null) return emptyList()
+
+        val tags = mutableListOf<String>()
+        doc.apply {
+            select(".artist-tag-list .search-tag").forEach {
+                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".character-tag-list .search-tag").forEach {
+                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".copyright-tag-list .search-tag").forEach {
+                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".species-tag-list .search-tag").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".general-tag-list .search-tag").forEach {
+                tags.add(it.ownText().replace(" ", "_"))
+            }
+            select(".meta-tag-list .search-tag").forEach {
                 tags.add(it.ownText().replace(" ", "_"))
             }
         }

@@ -11,7 +11,8 @@ class AutoTagger(
     private val items: List<Item>,
     private val source: OnlineMatchFinder,
     private val onFoundTagsForItem: (Item) -> Unit = {},
-    private val onFinished: () -> Unit = {}
+    private val onFinished: () -> Unit = {},
+    private val onError: (Throwable) -> Unit = { log.error("Auto tagger error", it) }
 ) :
     Thread("Auto tagger") {
 
@@ -28,6 +29,10 @@ class AutoTagger(
 
             val set = OnlineMatchSet(item)
             source.findMatches(set)
+            set.error?.also {
+                onError(it)
+                return@forEach
+            }
 
             val sourcesUsed = mutableSetOf<String>()
 
@@ -37,7 +42,8 @@ class AutoTagger(
                 if (!SourceTagParser.canGetTagsFrom(match.sourceUrl)) return@forEach
 
                 // Only get tags from source if it hasn't been searched for this item yet
-                val sourceName = match.sourceUrl.substring(0, match.sourceUrl.indexOf("/", match.sourceUrl.indexOf("//") + 2))
+                val sourceName =
+                    match.sourceUrl.substring(0, match.sourceUrl.indexOf("/", match.sourceUrl.indexOf("//") + 2))
                 @Suppress("LABEL_NAME_CLASH")
                 if (sourcesUsed.contains(sourceName)) return@forEach
                 sourcesUsed.add(sourceName)
@@ -52,7 +58,7 @@ class AutoTagger(
                         }
                     }
                 } catch (e: HttpResponseException) {
-                    log.error("Bad response from source", e)
+                    onError(e)
                 }
             }
 
