@@ -18,5 +18,5 @@ cp ..\histdupe.ptx .\input\
 cp ..\src\main\resources\log4j.properties .\input\
 cp .\setup-schema.bat .\input\
 
-& $jpackage --module-path "$modulePath" --add-modules $modules --input "$input" --dest "$output" -n "$name" --app-version "$version" --description "$description" --icon "$icon" --about-url "$url" --java-options "$jvmoptions" --main-jar "$jar" --verbose --win-menu --win-shortcut-prompt --win-dir-chooser --add-launcher menageriek-console=consolelauncher.properties
+& $jpackage --module-path "$modulePath" --add-modules $modules --input "$input" --dest "$output" -n "$name" --app-version "$version" --description "$description" --icon "$icon" --about-url "$url" --java-options "$jvmoptions" --main-jar "$jar" --verbose --win-menu --win-shortcut-prompt --win-dir-chooser --win-menu-group "$name" --add-launcher menageriek-console=consolelauncher.properties
 # & $jpackage --type app-image --module-path "$modulePath" --add-modules $modules --input "$input" --dest "$output" -n "$name" --app-version "$version" --description "$description" --icon "$icon" --java-options "$jvmoptions" --main-jar "$jar" --verbose --add-launcher menageriek-console=consolelauncher.properties

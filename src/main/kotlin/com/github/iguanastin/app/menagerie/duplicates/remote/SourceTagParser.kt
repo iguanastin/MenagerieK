@@ -51,34 +51,47 @@ object SourceTagParser {
         }
     }
 
+    private fun processTag(tag: String, list: MutableList<String>, optionalPrefix: String? = null, splitParentheses: Boolean = false) {
+        val name = tag.trim().replace(" ", "_")
+        list.add(name)
+
+        if (optionalPrefix != null) list.add(optionalPrefix + name)
+        if (splitParentheses && name.contains("_(")) {
+            val one = name.substring(0, name.indexOf("_("))
+            list.add(one)
+            if (optionalPrefix != null) list.add(optionalPrefix + one)
+
+            val two = name.substring(name.indexOf("_(") + 2, name.length - 1)
+            list.add(two)
+            if (optionalPrefix != null) list.add(optionalPrefix + two)
+        }
+    }
+
     private fun parseSanTags(doc: Document): List<String> {
         if (doc.selectFirst("#post-view") == null) return emptyList()
 
         val tags = mutableListOf<String>()
         doc.apply {
             select(".tag-type-artist > a").forEach {
-                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, artistPrefix, true)
             }
             select(".tag-type-character > a").forEach {
-                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, characterPrefix)
             }
             select(".tag-type-copyright > a").forEach {
-                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, copyrightPrefix)
             }
             select(".tag-type-general > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".tag-type-medium > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".tag-type-meta > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".tag-type-genre > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
         }
         return tags
@@ -90,19 +103,16 @@ object SourceTagParser {
         val tags = mutableListOf<String>()
         doc.apply {
             select(".tag-type-artist > a:nth-child(2)").forEach {
-                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, artistPrefix, true)
             }
             select(".tag-type-character > a:nth-child(2)").forEach {
-                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, characterPrefix)
             }
             select(".tag-type-copyright > a:nth-child(2)").forEach {
-                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, copyrightPrefix)
             }
             select(".tag-type-general > a:nth-child(2)").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
         }
         return tags
@@ -114,25 +124,22 @@ object SourceTagParser {
         val tags = mutableListOf<String>()
         doc.apply {
             select(".artist-tag-list .search-tag").forEach {
-                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, artistPrefix, true)
             }
             select(".character-tag-list .search-tag").forEach {
-                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, characterPrefix)
             }
             select(".copyright-tag-list .search-tag").forEach {
-                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, copyrightPrefix)
             }
             select(".species-tag-list .search-tag").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".general-tag-list .search-tag").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".meta-tag-list .search-tag").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
         }
         return tags
@@ -144,22 +151,19 @@ object SourceTagParser {
         val tags = mutableListOf<String>()
         doc.apply {
             select(".tag-type-artist > a").forEach {
-                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, artistPrefix, true)
             }
             select(".tag-type-character > a").forEach {
-                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, characterPrefix)
             }
             select(".tag-type-copyright > a").forEach {
-                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, copyrightPrefix)
             }
             select(".tag-type-general > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".tag-type-metadata > a").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
         }
         return tags
@@ -171,22 +175,19 @@ object SourceTagParser {
         val tags = mutableListOf<String>()
         doc.apply {
             select(".artist-tag-list .search-tag").forEach {
-                tags.add("$artistPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, artistPrefix, true)
             }
             select(".character-tag-list .search-tag").forEach {
-                tags.add("$characterPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, characterPrefix)
             }
             select(".copyright-tag-list .seach-tag").forEach {
-                tags.add("$copyrightPrefix${it.ownText().replace(" ", "_")}")
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags, copyrightPrefix)
             }
             select(".general-tag-list .search-tag").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
             select(".meta-tag-list .search-tag").forEach {
-                tags.add(it.ownText().replace(" ", "_"))
+                processTag(it.ownText(), tags)
             }
         }
         return tags
