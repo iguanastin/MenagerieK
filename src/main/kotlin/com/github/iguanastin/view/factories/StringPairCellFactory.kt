@@ -1,8 +1,8 @@
 package com.github.iguanastin.view.factories
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.view.onActionConsuming
 import javafx.application.Platform
-import javafx.event.EventHandler
 import javafx.scene.control.*
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
@@ -27,10 +27,7 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                             if (change.text == " ") change.text = ""
                             return@TextFormatter change
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            secondField.requestFocus()
-                        }
+                        onActionConsuming { secondField.requestFocus() }
                         promptText = firstPrompt
                         editableWhen(editingProperty())
                         visibleWhen(itemProperty().isNotNull)
@@ -41,10 +38,7 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                             if (change.text == " ") change.text = ""
                             return@TextFormatter change
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            editApplyButton.fire()
-                        }
+                        onActionConsuming { editApplyButton.fire() }
                         promptText = secondPrompt
                         editableWhen(editingProperty())
                         visibleWhen(itemProperty().isNotNull)
@@ -59,8 +53,7 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                                 removeClass(Styles.blueBase)
                             }
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
+                        onActionConsuming {
                             if (isEditing) {
                                 commitEdit(Pair(firstField.text, secondField.text))
                             } else {
@@ -70,8 +63,7 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                     }
                     button("x") {
                         visibleWhen(itemProperty().isNotNull)
-                        onAction = EventHandler { event ->
-                            event.consume()
+                        onActionConsuming {
                             cancelEdit()
                             listView?.items?.remove(item)
                         }

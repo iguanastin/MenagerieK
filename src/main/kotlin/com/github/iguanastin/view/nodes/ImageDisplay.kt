@@ -5,7 +5,6 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.image
 import com.github.iguanastin.view.nodes.image.PanZoomImageView
 import com.github.iguanastin.view.nodes.image.panzoomimageview
-import com.github.iguanastin.view.runOnUIThread
 import javafx.event.EventTarget
 import javafx.scene.image.Image
 import tornadofx.*
@@ -25,11 +24,7 @@ class ImageDisplay : ItemDisplay() {
             }
         }
 
-        itemProperty.addListener { _, _, new ->
-            runOnUIThread {
-                imageView.trueImage = if (new is ImageItem) image(new.file, true) else null
-            }
-        }
+        imageView.trueImageProperty.bind(itemProperty.map { if (it is ImageItem) image(it.file, true) else null })
     }
 
     override fun canDisplay(item: Item?): Boolean {

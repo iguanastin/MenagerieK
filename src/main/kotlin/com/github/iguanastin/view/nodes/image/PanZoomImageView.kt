@@ -12,7 +12,6 @@ import javafx.scene.input.MouseButton
 import javafx.scene.input.MouseEvent
 import javafx.scene.input.ScrollEvent
 import tornadofx.*
-import java.util.*
 import kotlin.math.abs
 
 
@@ -20,7 +19,7 @@ class PanZoomImageView : DynamicImageView() {
 
     companion object {
         private val SCALES = doubleArrayOf(0.1, 0.13, 0.18, 0.24, 0.32, 0.42, 0.56, 0.75, 1.0, 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3)
-        private const val scaleAsyncGreaterThan = 3.0
+        private const val scaleAsyncGreaterThan = 1.0
     }
 
     val trueImageProperty: ObjectProperty<Image?> = SimpleObjectProperty()

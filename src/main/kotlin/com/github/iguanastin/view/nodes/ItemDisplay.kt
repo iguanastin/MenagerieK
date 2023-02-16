@@ -9,12 +9,8 @@ abstract class ItemDisplay: BorderPane() {
 
     val itemProperty: ObjectProperty<Item?> = SimpleObjectProperty(null)
     var item: Item?
-        get() {
-            return itemProperty.get()
-        }
-        set(value) {
-            itemProperty.set(value)
-        }
+        get() = itemProperty.value
+        set(value) = itemProperty.set(value)
 
     abstract fun canDisplay(item: Item?): Boolean
 

@@ -1,5 +1,6 @@
 package com.github.iguanastin.app
 
+import com.github.iguanastin.view.factories.ItemCellFactory
 import javafx.scene.Cursor
 import javafx.scene.effect.DropShadow
 import javafx.scene.layout.BorderStrokeStyle
@@ -13,7 +14,7 @@ class Styles : Stylesheet() {
         val heading by cssclass()
         val fourChoice by cssclass()
         val dialogPane by cssclass()
-        val itemGridView by cssclass()
+        val mainItemGridView by cssclass()
         val itemGridCell by cssclass()
         val transparentOverlay by cssclass()
         val dragDropDialog by cssclass()
@@ -27,6 +28,10 @@ class Styles : Stylesheet() {
         val focusableTagList by cssclass()
         val tempTag by cssclass()
         val videoControls by cssclass()
+        val duplicatesTagList by cssclass()
+        val itemGrid by cssclass()
+        val importCellSource by cssclass()
+        val importCellStatus by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -89,7 +94,7 @@ class Styles : Stylesheet() {
             cursor = Cursor.HAND
         }
 
-        itemGridView {
+        mainItemGridView {
             minWidth = 525.px
         }
 
@@ -188,6 +193,27 @@ class Styles : Stylesheet() {
             button {
                 baseColor = c(0.25, 0.25, 0.25, 0.25)
             }
+        }
+
+        duplicatesTagList {
+            maxWidth = 200.px
+            minWidth = 200.px
+            focusTraversable = false
+            opacity = 0.75
+        }
+
+        itemGrid {
+            cellWidth = ItemCellFactory.SIZE.px
+            cellHeight = ItemCellFactory.SIZE.px
+            horizontalCellSpacing = 4.px
+            verticalCellSpacing = 4.px
+        }
+
+        importCellSource {
+            textFill = c("grey")
+        }
+        importCellStatus {
+            textFill = c("white")
         }
     }
 }

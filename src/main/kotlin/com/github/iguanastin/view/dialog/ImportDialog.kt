@@ -1,7 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.view.nodes.TopEnabledStackPane
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.geometry.Pos
 import javafx.scene.layout.VBox
 import tornadofx.*
@@ -28,8 +28,7 @@ class ImportDialog(files: List<File>, var individually: () -> Unit = {}, var asG
                 button("Individually") {
                     maxWidth = Double.MAX_VALUE
                     style { padding = box(10.px) }
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         close()
                         individually()
                     }
@@ -37,8 +36,7 @@ class ImportDialog(files: List<File>, var individually: () -> Unit = {}, var asG
                 button("As group") {
                     maxWidth = Double.MAX_VALUE
                     style { padding = box(10.px) }
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         close()
                         asGroup()
                     }
@@ -49,8 +47,7 @@ class ImportDialog(files: List<File>, var individually: () -> Unit = {}, var asG
                             button("Folders as groups") {
                                 maxWidth = Double.MAX_VALUE
                                 style { padding = box(10.px) }
-                                onAction = EventHandler { event ->
-                                    event.consume()
+                                onActionConsuming {
                                     close()
                                     dirsAsGroups()
                                 }
@@ -64,8 +61,7 @@ class ImportDialog(files: List<File>, var individually: () -> Unit = {}, var asG
             hbox {
                 alignment = Pos.CENTER_RIGHT
                 button("Cancel") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         close()
                         onCancel()
                     }

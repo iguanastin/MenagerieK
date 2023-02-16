@@ -5,10 +5,10 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.VideoItem
 import com.github.iguanastin.app.utils.toggle
 import com.github.iguanastin.view.nodes.image.dynamicImageView
+import com.github.iguanastin.view.onActionConsuming
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleLongProperty
-import javafx.event.EventHandler
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.image.Image
@@ -106,10 +106,7 @@ class VideoDisplay : ItemDisplay() {
                         graphic = imageview {
                             imageProperty().bind(pausedProperty.map { if (it) playImage else pauseImage })
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            pausedProperty.toggle()
-                        }
+                        onActionConsuming { pausedProperty.toggle() }
                     }
                     slider(0.0, 1.0) {
                         isFocusTraversable = false
@@ -118,12 +115,15 @@ class VideoDisplay : ItemDisplay() {
                             override fun positionChanged(mediaPlayer: MediaPlayer?, newPosition: Float) {
                                 runOnUIThread {
                                     if (!isValueChanging) {
-                                        value = newPosition.toDouble()
+                                        value =
+                                            newPosition.toDouble() // TODO this is only updated once every 150-300ms at basically random; make it smoother
                                     }
                                 }
                             }
                         })
-                        valueProperty().addListener { _, _, new -> if (isValueChanging) mediaPlayer.controls().setPosition(new.toFloat()) }
+                        valueProperty().addListener { _, _, new ->
+                            if (isValueChanging) mediaPlayer.controls().setPosition(new.toFloat())
+                        }
                         addEventFilter(MouseEvent.MOUSE_PRESSED) { isValueChanging = true }
                         addEventFilter(MouseEvent.MOUSE_RELEASED) { isValueChanging = false }
                         valueChangingProperty().addListener { _, _, new -> isPaused = new }
@@ -143,10 +143,7 @@ class VideoDisplay : ItemDisplay() {
                         graphic = imageview {
                             imageProperty().bind(muteProperty.map { if (it) volumeOffImage else volumeUpImage })
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            muteProperty.toggle()
-                        }
+                        onActionConsuming { muteProperty.toggle() }
                     }
                     button {
                         isFocusTraversable = false
@@ -154,19 +151,15 @@ class VideoDisplay : ItemDisplay() {
                         graphic = imageview {
                             imageProperty().bind(repeatProperty.map { if (it) repeatOnImage else repeatOffImage })
                         }
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            repeatProperty.toggle()
-                        }
+                        onActionConsuming { repeatProperty.toggle() }
                     }
 
                     // TODO fullscreen behavior?
 //                    button {
 //                        tooltip("Fullscreen")
 //                        graphic = imageview(fullscreenImage)
-//                        onAction = EventHandler { event ->
-//                            event.consume()
-//                            // TODO?
+//                        onActionConsuming {
+//                            // fullscreen it here
 //                        }
 //                    }
                 }

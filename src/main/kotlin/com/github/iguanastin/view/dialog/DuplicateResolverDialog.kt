@@ -10,18 +10,16 @@ import com.github.iguanastin.app.menagerie.model.Tag
 import com.github.iguanastin.app.utils.copyTagsToClipboard
 import com.github.iguanastin.app.utils.pasteTagsFromClipboard
 import com.github.iguanastin.view.factories.TagCellFactory
-import com.github.iguanastin.view.nodes.MultiTypeItemDisplay
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
+import com.github.iguanastin.view.onActionConsuming
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
-import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
-import javafx.scene.input.MouseEvent
 import tornadofx.*
 
 class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val context: MenagerieContext?) :
@@ -32,36 +30,19 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         get() = displayingProperty.get()
         set(value) = displayingProperty.set(value)
 
-    private lateinit var deleteLeftButton: Button
-    private lateinit var deleteRightButton: Button
-    private lateinit var replaceLeftButton: Button
-    private lateinit var replaceRightButton: Button
-    private lateinit var prevButton: Button
     private lateinit var notDuplicateButton: ToggleButton
-    private lateinit var nextButton: Button
-    private lateinit var countSimilarityLabel: Label
-    private lateinit var leftDisplay: MultiTypeItemDisplay
-    private lateinit var rightDisplay: MultiTypeItemDisplay
     private lateinit var leftTags: ListView<Tag>
     private lateinit var rightTags: ListView<Tag>
+    private lateinit var prevButton: Button
+    private lateinit var nextButton: Button
     private lateinit var topPane: SplitPane
 
     private val leftTagCellFactory = object : TagCellFactory() {
         override fun call(listView: ListView<Tag>?): ListCell<Tag> {
             return super.call(listView).apply {
                 contextmenu {
-                    item("Clone to Other") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            displaying?.obj2?.addTag(item)
-                        }
-                    }
-                    item("Remove") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            displaying?.obj1?.removeTag(item)
-                        }
-                    }
+                    item("Clone to Other") { onActionConsuming { displaying?.obj2?.addTag(item) } }
+                    item("Remove") { onActionConsuming { displaying?.obj1?.removeTag(item) } }
                 }
             }
         }
@@ -70,18 +51,8 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         override fun call(listView: ListView<Tag>?): ListCell<Tag> {
             return super.call(listView).apply {
                 contextmenu {
-                    item("Clone to Other") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            displaying?.obj1?.addTag(item)
-                        }
-                    }
-                    item("Remove") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            displaying?.obj2?.removeTag(item)
-                        }
-                    }
+                    item("Clone to Other") { onActionConsuming { displaying?.obj1?.addTag(item) } }
+                    item("Remove") { onActionConsuming { displaying?.obj2?.removeTag(item) } }
                 }
             }
         }
@@ -91,33 +62,65 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         addClass(Styles.dialogPane)
 
         center {
-            topPane = splitpane {
+            topPane = splitpane()
+            // Create then apply so it's topPane is usable for initialization of children
+            topPane.apply {
                 stackpane {
-                    leftDisplay = multitypeitemdisplay()
+                    multitypeitemdisplay {
+                        itemProperty.bind(displayingProperty.map { it?.obj1 })
+                        contextmenu {
+                            item("Clone Tags from Other") {
+                                onActionConsuming { displaying?.obj2?.tags?.forEach { displaying?.obj1?.addTag(it) } }
+                            }
+                            item("Copy Tags") {
+                                onActionConsuming { displaying?.obj1?.copyTagsToClipboard() }
+                            }
+                            item("Paste Tags") {
+                                onActionConsuming { displaying?.obj1?.pasteTagsFromClipboard(context) }
+                            }
+                            separator()
+                            item("No Duplicates") {
+                                onActionConsuming { markNoDuplicates(displaying!!, displaying!!.obj1) }
+                            }
+                        }
+                    }
                     borderpane {
                         isPickOnBounds = false
                         right {
                             leftTags = listview {
-                                opacity = 0.75
-                                isFocusTraversable = false
+                                addClass(Styles.duplicatesTagList)
                                 cellFactory = leftTagCellFactory
-                                maxWidth = 200.0
-                                minWidth = 200.0
+                                visibleWhen(topPane.hoverProperty())
                             }
                         }
                     }
                 }
                 stackpane {
-                    rightDisplay = multitypeitemdisplay()
+                    multitypeitemdisplay {
+                        itemProperty.bind(displayingProperty.map { it?.obj2 })
+                        contextmenu {
+                            item("Clone Tags from Other") {
+                                onActionConsuming { displaying?.obj1?.tags?.forEach { displaying?.obj2?.addTag(it) } }
+                            }
+                            item("Copy Tags") {
+                                onActionConsuming { displaying?.obj2?.copyTagsToClipboard() }
+                            }
+                            item("Paste Tags") {
+                                onActionConsuming { displaying?.obj2?.pasteTagsFromClipboard(context) }
+                            }
+                            separator()
+                            item("No Duplicates") {
+                                onActionConsuming { markNoDuplicates(displaying!!, displaying!!.obj2) }
+                            }
+                        }
+                    }
                     borderpane {
                         isPickOnBounds = false
                         left {
                             rightTags = listview {
-                                opacity = 0.75
-                                isFocusTraversable = false
+                                addClass(Styles.duplicatesTagList)
                                 cellFactory = rightTagCellFactory
-                                maxWidth = 200.0
-                                minWidth = 200.0
+                                visibleWhen(topPane.hoverProperty())
                             }
                         }
                     }
@@ -129,18 +132,12 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 padding = insets(10.0)
                 left {
                     hbox(5) {
-                        deleteLeftButton = button("Delete") {
-                            onAction = EventHandler { event ->
-                                val pair = displaying ?: return@EventHandler
-                                event.consume()
-                                delete(pair, true)
-                            }
+                        button("Delete") {
+                            onActionConsuming { delete(displaying ?: return@onActionConsuming, true) }
                         }
-                        replaceLeftButton = button("Replace") {
-                            onAction = EventHandler { event ->
-                                val pair = displaying ?: return@EventHandler
-                                event.consume()
-                                pair.obj1.replace(pair.obj2, false)
+                        button("Replace") {
+                            onActionConsuming {
+                                replace(displaying ?: return@onActionConsuming, true)
                             }
                         }
                     }
@@ -148,19 +145,25 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 center {
                     vbox(5.0) {
                         alignment = Pos.CENTER
-                        countSimilarityLabel = label("N/A")
+                        label {
+                            textProperty().bind(displayingProperty.stringBinding(pairs) {
+                                if (it == null) "N/A" else "${
+                                    pairs.indexOf(it) + 1
+                                }/${pairs.size}: %.2f%%".format(it.similarity * 100)
+                            })
+                        }
                         hbox(5.0) {
                             alignment = Pos.CENTER
                             prevButton = button("◄") {
-                                onAction = EventHandler { event ->
-                                    event.consume()
-                                    previous()
-                                }
+                                disableWhen(displayingProperty.booleanBinding(pairs) {
+                                    pairs.indexOf(it) <= 0
+                                })
+                                onActionConsuming { previous() }
                             }
                             notDuplicateButton = togglebutton("Not a duplicate", selectFirst = false) {
-                                onAction = EventHandler { event ->
-                                    val pair = displaying ?: return@EventHandler
-                                    event.consume()
+                                displayingProperty.addListener { _, _, new -> isSelected = new?.obj1?.menagerie?.hasNonDupe(new) == true }
+                                onActionConsuming {
+                                    val pair = displaying ?: return@onActionConsuming
                                     if (pair.obj1.menagerie.hasNonDupe(pair)) {
                                         pair.obj1.menagerie.removeNonDupe(pair)
                                         isSelected = false
@@ -171,29 +174,23 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                                 }
                             }
                             nextButton = button("►") {
-                                onAction = EventHandler { event ->
-                                    event.consume()
-                                    next()
-                                }
+                                disableWhen(displayingProperty.booleanBinding(pairs) {
+                                    pairs.indexOf(it) >= pairs.size - 1
+                                })
+                                onActionConsuming { next() }
                             }
                         }
                     }
                 }
                 right {
                     hbox(5) {
-                        replaceRightButton = button("Replace") {
-                            onAction = EventHandler { event ->
-                                val pair = displaying ?: return@EventHandler
-                                event.consume()
-                                pair.obj2.replace(pair.obj1, false)
+                        button("Replace") {
+                            onActionConsuming {
+                                replace(displaying ?: return@onActionConsuming, false)
                             }
                         }
-                        deleteRightButton = button("Delete") {
-                            onAction = EventHandler { event ->
-                                val pair = displaying ?: return@EventHandler
-                                event.consume()
-                                delete(pair, false)
-                            }
+                        button("Delete") {
+                            onActionConsuming { delete(displaying ?: return@onActionConsuming, false) }
                         }
                     }
                 }
@@ -205,6 +202,15 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         if (pairs.isNotEmpty()) displaying = pairs.first()
     }
 
+    private fun replace(pair: SimilarPair<Item>, replaceLeftWithRight: Boolean) {
+        val replace = if (replaceLeftWithRight) pair.obj1 else pair.obj2
+        val with = if (replaceLeftWithRight) pair.obj2 else pair.obj1
+
+        displayNextForRemovingItem(pair, with)
+
+        replace.replace(with, false)
+    }
+
     private fun delete(pair: SimilarPair<Item>, left: Boolean) {
         val item = if (left) pair.obj1 else pair.obj2
 
@@ -212,9 +218,6 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
 
         item.menagerie.removeItem(item)
         if (item is FileItem) item.file.delete()
-
-        pairs.removeIf { it.contains(item) }
-        updateCountSimilarityLabel(displaying)
     }
 
     private fun displayNextForRemovingItem(pair: SimilarPair<Item>, removing: Item) {
@@ -251,19 +254,9 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         }
 
         pairs.removeIf { it.contains(item) }
-        updateCountSimilarityLabel(displaying)
     }
 
     private fun initListeners() {
-        topPane.addEventHandler(MouseEvent.MOUSE_ENTERED) {
-            leftTags.show()
-            rightTags.show()
-        }
-        topPane.addEventHandler(MouseEvent.MOUSE_EXITED) {
-            leftTags.hide()
-            rightTags.hide()
-        }
-
         @Suppress("RemoveExplicitTypeArguments")
         val leftTagsListener = SetChangeListener<Tag> { change ->
             leftTags.items.apply {
@@ -281,7 +274,8 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 sortWith(MyApp.displayTagSorter)
             }
         }
-        displayingProperty.addListener { _, oldValue, newValue ->
+
+        displayingProperty.addListener { _, oldValue, new ->
             if (oldValue != null) {
                 leftTags.items.clear()
                 rightTags.items.clear()
@@ -289,78 +283,17 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
                 oldValue.obj2.tags.removeListener(rightTagsListener)
             }
 
-            if (newValue != null) {
+            if (new != null) {
                 leftTags.items.apply {
-                    addAll(newValue.obj1.tags)
+                    addAll(new.obj1.tags)
                     sortWith(MyApp.displayTagSorter)
                 }
                 rightTags.items.apply {
-                    addAll(newValue.obj2.tags)
+                    addAll(new.obj2.tags)
                     sortWith(MyApp.displayTagSorter)
                 }
-                newValue.obj1.tags.addListener(leftTagsListener)
-                newValue.obj2.tags.addListener(rightTagsListener)
-            }
-
-            notDuplicateButton.isSelected = newValue?.obj1?.menagerie?.knownNonDupes?.contains(newValue) == true
-
-            updateCountSimilarityLabel(newValue)
-            leftDisplay.item = newValue?.obj1
-            rightDisplay.item = newValue?.obj2
-        }
-
-        leftDisplay.contextmenu {
-            item("Clone Tags from Other") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj2?.tags?.forEach { displaying?.obj1?.addTag(it) }
-                }
-            }
-            item("Copy Tags") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj1?.copyTagsToClipboard()
-                }
-            }
-            item("Paste Tags") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj1?.pasteTagsFromClipboard(context)
-                }
-            }
-            separator()
-            item("No Duplicates") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    markNoDuplicates(displaying!!, displaying!!.obj1)
-                }
-            }
-        }
-        rightDisplay.contextmenu {
-            item("Clone Tags from Other") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj1?.tags?.forEach { displaying?.obj2?.addTag(it) }
-                }
-            }
-            item("Copy Tags") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj2?.copyTagsToClipboard()
-                }
-            }
-            item("Paste Tags") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    displaying?.obj2?.pasteTagsFromClipboard(context)
-                }
-            }
-            separator()
-            item("No Duplicates") {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    markNoDuplicates(displaying!!, displaying!!.obj2)
-                }
+                new.obj1.tags.addListener(leftTagsListener)
+                new.obj2.tags.addListener(rightTagsListener)
             }
         }
 
@@ -388,20 +321,14 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
         }
     }
 
-    private fun updateCountSimilarityLabel(pair: SimilarPair<Item>?) {
-        countSimilarityLabel.text = if (pair == null) {
-            "N/a"
-        } else {
-            "${pairs.indexOf(pair) + 1}/${pairs.size}: %.2f%%".format(pair.similarity * 100)
-        }
-    }
-
     private fun next() {
+        if (pairs.isEmpty()) return
         val i = pairs.indexOf(displaying)
         displaying = pairs[(i + 1).coerceAtMost(pairs.size - 1)]
     }
 
     private fun previous() {
+        if (pairs.isEmpty()) return
         val i = pairs.indexOf(displaying)
         displaying = pairs[(i - 1).coerceAtLeast(0)]
     }

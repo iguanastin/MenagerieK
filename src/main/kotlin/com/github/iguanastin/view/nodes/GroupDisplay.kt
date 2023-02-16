@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.nodes
 
+import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.factories.ItemCellFactory
@@ -35,12 +36,9 @@ class GroupDisplay : ItemDisplay() {
         isPickOnBounds = false
         padding = insets(100)
 
-        grid.cellFactory = ItemCellFactory.factory()
         grid.apply {
-            cellWidth = ItemCellFactory.SIZE
-            cellHeight = ItemCellFactory.SIZE
-            horizontalCellSpacing = 4.0
-            verticalCellSpacing = 4.0
+            addClass(Styles.itemGrid)
+            cellFactory = ItemCellFactory.factory()
         }
         center = grid
 
@@ -52,6 +50,7 @@ class GroupDisplay : ItemDisplay() {
             style {
                 fontSize = 24.px
             }
+            textProperty().bind(itemProperty.map { if (it is GroupItem) it.title else null })
         }
 
         itemProperty.addListener { _, oldValue, newValue ->
@@ -65,7 +64,6 @@ class GroupDisplay : ItemDisplay() {
             }
 
             runOnUIThread {
-                title.text = if (newValue is GroupItem) newValue.title else null
                 grid.items.apply {
                     clear()
                     if (newValue is GroupItem) addAll(newValue.items)

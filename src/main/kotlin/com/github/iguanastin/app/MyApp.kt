@@ -18,11 +18,8 @@ import com.github.iguanastin.app.settings.WindowSettings
 import com.github.iguanastin.app.utils.Versioning
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
-import com.github.iguanastin.view.MainView
-import com.github.iguanastin.view.Shortcut
-import com.github.iguanastin.view.bindShortcut
+import com.github.iguanastin.view.*
 import com.github.iguanastin.view.dialog.*
-import com.github.iguanastin.view.runOnUIThread
 import com.sun.jna.platform.FileUtils
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
@@ -370,14 +367,14 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initEditTagsControl() {
-        root.applyTagEdit.onAction = EventHandler { event ->
+        root.applyTagEdit.onActionConsuming {
             val items = root.itemGrid.selected
-            if (items.isEmpty()) return@EventHandler // Do nothing if there are no items selected
+            if (items.isEmpty()) return@onActionConsuming // Do nothing if there are no items selected
 
             val tagsToAdd = mutableListOf<Tag>()
             val tagsToRemove = mutableListOf<Tag>()
 
-            val context = context ?: return@EventHandler // Do nothing if there is no context
+            val context = context ?: return@onActionConsuming // Do nothing if there is no context
 
             for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
                 if (name.isBlank()) continue // Ignore empty and blank additions
@@ -392,13 +389,12 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             }
 
-            if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@EventHandler // Do nothing if there are no viable tag edits
+            if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@onActionConsuming // Do nothing if there are no viable tag edits
 
             // Apply tag edits
             this.context?.tagEdit(items, tagsToAdd, tagsToRemove)
 
             root.editTagsPane.hide()
-            event.consume()
         }
     }
 

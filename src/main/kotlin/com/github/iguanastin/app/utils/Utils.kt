@@ -74,3 +74,13 @@ fun Item.pasteTagsFromClipboard(context: MenagerieContext?) {
 fun BooleanProperty.toggle() {
     value = !value
 }
+
+fun <E> MutableCollection<E>.clearAndAddAll(add: Collection<E>) {
+    clear()
+    addAll(add)
+}
+
+fun <E> MutableCollection<E>.clearAndAdd(add: E) {
+    clear()
+    add(add)
+}

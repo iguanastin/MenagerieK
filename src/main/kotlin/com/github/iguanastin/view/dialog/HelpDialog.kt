@@ -3,7 +3,7 @@ package com.github.iguanastin.view.dialog
 import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.view.nodes.TopEnabledStackPane
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.geometry.Pos
 import javafx.scene.control.TabPane
 import javafx.scene.text.FontWeight
@@ -75,18 +75,14 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                 label("Local file organizer")
                 label("Version: ${MyApp.VERSION}")
                 hyperlink(MyApp.githubURL) {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         if (Desktop.isDesktopSupported() && Desktop.getDesktop()
                                 .isSupported(Desktop.Action.BROWSE)
                         ) Desktop.getDesktop().browse(URI(text))
                     }
                 }
                 hyperlink("Patch Notes") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        app.showPatchNotesDialog()
-                    }
+                    onActionConsuming { app.showPatchNotesDialog() }
                 }
             }
         }
@@ -100,8 +96,7 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                 vbox(spacing = 10.0) {
                     label("New to Menagerie?")
                     button("Take a tour") {
-                        onAction = EventHandler { event ->
-                            event.consume()
+                        onActionConsuming {
                             this@HelpDialog.close()
                             app.root.startTour()
                         }
@@ -126,15 +121,19 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
 
                     separator()
                     label("Tagging") { addClass(Styles.helpHeader) }
-                    label("Tags cannot contain spaces. Separate tag adds/deletes with a space to do multiple edits at once. To remove a tag, prepend it with a dash (-)\n\n" +
-                            "E.g. remove 'tagme', add 'person' and 'landscape':\n" +
-                            "    -tagme person landscape\n\n" +
-                            "When editing or searching tags, an autocomplete will show the most common tags. Select the first option by pressing Ctrl+Space, or navigate to a specific option with the up/down arrow keys.") { isWrapText = true }
+                    label(
+                        "Tags cannot contain spaces. Separate tag adds/deletes with a space to do multiple edits at once. To remove a tag, prepend it with a dash (-)\n\n" +
+                                "E.g. remove 'tagme', add 'person' and 'landscape':\n" +
+                                "    -tagme person landscape\n\n" +
+                                "When editing or searching tags, an autocomplete will show the most common tags. Select the first option by pressing Ctrl+Space, or navigate to a specific option with the up/down arrow keys."
+                    ) { isWrapText = true }
 
                     separator()
                     label("Searching") { addClass(Styles.helpHeader) }
-                    label("Searching also autocompletes tags, but additionally completes non-tag search terms.\n\n" +
-                            "Special search terms:") { isWrapText = true }
+                    label(
+                        "Searching also autocompletes tags, but additionally completes non-tag search terms.\n\n" +
+                                "Special search terms:"
+                    ) { isWrapText = true }
                     gridpane {
                         hgap = 10.0
                         paddingLeft = 10.0
@@ -148,7 +147,9 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                         }
                         row {
                             label("time:(<|>){MILLIS}")
-                            label("Imported before (<), after (>), or at (no prefix) a given time in milliseconds since epoch") { isWrapText = true }
+                            label("Imported before (<), after (>), or at (no prefix) a given time in milliseconds since epoch") {
+                                isWrapText = true
+                            }
                         }
                         row {
                             label("id:(<|>){ID}")

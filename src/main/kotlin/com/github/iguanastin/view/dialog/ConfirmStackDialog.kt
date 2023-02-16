@@ -2,7 +2,7 @@ package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.view.bindShortcut
 import com.github.iguanastin.view.nodes.TopEnabledStackPane
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
 import tornadofx.*
@@ -37,25 +37,20 @@ class ConfirmStackDialog(
                 isWrapText = true
             }
             if (url != null) hyperlink(url) {
-                onAction = EventHandler { event ->
-                    event.consume()
-                    Desktop.getDesktop().browse(URI.create(url))
-                }
+                onActionConsuming { Desktop.getDesktop().browse(URI.create(url)) }
             }
             borderpane {
                 right {
                     hbox(10) {
                         confirmButton = button(confirmText) {
-                            onAction = EventHandler { event ->
+                            onActionConsuming {
                                 close()
-                                event.consume()
                                 onConfirm()
                             }
                         }
                         cancelButton = button(cancelText) {
-                            onAction = EventHandler { event ->
+                            onActionConsuming {
                                 close()
-                                event.consume()
                                 onCancel()
                             }
                         }

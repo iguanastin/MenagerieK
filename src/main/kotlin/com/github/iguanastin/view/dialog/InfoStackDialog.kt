@@ -1,7 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.view.bindShortcut
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.scene.control.Button
 import javafx.scene.input.KeyCode
 import tornadofx.*
@@ -26,17 +26,15 @@ class InfoStackDialog(header: String, message: String, url: String? = null, okTe
                 isWrapText = true
             }
             if (url != null) hyperlink("Get the latest release") {
-                onAction = EventHandler { event ->
-                    event.consume()
+                onActionConsuming {
                     Desktop.getDesktop().browse(URI.create(url))
                 }
             }
             borderpane {
                 right {
                     okButton = button(okText) {
-                        onAction = EventHandler { event ->
+                        onActionConsuming {
                             close()
-                            event.consume()
                             onOk()
                         }
                     }

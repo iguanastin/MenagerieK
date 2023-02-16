@@ -1,6 +1,7 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.menagerie.import.ImportJob
+import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.property.*
 
 class ImportNotification(val job: ImportJob) {
@@ -27,23 +28,31 @@ class ImportNotification(val job: ImportJob) {
 
     init {
         job.onStart.add {
-            status = "Started"
-            progress = 0.0
+            runOnUIThread {
+                status = "Started"
+                progress = 0.0
+            }
         }
         job.onProgress.add { status, progress ->
-            this.status = status
-            this.progress = progress
+            runOnUIThread {
+                this.status = status
+                this.progress = progress
+            }
         }
         job.onFinish.add {
-            status = "Finished"
-            progress = 1.0
-            isFinished = true
+            runOnUIThread {
+                status = "Finished"
+                progress = 1.0
+                isFinished = true
+            }
         }
         job.onError.add {
-            status = "Exception occurred"
-            progress = 0.0
-            isFinished = true
-            isError = true
+            runOnUIThread {
+                status = "Exception occurred"
+                progress = 0.0
+                isFinished = true
+                isError = true
+            }
         }
     }
 

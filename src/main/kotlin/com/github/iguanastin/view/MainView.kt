@@ -10,10 +10,7 @@ import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.SearchHistory
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
-import com.github.iguanastin.app.utils.addSorted
-import com.github.iguanastin.app.utils.copyTagsToClipboard
-import com.github.iguanastin.app.utils.expandGroups
-import com.github.iguanastin.app.utils.pasteTagsFromClipboard
+import com.github.iguanastin.app.utils.*
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
 import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
@@ -37,13 +34,10 @@ import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
-import javafx.stage.Popup
-import javafx.stage.PopupWindow
 import mu.KotlinLogging
 import tornadofx.*
 import java.io.PrintWriter
 import java.io.StringWriter
-import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
 
@@ -147,10 +141,7 @@ class MainView : View("Menagerie") {
                                 hbox(5.0) {
                                     backButton = button("\uD83E\uDC44") {
                                         isDisable = true
-                                        onAction = EventHandler { event ->
-                                            event.consume()
-                                            navigateBack()
-                                        }
+                                        onActionConsuming { navigateBack() }
                                     }
                                     searchTextField = textfield {
                                         hgrow = Priority.ALWAYS
@@ -196,11 +187,8 @@ class MainView : View("Menagerie") {
                         }
                         center {
                             itemGrid = multiselectgridview {
-                                addClass(Styles.itemGridView)
-                                cellWidth = ItemCellFactory.SIZE
-                                cellHeight = ItemCellFactory.SIZE
-                                horizontalCellSpacing = 4.0
-                                verticalCellSpacing = 4.0
+                                addClass(Styles.mainItemGridView)
+                                addClass(Styles.itemGrid)
                             }
                         }
                         bottom {
@@ -397,10 +385,7 @@ class MainView : View("Menagerie") {
             }
         })
 
-        similarButton.onAction = EventHandler { event ->
-            event.consume()
-            openSimilarDialog()
-        }
+        similarButton.onActionConsuming { openSimilarDialog() }
     }
 
     fun openSimilarDialog() {
@@ -415,10 +400,7 @@ class MainView : View("Menagerie") {
     }
 
     private fun initImportsButton() {
-        importsButton.onAction = EventHandler { event ->
-            event.consume()
-            root.add(ImportQueueDialog(imports))
-        }
+        importsButton.onActionConsuming { root.add(ImportQueueDialog(imports)) }
 
         val finishedListener: (observable: Observable) -> Unit = { _ ->
             updateImportsButton()
@@ -499,26 +481,6 @@ class MainView : View("Menagerie") {
         }
     }
 
-    private fun displaySearchError(error: String) {
-        val popup = Popup().apply {
-            anchorLocation = PopupWindow.AnchorLocation.CONTENT_TOP_LEFT
-            content.add(label(error) {
-                addClass(Styles.dialogPane)
-                style {
-                    fontSize = 18.px
-                    textFill = c("red")
-                }
-                padding = insets(10.0)
-            })
-        }
-        val bounds = searchTextField.localToScreen(searchTextField.layoutBounds)
-        popup.show(searchTextField, bounds.minX, bounds.maxY + 20.0)
-        thread(start = true) {
-            Thread.sleep(5000)
-            runOnUIThread { popup.hide() }
-        }
-    }
-
     private fun robotSearch(
         text: String = "",
         descending: Boolean? = null,
@@ -568,10 +530,7 @@ class MainView : View("Menagerie") {
     }
 
     private fun initSearchListener() {
-        searchButton.onAction = EventHandler { event ->
-            event.consume()
-            applySearch()
-        }
+        searchButton.onActionConsuming { applySearch() }
 
         searchTextField.apply {
             onAction = searchButton.onAction
@@ -600,10 +559,7 @@ class MainView : View("Menagerie") {
         val back = history.removeLastOrNull() ?: return
         searchProperty.set(back.view)
 
-        itemGrid.selected.apply {
-            clear()
-            addAll(back.selected)
-        }
+        itemGrid.selected.clearAndAddAll(back.selected)
         if (back.lastSelected == null) {
             itemGrid.lastSelectedIndex = -1
         } else {
@@ -655,14 +611,10 @@ class MainView : View("Menagerie") {
 
             contextmenu {
                 item("Edit tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        showEditTagsPane()
-                    }
+                    onActionConsuming { showEditTagsPane() }
                 }
                 val syncGroupTags = item("Sync tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val i = itemGrid.selected.firstOrNull()
                         if (itemGrid.selected.size == 1 && i is GroupItem) {
                             i.items.forEach { e ->
@@ -672,27 +624,19 @@ class MainView : View("Menagerie") {
                     }
                 }
                 item("Copy Tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        itemGrid.selected.firstOrNull()?.copyTagsToClipboard()
-                    }
+                    onActionConsuming { itemGrid.selected.firstOrNull()?.copyTagsToClipboard() }
                 }
                 item("Paste Tags") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard(myApp.context)
-                    }
+                    onActionConsuming { itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard(myApp.context) }
                 }
                 separator()
                 val open = item("Open") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        myApp.onItemAction(itemGrid.selected.singleOrNull() ?: return@EventHandler)
+                    onActionConsuming {
+                        myApp.onItemAction(itemGrid.selected.singleOrNull() ?: return@onActionConsuming)
                     }
                 }
                 val showInExplorer = item("Show in Explorer") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val i = itemGrid.selected.firstOrNull()
                         if (itemGrid.selected.size == 1 && i is FileItem) {
                             Runtime.getRuntime().exec("explorer.exe /select,${i.file.absolutePath}")
@@ -701,8 +645,7 @@ class MainView : View("Menagerie") {
                 }
                 separator()
                 val goToGroup = item("Go to Group") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val i = itemGrid.selected.firstOrNull()
                         if (itemGrid.selected.size == 1 && i is FileItem && i.elementOf != null) {
                             openGroupsToggle.isSelected = false
@@ -720,8 +663,7 @@ class MainView : View("Menagerie") {
                     }
                 }
                 val removeFromGroup = item("Remove from Group") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val i = itemGrid.selected.firstOrNull()
                         if (itemGrid.selected.size == 1 && i is FileItem && i.elementOf != null) {
                             i.elementOf!!.removeItem(i)
@@ -729,35 +671,20 @@ class MainView : View("Menagerie") {
                     }
                 }
                 val ungroup = item("Ungroup") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        myApp.ungroupShortcut()
-                    }
+                    onActionConsuming { myApp.ungroupShortcut() }
                 }
                 val group = item("Group") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        myApp.groupShortcut()
-                    }
+                    onActionConsuming { myApp.groupShortcut() }
                 }
                 val dupesGroup = menu("Duplicates") {
                     item("Find in Menagerie") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            myApp.duplicatesShortcut(false)
-                        }
+                        onActionConsuming { myApp.duplicatesShortcut(false) }
                     }
                     item("Find in selected") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            myApp.duplicatesShortcut(true)
-                        }
+                        onActionConsuming { myApp.duplicatesShortcut(true) }
                     }
                     item("Find online") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            myApp.findOnlineShortcut()
-                        }
+                        onActionConsuming { myApp.findOnlineShortcut() }
                     }
                 }
 
@@ -863,10 +790,7 @@ class MainView : View("Menagerie") {
             new?.tags?.addListener(displayTagChangeListener)
 
             runOnUIThread {
-                tagView.items.apply {
-                    clear()
-                    addAll(new?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@apply)
-                }
+                tagView.items.clearAndAddAll(new?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@runOnUIThread)
             }
         })
     }

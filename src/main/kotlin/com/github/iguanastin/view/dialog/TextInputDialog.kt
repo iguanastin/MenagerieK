@@ -1,6 +1,6 @@
 package com.github.iguanastin.view.dialog
 
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.TextField
@@ -25,25 +25,18 @@ class TextInputDialog(header: String, text: String = "", prompt: String = "", on
             }
             textField = textfield(text) {
                 promptText = prompt
-                onAction = EventHandler { event ->
-                    event.consume()
-                    acceptButton.fire()
-                }
+                onActionConsuming { acceptButton.fire() }
             }
             hbox {
                 alignment = Pos.CENTER_RIGHT
                 acceptButton = button("Ok") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         close()
                         onAccept(textField.text)
                     }
                 }
                 cancelButton = button("Cancel") {
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        close()
-                    }
+                    onActionConsuming { close() }
                 }
             }
         }

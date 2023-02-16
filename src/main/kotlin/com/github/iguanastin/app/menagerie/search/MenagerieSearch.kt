@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.ItemChangeBase
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.search.filters.SearchFilter
+import com.github.iguanastin.app.utils.clearAndAddAll
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -65,10 +66,7 @@ class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", v
             if (shuffle) shuffleMap.computeIfAbsent(it) { shuffleRand.nextInt() }
         }
 
-        items = list.apply {
-            clear()
-            addAll(temp)
-        }
+        items = list.apply { clearAndAddAll(temp) }
         sortItems()
     }
 

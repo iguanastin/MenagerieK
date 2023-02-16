@@ -2,9 +2,11 @@ package com.github.iguanastin.view
 
 import javafx.application.Platform
 import javafx.beans.value.ChangeListener
+import javafx.event.ActionEvent
+import javafx.event.Event
+import javafx.event.EventHandler
 import javafx.event.EventTarget
-import javafx.scene.control.Alert
-import javafx.scene.control.ButtonType
+import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.stage.Window
 import org.controlsfx.control.GridView
@@ -51,6 +53,23 @@ fun Image.afterLoaded(op: Image.() -> Unit) {
         progressProperty().removeListener(listener)
         op()
     }
+}
+
+fun <T : Event> eventHandlerConsuming(op: (T) -> Unit): EventHandler<T> {
+    return EventHandler { event ->
+        event.consume()
+        op(event)
+    }
+}
+
+fun ButtonBase.onActionConsuming(op: (ActionEvent) -> Unit) {
+    onAction = eventHandlerConsuming(op)
+}
+fun TextField.onActionConsuming(op: (ActionEvent) -> Unit) {
+    onAction = eventHandlerConsuming(op)
+}
+fun MenuItem.onActionConsuming(op: (ActionEvent) -> Unit) {
+    onAction = eventHandlerConsuming(op)
 }
 
 fun runOnUIThread(op: () -> Unit) {

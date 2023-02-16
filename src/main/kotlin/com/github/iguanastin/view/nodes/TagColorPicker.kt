@@ -1,6 +1,6 @@
 package com.github.iguanastin.view.nodes
 
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.geometry.Pos
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -19,27 +19,18 @@ class TagColorPicker(onChoose: (String?) -> Unit): HBox(5.0) {
                 style {
                     baseColor = c(color)
                 }
-                onAction = EventHandler { event ->
-                    event.consume()
-                    onChoose(color)
-                }
+                onActionConsuming { onChoose(color) }
                 tooltip(color)
             }
         }
 
         textfield {
             promptText = "E.g. #ffffff"
-            onAction = EventHandler { event ->
-                event.consume()
-                onChoose(text)
-            }
+            onActionConsuming { onChoose(text) }
         }
 
         button {
-            onAction = EventHandler { event ->
-                event.consume()
-                onChoose(null)
-            }
+            onActionConsuming { onChoose(null) }
             graphic = ImageView(Image(TagColorPicker::class.java.getResource("/imgs/resetcolor.png")?.toExternalForm()))
             tooltip("Reset")
         }

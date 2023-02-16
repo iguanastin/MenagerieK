@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
+import com.github.iguanastin.app.utils.clearAndAddAll
 import javafx.collections.FXCollections
 import javafx.collections.ObservableSet
 import javafx.collections.SetChangeListener
@@ -127,8 +128,7 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
         if (invalidated || with == this) return false
 
         if (replaceTags) {
-            _tags.clear()
-            _tags.addAll(with.tags)
+            _tags.clearAndAddAll(with.tags)
         }
 
         with.menagerie.removeItem(with)

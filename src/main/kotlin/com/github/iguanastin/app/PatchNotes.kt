@@ -19,7 +19,8 @@ object PatchNotes {
                 "- Fix API server not reflecting changes to port setting\n" +
                 "- Fix long tag names clipping the frequency of all tags"
         notes["1.2.0"] = "Features:\n" +
-                "- Video playback support"
+                "- Video playback support\n" +
+                "- Video thumbnails"
     }
 
     fun get(version: String): String {

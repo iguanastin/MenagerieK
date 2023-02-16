@@ -4,8 +4,8 @@ import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.duplicates.remote.*
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.bindShortcut
+import com.github.iguanastin.view.onActionConsuming
 import com.github.iguanastin.view.runOnUIThread
-import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.image.Image
@@ -55,19 +55,15 @@ class FindOnlineChooseMatcherDialog(private val context: MenagerieContext, priva
                         hgrow = Priority.ALWAYS
 
                         style { padding = box(10.px) }
-                        onAction = EventHandler { event ->
+                        onActionConsuming {
                             val parent = this@FindOnlineChooseMatcherDialog.parent
-                            event.consume()
                             close()
                             parent.add(SimilarOnlineDialog(matchSets, IQDBMatchFinder()))
                         }
                     }
                     iqdbAutoTagButton = button {
                         graphic = ImageView(tagIcon)
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            autoTag(IQDBMatchFinder())
-                        }
+                        onActionConsuming { autoTag(IQDBMatchFinder()) }
                         prefHeightProperty().bind(iqdbButton.heightProperty())
                     }
                 }
@@ -76,19 +72,15 @@ class FindOnlineChooseMatcherDialog(private val context: MenagerieContext, priva
                         maxWidth = Double.MAX_VALUE
                         hgrow = Priority.ALWAYS
                         style { padding = box(10.px) }
-                        onAction = EventHandler { event ->
+                        onActionConsuming {
                             val parent = this@FindOnlineChooseMatcherDialog.parent
-                            event.consume()
                             close()
                             parent.add(SimilarOnlineDialog(matchSets, SauceNAOMatchFinder()))
                         }
                     }
                     sauceNAOAutoTagButton = button {
                         graphic = ImageView(tagIcon)
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            autoTag(SauceNAOMatchFinder())
-                        }
+                        onActionConsuming { autoTag(SauceNAOMatchFinder()) }
                         prefHeightProperty().bind(sauceNAOButton.heightProperty())
                     }
                 }
@@ -97,8 +89,7 @@ class FindOnlineChooseMatcherDialog(private val context: MenagerieContext, priva
             hbox {
                 alignment = Pos.CENTER_RIGHT
                 button("Cancel") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         close()
                         onCancel()
                     }

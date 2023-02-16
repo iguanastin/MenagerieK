@@ -8,12 +8,12 @@ import com.github.iguanastin.app.utils.bytesToPrettyString
 import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.gridView
 import com.github.iguanastin.view.image
+import com.github.iguanastin.view.onActionConsuming
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
 import javafx.beans.Observable
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
-import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.Label
@@ -95,39 +95,7 @@ class SimilarOnlineDialog(
                         tagButton = button {
                             graphic = ImageView(tagIcon)
                             stackpaneConstraints { alignment = Pos.TOP_RIGHT }
-                            onAction = EventHandler { event ->
-                                event.consume()
-                                val match = item ?: return@EventHandler
-                                val set = viewing ?: return@EventHandler
-                                if (!SourceTagParser.canGetTagsFrom(match.sourceUrl)) return@EventHandler
-
-                                (graphic as ImageView).image = loadingIcon
-                                isDisable = true
-
-                                thread(start = true, isDaemon = true, name = "Online auto tagger") {
-                                    val tags = SourceTagParser.getTags(match.sourceUrl, matcher.client!!)
-
-                                    tags.forEach {
-                                        val tag = set.item.menagerie.getOrMakeTag(it, true)
-                                        set.item.addTag(tag)
-                                    }
-
-                                    if (scene != null && item == match) {
-                                        runOnUIThread {
-                                            (graphic as ImageView).image =
-                                                if (tags.isNotEmpty()) finishedIcon else tagIcon
-                                            isDisable = tags.isNotEmpty()
-
-//                                            this@SimilarOnlineDialog.parent.add(
-//                                                InfoStackDialog(
-//                                                    "Found ${tags.size} tags",
-//                                                    "Applied tags to item\n\nNew tags are applied as temporary tags"
-//                                                )
-//                                            )
-                                        }
-                                    }
-                                }
-                            }
+                            onActionConsuming { autotagCurrentItem() }
                             tooltip("Automatically tag item")
                         }
                     }
@@ -138,6 +106,39 @@ class SimilarOnlineDialog(
                         if (item != null) Desktop.getDesktop().browse(URI(item!!.sourceUrl))
                     }
                     event.consume()
+                }
+            }
+
+            private fun autotagCurrentItem() {
+                val match = item ?: return
+                val set = viewing ?: return
+                if (!SourceTagParser.canGetTagsFrom(match.sourceUrl)) return
+
+                (graphic as ImageView).image = loadingIcon
+                isDisable = true
+
+                thread(start = true, isDaemon = true, name = "Online auto tagger") {
+                    val tags = SourceTagParser.getTags(match.sourceUrl, matcher.client!!)
+
+                    tags.forEach {
+                        val tag = set.item.menagerie.getOrMakeTag(it, true)
+                        set.item.addTag(tag)
+                    }
+
+                    if (scene != null && item == match) {
+                        runOnUIThread {
+                            (graphic as ImageView).image =
+                                if (tags.isNotEmpty()) finishedIcon else tagIcon
+                            isDisable = tags.isNotEmpty()
+
+            //                                            this@SimilarOnlineDialog.parent.add(
+            //                                                InfoStackDialog(
+            //                                                    "Found ${tags.size} tags",
+            //                                                    "Applied tags to item\n\nNew tags are applied as temporary tags"
+            //                                                )
+            //                                            )
+                        }
+                    }
                 }
             }
 
@@ -183,8 +184,6 @@ class SimilarOnlineDialog(
     private lateinit var loadingIndicator: ProgressIndicator
     private lateinit var indexLabel: Label
     private lateinit var refreshButton: Button
-    private lateinit var leftButton: Button
-    private lateinit var rightButton: Button
     private lateinit var errorText: Label
 
 
@@ -218,11 +217,10 @@ class SimilarOnlineDialog(
                 }
                 refreshButton = button {
                     graphic = imageview(
-                        SimilarOnlineDialog::class.java.getResource("/imgs/refresh.png").toExternalForm(),
+                        SimilarOnlineDialog::class.java.getResource("/imgs/refresh.png")?.toExternalForm(),
                         true
                     )
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val viewing = viewing
 
                         if (viewing != null) {
@@ -260,20 +258,16 @@ class SimilarOnlineDialog(
                 alignment = Pos.CENTER
                 prefWidth = 0.0
 
-                leftButton = button("<") {
+                button("<") {
                     isDisable = true
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        previous()
-                    }
+                    viewingProperty.addListener { _, _, new -> isDisable = matches.indexOf(new) <= 0 }
+                    onActionConsuming { previous() }
                 }
                 indexLabel = label("N/A")
-                rightButton = button(">") {
+                button(">") {
                     isDisable = true
-                    onAction = EventHandler { event ->
-                        event.consume()
-                        next()
-                    }
+                    viewingProperty.addListener { _, _, new -> isDisable = matches.indexOf(new) >= matches.size - 1 }
+                    onActionConsuming { next() }
                 }
             }
         }
@@ -354,9 +348,6 @@ class SimilarOnlineDialog(
             } else {
                 "${matches.indexOf(viewing) + 1}/${matches.size}"
             }
-
-            leftButton.isDisable = matches.indexOf(newValue) <= 0
-            rightButton.isDisable = matches.indexOf(newValue) >= matches.size - 1
 
             stateListener(null)
         }

@@ -2,7 +2,7 @@ package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.settings.*
 import com.github.iguanastin.view.factories.StringPairCellFactory
-import javafx.event.EventHandler
+import com.github.iguanastin.view.onActionConsuming
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.Node
@@ -37,10 +37,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
                     right {
                         borderpaneConstraints { alignment = Pos.CENTER_RIGHT }
                         button("X") {
-                            onAction = EventHandler { event ->
-                                event.consume()
-                                close()
-                            }
+                            onActionConsuming { close() }
                         }
                     }
                 }
@@ -68,17 +65,13 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
                     alignment = Pos.CENTER_RIGHT
 
                     button("Apply") {
-                        onAction = EventHandler { event ->
-                            event.consume()
+                        onActionConsuming {
                             applySettings()
                             close()
                         }
                     }
                     cancelButton = button("Cancel") {
-                        onAction = EventHandler { event ->
-                            event.consume()
-                            close()
-                        }
+                        onActionConsuming { close() }
                     }
                 }
             }
@@ -124,8 +117,7 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
                 }
 
                 button("+") {
-                    onAction = EventHandler { event ->
-                        event.consume()
+                    onActionConsuming {
                         val rule = Pair("", "")
                         field.items.add(rule)
                         val i = field.items.indexOf(rule)
@@ -171,19 +163,19 @@ class SettingsDialog(private val prefs: AppSettings) : StackDialog() {
         field: TextField,
         setting: StringSetting
     ) {
+        // TODO creation of button should probably be outside of this function
         button("Browse") {
-            onAction = EventHandler { event ->
-                event.consume()
+            onActionConsuming {
                 var initial: File? = File(field.text)
                 if (initial?.exists() == false || initial?.isDirectory == false) initial =
                     initial.parentFile
                 if (initial?.exists() == false || initial?.isDirectory == false) initial = null
 
                 if (setting.type == StringSetting.Type.FILE_PATH) {
-                    val file = fileChooser(initial, scene.window) ?: return@EventHandler
+                    val file = fileChooser(initial, scene.window) ?: return@onActionConsuming
                     field.text = file.absolutePath
                 } else if (setting.type == StringSetting.Type.FOLDER_PATH) {
-                    val folder = directoryChooser(initial, scene.window) ?: return@EventHandler
+                    val folder = directoryChooser(initial, scene.window) ?: return@onActionConsuming
                     field.text = folder.absolutePath
                 }
             }

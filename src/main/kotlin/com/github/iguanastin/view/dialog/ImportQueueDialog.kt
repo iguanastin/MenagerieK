@@ -2,12 +2,15 @@ package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.menagerie.import.RemoteImportJob
+import com.github.iguanastin.view.onActionConsuming
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.InvalidationListener
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
-import javafx.event.EventHandler
-import javafx.scene.control.*
+import javafx.scene.control.Button
+import javafx.scene.control.ListCell
+import javafx.scene.control.ListView
+import javafx.scene.control.ProgressBar
 import javafx.scene.layout.Priority
 import javafx.util.Callback
 import tornadofx.*
@@ -18,42 +21,36 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
 
     private val notificationCellFactory = Callback<ListView<ImportNotification>, ListCell<ImportNotification>> {
         object : ListCell<ImportNotification>() {
-            private lateinit var statusLabel: Label
-            private lateinit var sourceLabel: Label
             private lateinit var progressBar: ProgressBar
             private lateinit var cancelButton: Button
 
-            private val statusListener = ChangeListener<String> { _, _, newValue ->
-                runOnUIThread { statusLabel.text = newValue }
-            }
-            private val progressListener = ChangeListener<Number> { _, _, newValue ->
-                runOnUIThread { progressBar.progress = newValue.toDouble() }
-            }
-            private val finishedListener = ChangeListener<Boolean> { _, _, newValue ->
-                runOnUIThread {
-                    if (newValue) {
-                        if (!hasClass(Styles.importFinished)) addClass(Styles.importFinished)
-                    } else {
-                        removeClass(Styles.importFinished)
-                    }
-                    cancelButton.isVisible = !newValue
-                    progressBar.isVisible = !newValue
-                }
+            private val finishedListener = ChangeListener { _, _, newValue ->
+                runOnUIThread { updateFinished(newValue == true) }
             }
 
             init {
                 graphic = vbox(5.0) {
                     padding = insets(5.0)
 
-                    statusLabel = label { style { textFill = c("white") } }
-                    sourceLabel = label { style { textFill = c("grey") } }
+                    // Status label
+                    label {
+                        addClass(Styles.importCellStatus)
+                        textProperty().bind(itemProperty().flatMap { it.statusProperty })
+                    }
+
+                    // Source label
+                    label {
+                        addClass(Styles.importCellSource)
+                        textProperty().bind(itemProperty().map { if (it.job is RemoteImportJob) it.job.url else it?.job?.file?.path })
+                    }
+
                     hbox(5.0) {
                         progressBar = progressbar {
                             hgrow = Priority.ALWAYS
+                            progressProperty().bind(itemProperty().flatMap { it.progressProperty })
                         }
                         cancelButton = button("Cancel") {
-                            onAction = EventHandler { event ->
-                                event.consume()
+                            onActionConsuming {
                                 item?.job?.cancel()
                                 item?.isFinished = true
                             }
@@ -65,35 +62,23 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
             }
 
             override fun updateItem(item: ImportNotification?, empty: Boolean) {
-                getItem()?.statusProperty?.removeListener(statusListener)
-                getItem()?.progressProperty?.removeListener(progressListener)
                 getItem()?.finishedProperty?.removeListener(finishedListener)
-                statusLabel.text = ""
-                sourceLabel.text = ""
-                progressBar.progress = 0.0
 
                 super.updateItem(item, empty)
 
-                if (item?.isFinished == true) {
+                updateFinished(item?.isFinished == true)
+
+                item?.finishedProperty?.addListener(finishedListener)
+            }
+
+            private fun updateFinished(finished: Boolean) {
+                if (finished) {
                     if (!hasClass(Styles.importFinished)) addClass(Styles.importFinished)
                 } else {
                     removeClass(Styles.importFinished)
                 }
-                cancelButton.isVisible = !empty && item?.isFinished == false
-                progressBar.isVisible = !empty && item?.isFinished == false
-
-                if (item != null) {
-                    statusLabel.text = item.status
-                    item.statusProperty.addListener(statusListener)
-                    progressBar.progress = item.progress
-                    item.progressProperty.addListener(progressListener)
-                    item.finishedProperty.addListener(finishedListener)
-                    sourceLabel.text = if (item.job is RemoteImportJob) {
-                        item.job.url
-                    } else {
-                        item.job.file.absolutePath
-                    }
-                }
+                cancelButton.isVisible = item != null && !finished
+                progressBar.isVisible = item != null && !finished
             }
         }
     }

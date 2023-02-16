@@ -1,6 +1,8 @@
 package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
+import com.github.iguanastin.app.utils.clearAndAdd
+import com.github.iguanastin.app.utils.clearAndAddAll
 import com.github.iguanastin.view.runOnUIThread
 import impl.org.controlsfx.skin.GridViewSkin
 import javafx.beans.InvalidationListener
@@ -62,8 +64,7 @@ class MultiSelectGridView<T> : GridView<T>() {
                     if (selected.containsAll(items)) {
                         selected.clear()
                     } else {
-                        selected.clear()
-                        selected.addAll(items)
+                        selected.clearAndAddAll(items)
                     }
                     event.consume()
                 }
@@ -141,10 +142,7 @@ class MultiSelectGridView<T> : GridView<T>() {
             lastSelectedIndex = -1
         }
 
-        oldItems.apply {
-            clear()
-            addAll(change.list)
-        }
+        oldItems.clearAndAddAll(change.list)
     }
 
 
@@ -183,11 +181,13 @@ class MultiSelectGridView<T> : GridView<T>() {
     }
 
     private fun selectUtility(item: T, event: KeyEvent) {
-        selectUtility(item, when {
-            event.isShiftDown -> SelectionType.FROM_TO
-            event.isShortcutDown -> SelectionType.ADD
-            else -> SelectionType.ONLY
-        })
+        selectUtility(
+            item, when {
+                event.isShiftDown -> SelectionType.FROM_TO
+                event.isShortcutDown -> SelectionType.ADD
+                else -> SelectionType.ONLY
+            }
+        )
     }
 
     private fun selectUtility(item: T, event: MouseEvent) {
@@ -207,14 +207,10 @@ class MultiSelectGridView<T> : GridView<T>() {
                     if (selected.size == 1) {
                         selected.clear()
                     } else {
-                        selected.clear()
-                        selected.add(item)
+                        selected.clearAndAdd(item)
                     }
                 } else {
-                    selected.apply {
-                        clear()
-                        add(item)
-                    }
+                    selected.clearAndAdd(item)
                 }
             }
             SelectionType.ADD -> {
@@ -233,15 +229,8 @@ class MultiSelectGridView<T> : GridView<T>() {
                     val i1 = items.indexOf(first)
                     val i2 = items.indexOf(item)
 
-                    selected.apply {
-                        clear()
-                        val list = items.subList(min(i1, i2), max(i1, i2) + 1)
-                        addAll(if (i2 < i1) {
-                            list.asReversed()
-                        } else {
-                            list
-                        })
-                    }
+                    val list = items.subList(min(i1, i2), max(i1, i2) + 1)
+                    selected.clearAndAddAll(if (i2 < i1) list.asReversed() else list)
                 }
             }
         }
@@ -265,4 +254,5 @@ class MultiSelectGridView<T> : GridView<T>() {
 
 }
 
-inline fun <T> EventTarget.multiselectgridview(op: MultiSelectGridView<T>.() -> Unit = {}) = MultiSelectGridView<T>().attachTo(this, op)
+inline fun <T> EventTarget.multiselectgridview(op: MultiSelectGridView<T>.() -> Unit = {}) =
+    MultiSelectGridView<T>().attachTo(this, op)

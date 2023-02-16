@@ -1,9 +1,7 @@
 package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.model.GroupItem
-import com.github.iguanastin.app.menagerie.model.ImageItem
-import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.utils.bytesToPrettyString
 import com.github.iguanastin.view.afterLoaded
 import com.github.iguanastin.view.runOnUIThread
@@ -142,16 +140,22 @@ class MultiTypeItemDisplay : StackPane() {
             ).format(Date(new.added).toInstant())
         infoLabel.text = if (expandedInfo) "ID: ${new.id}\n$time\n" else ""
 
-        if (new is ImageItem) {
-            imageDisplay.trueImage?.afterLoaded {
-                val fileSize = bytesToPrettyString(new.file.length())
-                val resolution = "${width.toInt()}x${height.toInt()}"
+        if (new is FileItem) {
+            val fileSize = bytesToPrettyString(new.file.length())
 
-                runOnUIThread {
-                    if (item == new) infoLabel.text += if (expandedInfo) "$fileSize\n" +
-                            "$resolution\n" +
-                            new.file.path else resolution
+            if (new is ImageItem) {
+                imageDisplay.trueImage?.afterLoaded {
+                    val resolution = "${width.toInt()}x${height.toInt()}"
+
+                    runOnUIThread {
+                        if (item == new) infoLabel.text += if (expandedInfo) "$fileSize\n" +
+                                "$resolution\n" +
+                                new.file.path else resolution
+                    }
                 }
+            } else if (new is VideoItem) {
+                infoLabel.text += if (expandedInfo) "$fileSize\n" +
+                        new.file.path else "ID: ${new.id}"
             }
         } else if (new is GroupItem) {
             infoLabel.text += if (expandedInfo) "Size: ${new.items.size}" else "ID: ${new.id}"
