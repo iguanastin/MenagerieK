@@ -56,7 +56,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.1.0" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.2.0" // When updating version, update it in pom.xml as well
         private const val githubRoot = "/iguanastin/menageriek"
         const val githubURL = "https://github.com$githubRoot"
         const val githubReleasesURL = "$githubURL/releases/latest"
@@ -75,7 +75,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private val uiPrefs: WindowSettings = WindowSettings()
-    private val contextPrefs: AppSettings = AppSettings()
+    private val settings: AppSettings = AppSettings()
 
     var context: MenagerieContext? = null
 
@@ -117,9 +117,9 @@ class MyApp : App(MainView::class, Styles::class) {
         // Load the Menagerie data from disk
         loadMenagerie(
             stage,
-            contextPrefs.database.url.value,
-            contextPrefs.database.user.value,
-            contextPrefs.database.pass.value
+            settings.database.url.value,
+            settings.database.user.value,
+            settings.database.pass.value
         ) { context ->
             onMenagerieLoaded(context)
 
@@ -152,8 +152,8 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         // Start the HTTP API server
-        if (contextPrefs.api.enabled.value) {
-            context.api.start(contextPrefs.api.port.value)
+        if (settings.api.enabled.value) {
+            context.api.start(settings.api.port.value)
         }
 
         purgeUnusedTags(context.menagerie)
@@ -165,6 +165,8 @@ class MyApp : App(MainView::class, Styles::class) {
         })
 
         runOnUIThread {
+            root.context = context
+
             // Initial search
             root.navigateForward(
                 MenagerieSearch(
@@ -209,7 +211,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     splitString.subList(1, splitString.size)
                         .map {
                             context!!.menagerie.getOrMakeTag(
-                                contextPrefs.tags.tagAliases.apply(it),
+                                settings.tags.tagAliases.apply(it),
                                 temporaryIfNew = true
                             )
                         }
@@ -226,24 +228,24 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun handleParameters() {
         if ("--reset" in parameters.unnamed) {
-            contextPrefs.resetToDefaults()
+            settings.resetToDefaults()
             uiPrefs.resetToDefaults()
         }
 
-        if (parameters.named.containsKey("db")) contextPrefs.database.url.value =
-            parameters.named["db"] ?: contextPrefs.database.url.default
-        if (parameters.named.containsKey("db-url")) contextPrefs.database.url.value =
-            parameters.named["db-url"] ?: contextPrefs.database.url.default
+        if (parameters.named.containsKey("db")) settings.database.url.value =
+            parameters.named["db"] ?: settings.database.url.default
+        if (parameters.named.containsKey("db-url")) settings.database.url.value =
+            parameters.named["db-url"] ?: settings.database.url.default
 
-        if (parameters.named.containsKey("dbu")) contextPrefs.database.user.value =
-            parameters.named["dbu"] ?: contextPrefs.database.user.value
-        if (parameters.named.containsKey("db-user")) contextPrefs.database.user.value =
-            parameters.named["db-user"] ?: contextPrefs.database.user.default
+        if (parameters.named.containsKey("dbu")) settings.database.user.value =
+            parameters.named["dbu"] ?: settings.database.user.value
+        if (parameters.named.containsKey("db-user")) settings.database.user.value =
+            parameters.named["db-user"] ?: settings.database.user.default
 
-        if (parameters.named.containsKey("dbp")) contextPrefs.database.pass.value =
-            parameters.named["dbp"] ?: contextPrefs.database.pass.default
-        if (parameters.named.containsKey("db-pass")) contextPrefs.database.pass.value =
-            parameters.named["db-pass"] ?: contextPrefs.database.pass.default
+        if (parameters.named.containsKey("dbp")) settings.database.pass.value =
+            parameters.named["dbp"] ?: settings.database.pass.default
+        if (parameters.named.containsKey("db-pass")) settings.database.pass.value =
+            parameters.named["db-pass"] ?: settings.database.pass.default
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
     }
@@ -267,7 +269,7 @@ class MyApp : App(MainView::class, Styles::class) {
             val similar = CPUDuplicateFinder.findDuplicates(
                 listOf(item),
                 context.menagerie.items,
-                contextPrefs.duplicate.confidence.value,
+                settings.duplicate.confidence.value,
                 false
             )
 
@@ -286,16 +288,16 @@ class MyApp : App(MainView::class, Styles::class) {
 
     private fun checkVersionAndPatchNotes() {
         // Check if Menagerie should fetch update info
-        if (contextPrefs.hidden.dontRemindUpdate.value != VERSION) {
+        if (settings.hidden.dontRemindUpdate.value != VERSION) {
             thread(start = true, isDaemon = true, name = "Github Release Checker") { checkGithubForNewRelease() }
         }
 
         // Check if version was updated since last launch
-        val v = contextPrefs.hidden.lastLaunchVersion.value
+        val v = settings.hidden.lastLaunchVersion.value
         if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
             showPatchNotesDialog()
         }
-        contextPrefs.hidden.lastLaunchVersion.value = VERSION
+        settings.hidden.lastLaunchVersion.value = VERSION
     }
 
     fun showPatchNotesDialog() {
@@ -328,7 +330,7 @@ class MyApp : App(MainView::class, Styles::class) {
                                         url = githubReleasesURL,
                                         cancelText = "Don't remind me",
                                         onCancel = {
-                                            contextPrefs.hidden.dontRemindUpdate.value = VERSION
+                                            settings.hidden.dontRemindUpdate.value = VERSION
                                         }
                                     )
                                 )
@@ -449,7 +451,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 ungroupShortcut()
             }
             bindVisibleShortcut(KeyCode.S, ctrl = true, desc = "Open settings", context = "Main Screen") {
-                root.root.add(SettingsDialog(contextPrefs))
+                root.root.add(SettingsDialog(settings))
             }
             bindVisibleShortcut(
                 KeyCode.F,
@@ -605,18 +607,18 @@ class MyApp : App(MainView::class, Styles::class) {
 
         thread(start = true, isDaemon = true, name = "DuplicateFinder") {
             try {
-                val pairs = if (contextPrefs.duplicate.enableCuda.value) {
+                val pairs = if (settings.duplicate.enableCuda.value) {
                     CUDADuplicateFinder.findDuplicates(
                         first,
                         second,
-                        contextPrefs.duplicate.confidence.value.toFloat(),
+                        settings.duplicate.confidence.value.toFloat(),
                         100000
                     )
                 } else {
                     CPUDuplicateFinder.findDuplicates(
                         first,
                         second,
-                        contextPrefs.duplicate.confidence.value
+                        settings.duplicate.confidence.value
                     )
                 }
                 if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
@@ -641,7 +643,7 @@ class MyApp : App(MainView::class, Styles::class) {
             }
         }
 
-        val folderPath = contextPrefs.general.downloadFolder.value
+        val folderPath = settings.general.downloadFolder.value
 
         if (folderPath.isBlank()) {
             val dc = DirectoryChooser()
@@ -697,13 +699,13 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun importFileShortcut() {
         runOnUIThread {
             val fc = FileChooser()
-            val dir = contextPrefs.general.downloadFolder.value
+            val dir = settings.general.downloadFolder.value
             fc.initialDirectory = File(dir)
             if (!fc.initialDirectory.exists() || !fc.initialDirectory.isDirectory) fc.initialDirectory = null
             fc.title = "Import files"
             val files = fc.showOpenMultipleDialog(root.currentWindow)
             if (!files.isNullOrEmpty()) {
-                contextPrefs.general.downloadFolder.value = files.first().parent
+                settings.general.downloadFolder.value = files.first().parent
                 importFilesDialog(files)
             }
         }
@@ -712,12 +714,12 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun importFolderShortcut() {
         runOnUIThread {
             val dc = DirectoryChooser()
-            val dir = contextPrefs.general.downloadFolder.value
+            val dir = settings.general.downloadFolder.value
             dc.initialDirectory = File(dir)
             dc.title = "Import directory"
             val folder = dc.showDialog(root.currentWindow)
             if (folder != null) {
-                contextPrefs.general.downloadFolder.value = folder.parent
+                settings.general.downloadFolder.value = folder.parent
                 importFilesDialog(listOf(folder))
             }
         }
@@ -855,6 +857,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     override fun stop() {
+        root.onClose()
         super.stop()
 
         log.info("Stopping app")
@@ -886,7 +889,7 @@ class MyApp : App(MainView::class, Styles::class) {
                             val importer = MenagerieImporter(menagerie)
                             runOnUIThread { progress.close() }
 
-                            after?.invoke(MenagerieContext(menagerie, importer, database, contextPrefs))
+                            after?.invoke(MenagerieContext(menagerie, importer, database, settings))
                         } catch (e: MenagerieDatabaseException) {
                             e.printStackTrace()
                             runOnUIThread {

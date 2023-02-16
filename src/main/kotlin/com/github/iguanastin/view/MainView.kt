@@ -3,6 +3,7 @@ package com.github.iguanastin.view
 import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.bindVisibleShortcut
+import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.search.FilterParseException
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
@@ -81,6 +82,30 @@ class MainView : View("Menagerie") {
     private val history: ObservableList<SearchHistory> = observableListOf()
 
     private val myApp = (app as MyApp)
+
+    var context: MenagerieContext? = null
+        set(value) {
+            field = value
+
+            // Bi-directionally bind main video mute and repeat to prefs
+            value?.apply {
+                itemDisplay.videoDisplay.isMuted = prefs.hidden.videoMute.value
+                itemDisplay.videoDisplay.muteProperty.addListener { _, _, new ->
+                    if (prefs.hidden.videoMute.value != new) prefs.hidden.videoMute.value = new
+                }
+                prefs.hidden.videoMute.changeListeners.add {
+                    if (itemDisplay.videoDisplay.isMuted != it) itemDisplay.videoDisplay.isMuted = it
+                }
+
+                itemDisplay.videoDisplay.isRepeat = prefs.hidden.videoRepeat.value
+                itemDisplay.videoDisplay.repeatProperty.addListener { _, _, new ->
+                    if (prefs.hidden.videoRepeat.value != new) prefs.hidden.videoRepeat.value = new
+                }
+                prefs.hidden.videoRepeat.changeListeners.add {
+                    if (itemDisplay.videoDisplay.isRepeat != it) itemDisplay.videoDisplay.isRepeat = it
+                }
+            }
+        }
 
     override val root = topenabledstackpane {
         focusingstackpane {
@@ -844,6 +869,10 @@ class MainView : View("Menagerie") {
                 }
             }
         })
+    }
+
+    fun onClose() {
+        itemDisplay.release()
     }
 
 }

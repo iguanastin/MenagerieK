@@ -19,6 +19,8 @@ class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = tr
     val tourOnLaunch: BoolSetting
     val lastLaunchVersion: StringSetting
     val dontRemindUpdate: StringSetting
+    val videoRepeat: BoolSetting
+    val videoMute: BoolSetting
 
     init {
         settings = mutableListOf()
@@ -26,6 +28,8 @@ class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = tr
         tourOnLaunch = BoolSetting("launch-tour", "Start tour of app on next launch", default = true, prefs).also { settings.add(it) }
         lastLaunchVersion = StringSetting("last-launch-version", "Version of the app that was last launched", default = "", prefs = prefs).also { settings.add(it) }
         dontRemindUpdate = StringSetting("dont-remind-update", "Don't remind me of updates for this version", default = "", prefs = prefs).also { settings.add(it) }
+        videoRepeat = BoolSetting("video-repeat", "Repeat video playback", default = true, prefs).also { settings.add(it) }
+        videoMute = BoolSetting("video-mute", "Mute video playback", default = true, prefs).also { settings.add(it) }
     }
 
 }

@@ -30,9 +30,9 @@ private val log = KotlinLogging.logger {}
 
 class MultiTypeItemDisplay : StackPane() {
 
-    private val groupDisplay: GroupDisplay
-    private val imageDisplay: ImageDisplay
-    private val videoDisplay: VideoDisplay
+    val groupDisplay: GroupDisplay
+    val imageDisplay: ImageDisplay
+    val videoDisplay: VideoDisplay
     private lateinit var infoLabel: Label
 
     private val infoPadding: Double = 5.0
@@ -156,6 +156,10 @@ class MultiTypeItemDisplay : StackPane() {
         } else if (new is GroupItem) {
             infoLabel.text += if (expandedInfo) "Size: ${new.items.size}" else "ID: ${new.id}"
         }
+    }
+
+    fun release() {
+        videoDisplay.release()
     }
 
 }

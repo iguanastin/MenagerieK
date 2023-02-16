@@ -184,6 +184,10 @@ class Styles : Stylesheet() {
         videoControls {
             backgroundColor += c(0, 0, 0, 0.5)
             backgroundRadius += box(2.px)
+
+            button {
+                baseColor = c(0.25, 0.25, 0.25, 0.25)
+            }
         }
     }
 }

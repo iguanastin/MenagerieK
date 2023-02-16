@@ -26,14 +26,20 @@ import java.time.Duration
 
 class VideoDisplay : ItemDisplay() {
 
-    private val largePauseImage = Image(VideoDisplay::class.java.getResource("/imgs/pause_large.png")?.toExternalForm(), true)
-    private val largePlayImage = Image(VideoDisplay::class.java.getResource("/imgs/play_large.png")?.toExternalForm(), true)
     private val playImage = Image(VideoDisplay::class.java.getResource("/imgs/play.png")?.toExternalForm(), true)
     private val pauseImage = Image(VideoDisplay::class.java.getResource("/imgs/pause.png")?.toExternalForm(), true)
-    private val volumeOffImage = Image(VideoDisplay::class.java.getResource("/imgs/volume_off.png")?.toExternalForm(), true)
-    private val volumeUpImage = Image(VideoDisplay::class.java.getResource("/imgs/volume_up.png")?.toExternalForm(), true)
-    private val volumeDownImage = Image(VideoDisplay::class.java.getResource("/imgs/volume_down.png")?.toExternalForm(), true)
-    private val fullscreenImage = Image(VideoDisplay::class.java.getResource("/imgs/fullscreen.png")?.toExternalForm(), true)
+    private val volumeOffImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/volume_off.png")?.toExternalForm(), true)
+    private val volumeUpImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/volume_up.png")?.toExternalForm(), true)
+    private val volumeDownImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/volume_down.png")?.toExternalForm(), true)
+    private val fullscreenImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/fullscreen.png")?.toExternalForm(), true)
+    private val repeatOnImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/repeat_on.png")?.toExternalForm(), true)
+    private val repeatOffImage =
+        Image(VideoDisplay::class.java.getResource("/imgs/repeat_off.png")?.toExternalForm(), true)
 
     private lateinit var videoSurface: ImageView
 
@@ -53,7 +59,7 @@ class VideoDisplay : ItemDisplay() {
         get() = pausedProperty.value
         set(value) = pausedProperty.set(value)
 
-    val muteProperty = SimpleBooleanProperty(false)
+    val muteProperty = SimpleBooleanProperty(true)
     var isMuted: Boolean
         get() = muteProperty.value
         set(value) = muteProperty.set(value)
@@ -80,16 +86,10 @@ class VideoDisplay : ItemDisplay() {
 
             // Overlay
             borderpane {
-                isFocusTraversable = false
                 isPickOnBounds = false
                 padding = insets(2.0)
                 maxWidthProperty().bind(videoSurface.fitWidthProperty())
                 maxHeightProperty().bind(videoSurface.fitHeightProperty())
-
-                center = imageview {
-                    imageProperty().bind(pausedProperty.map { if (it) largePlayImage else largePauseImage })
-                    visibleWhen(pausedProperty.or(this@VideoDisplay.hoverProperty()))
-                }
 
                 bottom = hbox(5.0) {
                     padding = insets(2.0)
@@ -99,6 +99,7 @@ class VideoDisplay : ItemDisplay() {
                     visibleWhen(this@VideoDisplay.hoverProperty())
 
                     button {
+                        isFocusTraversable = false
                         tooltip {
                             textProperty().bind(pausedProperty.map { if (it) "Play" else "Pause" })
                         }
@@ -111,12 +112,21 @@ class VideoDisplay : ItemDisplay() {
                         }
                     }
                     slider(0.0, 1.0) {
+                        isFocusTraversable = false
                         hgrow = Priority.ALWAYS
                         mediaPlayer.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
                             override fun positionChanged(mediaPlayer: MediaPlayer?, newPosition: Float) {
-                                runOnUIThread { value = newPosition.toDouble() }
+                                runOnUIThread {
+                                    if (!isValueChanging) {
+                                        value = newPosition.toDouble()
+                                    }
+                                }
                             }
                         })
+                        valueProperty().addListener { _, _, new -> if (isValueChanging) mediaPlayer.controls().setPosition(new.toFloat()) }
+                        addEventFilter(MouseEvent.MOUSE_PRESSED) { isValueChanging = true }
+                        addEventFilter(MouseEvent.MOUSE_RELEASED) { isValueChanging = false }
+                        valueChangingProperty().addListener { _, _, new -> isPaused = new }
                     }
                     label {
                         val update = {
@@ -128,6 +138,7 @@ class VideoDisplay : ItemDisplay() {
                     }
                     // TODO show volume slider on hover
                     button {
+                        isFocusTraversable = false
                         tooltip("Volume")
                         graphic = imageview {
                             imageProperty().bind(muteProperty.map { if (it) volumeOffImage else volumeUpImage })
@@ -135,6 +146,17 @@ class VideoDisplay : ItemDisplay() {
                         onAction = EventHandler { event ->
                             event.consume()
                             muteProperty.toggle()
+                        }
+                    }
+                    button {
+                        isFocusTraversable = false
+                        tooltip("Repeat")
+                        graphic = imageview {
+                            imageProperty().bind(repeatProperty.map { if (it) repeatOnImage else repeatOffImage })
+                        }
+                        onAction = EventHandler { event ->
+                            event.consume()
+                            repeatProperty.toggle()
                         }
                     }
 
@@ -154,6 +176,7 @@ class VideoDisplay : ItemDisplay() {
         // Attach media player to surface
         mediaPlayer.videoSurface().set(ImageViewVideoSurface(videoSurface))
 
+        // Release VLCJ natives when removed from scene
         sceneProperty().addListener { _ ->
             if (scene == null) release()
         }
@@ -165,11 +188,18 @@ class VideoDisplay : ItemDisplay() {
             if (file != null) {
                 time = 0
                 mediaLength = 0
-                if (isPaused) mediaPlayer.media().startPaused(file.absolutePath)
-                else mediaPlayer.media().play(file.absolutePath)
+                mediaPlayer.submit {
+                    mediaPlayer.media().play(file.absolutePath)
+                }
             } else {
-                mediaPlayer.controls().stop()
-                mediaPlayer.media().prepare("") // Reset current media to stop it from holding a file lock
+                mediaPlayer.submit {
+                    mediaPlayer.controls().stop()
+                    mediaPlayer.media().prepare("") // Clear current media to stop it from holding a file lock
+                    // VLC seems to do a long blocking operation the first time it's loading a file from a folder with thousands of files in it.
+                    // I don't see why it's necessary for VLC to walk all the files in a folder when it has a direct path to a file.
+                    videoSurface.image =
+                        null // TODO this is an attempt to avoid confusing leftover frames when loading a video that takes a while to process. I don't know if it works yet
+                }
             }
         }
     }
@@ -177,23 +207,36 @@ class VideoDisplay : ItemDisplay() {
     private fun initControls() {
         // Init time event handler
         mediaPlayer.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
-            override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) {
+            override fun lengthChanged(mediaPlayer: MediaPlayer, newLength: Long) {
                 mediaLength = newLength
             }
 
-            override fun timeChanged(mediaPlayer: MediaPlayer?, newTime: Long) {
+            override fun timeChanged(mediaPlayer: MediaPlayer, newTime: Long) {
                 time = newTime
+            }
+
+            override fun finished(mediaPlayer: MediaPlayer) {
+                mediaPlayer.submit {
+                    if (!isRepeat) isPaused = true
+                }
             }
         })
 
         // Init simple controls
-        repeatProperty.addListener { _, _, new -> mediaPlayer.submit { mediaPlayer.controls().repeat = new } }
-        pausedProperty.addListener { _, _, new -> mediaPlayer.submit { mediaPlayer.controls().setPause(new) } }
+        repeatProperty.addListener { _, _, new -> mediaPlayer.controls().repeat = new }
+        pausedProperty.addListener { _, _, new ->
+            if (!new && !isRepeat && mediaPlayer.status().position() == -1f) {
+                mediaPlayer.controls().setPosition(0f)
+                mediaPlayer.controls().play()
+            } else {
+                mediaPlayer.controls().setPause(new)
+            }
+        }
         mediaPlayer.controls().apply {
             repeat = isRepeat
             setPause(isPaused)
         }
-        muteProperty.addListener { _, _, new -> mediaPlayer.submit { mediaPlayer.audio().isMute = new } }
+        muteProperty.addListener { _, _, new -> mediaPlayer.audio().isMute = new }
         mediaPlayer.audio().isMute = isMuted
     }
 
@@ -217,7 +260,7 @@ class VideoDisplay : ItemDisplay() {
         }
     }
 
-    private fun release() {
+    fun release() {
         mediaPlayer.controls().stop()
         mediaPlayer.release()
     }
