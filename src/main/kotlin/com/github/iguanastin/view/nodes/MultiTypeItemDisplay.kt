@@ -32,6 +32,7 @@ class MultiTypeItemDisplay : StackPane() {
 
     private val groupDisplay: GroupDisplay
     private val imageDisplay: ImageDisplay
+    private val videoDisplay: VideoDisplay
     private lateinit var infoLabel: Label
 
     private val infoPadding: Double = 5.0
@@ -85,6 +86,9 @@ class MultiTypeItemDisplay : StackPane() {
         imageDisplay = imagedisplay {
             isVisible = false
         }
+        videoDisplay = videodisplay {
+            isVisible = false
+        }
 
         anchorpane {
             isPickOnBounds = false
@@ -117,6 +121,10 @@ class MultiTypeItemDisplay : StackPane() {
             isVisible = this.item != null
         }
         imageDisplay.apply {
+            this.item = if (canDisplay(item)) item else null
+            isVisible = this.item != null
+        }
+        videoDisplay.apply {
             this.item = if (canDisplay(item)) item else null
             isVisible = this.item != null
         }

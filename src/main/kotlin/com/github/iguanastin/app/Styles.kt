@@ -26,6 +26,7 @@ class Styles : Stylesheet() {
         val infoLabel by cssclass()
         val focusableTagList by cssclass()
         val tempTag by cssclass()
+        val videoControls by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -133,7 +134,7 @@ class Styles : Stylesheet() {
         }
 
         button {
-            padding = box(5.px, 10.px) // TODO: This seems unnecessary
+//            padding = box(5.px, 10.px) // TODO: This seems unnecessary
             and(multiSelectButton) {
                 prefHeight = 100.px
                 padding = box(25.px)
@@ -178,6 +179,11 @@ class Styles : Stylesheet() {
         }
         tempTag and odd {
             backgroundColor += c("#330e17").brighter()
+        }
+
+        videoControls {
+            backgroundColor += c(0, 0, 0, 0.5)
+            backgroundRadius += box(2.px)
         }
     }
 }

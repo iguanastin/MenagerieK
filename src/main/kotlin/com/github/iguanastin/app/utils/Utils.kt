@@ -4,6 +4,7 @@ import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Tag
+import javafx.beans.property.BooleanProperty
 import mu.KotlinLogging
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -68,4 +69,8 @@ fun Item.pasteTagsFromClipboard(context: MenagerieContext?) {
     }
     context?.tagEdit(listOf(this), add)
     log.info("Pasted tags from clipboard: ${add.joinToString { it.name }}")
+}
+
+fun BooleanProperty.toggle() {
+    value = !value
 }
