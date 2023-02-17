@@ -56,6 +56,10 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
         return super.loadThumbnail()
     }
 
+    override fun getThumbnailExtension(): String {
+        return items.firstOrNull()?.getThumbnailExtension() ?: super.getThumbnailExtension()
+    }
+
     fun moveItem(item: FileItem, index: Int) {
         if (index == 0 || _items.indexOf(item) == 0) invalidateThumbnail()
         _items.move(item, index)

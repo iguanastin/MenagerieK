@@ -853,6 +853,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     override fun stop() {
+        VideoItem.releaseThumbnailer()
         root.onClose()
         super.stop()
 

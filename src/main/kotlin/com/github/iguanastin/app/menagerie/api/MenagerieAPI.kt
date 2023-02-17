@@ -401,9 +401,8 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
                 }
 
                 if (cdl.await(5, TimeUnit.SECONDS)) {
-                    var extension = "png"
+                    val extension = item.getThumbnailExtension() // TODO some thumbnails don't appear to be encoded the same as their extension?
                     if (item is FileItem) {
-                        extension = item.file.extension
                         exchange.responseHeaders["Cache-Control"] = "max-age=86400"
                         exchange.responseHeaders["ETag"] = "" + item.id
                         exchange.responseHeaders["Last-Modified"] = HTTP_DATE_TIME_FORMATTER.format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(item.file.lastModified()), ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("GMT")))

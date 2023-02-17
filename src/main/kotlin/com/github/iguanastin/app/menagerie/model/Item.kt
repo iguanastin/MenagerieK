@@ -74,6 +74,10 @@ open class Item(val id: Int, val added: Long, val menagerie: Menagerie) {
         return defaultThumbnail
     }
 
+    open fun getThumbnailExtension(): String {
+        return defaultThumbPath.substringAfterLast('.')
+    }
+
     override fun hashCode(): Int {
         return id.hashCode()
     }

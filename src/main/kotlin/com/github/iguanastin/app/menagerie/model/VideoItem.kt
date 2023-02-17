@@ -40,6 +40,10 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
             return fileExtensions.contains(file.extension.lowercase())
         }
 
+        fun releaseThumbnailer() {
+            thumbnailerMediaPlayer.release()
+        }
+
     }
 
     override fun loadThumbnail(): Image {
@@ -95,6 +99,10 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         }
 
         return result ?: super.loadThumbnail()
+    }
+
+    override fun getThumbnailExtension(): String {
+        return "png"
     }
 
     override fun replace(with: Item, replaceTags: Boolean): Boolean {

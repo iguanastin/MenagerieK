@@ -43,6 +43,10 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         return Image(file.toURI().toString(), thumbnailSize, thumbnailSize, true, true)
     }
 
+    override fun getThumbnailExtension(): String {
+        return file.extension
+    }
+
     override fun similarityTo(other: Item): Double {
         val superSimilarity = super.similarityTo(other)
         if (superSimilarity == 1.0 || other !is ImageItem || histogram == null || other.histogram == null) return superSimilarity
