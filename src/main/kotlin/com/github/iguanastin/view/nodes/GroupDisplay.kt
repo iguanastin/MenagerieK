@@ -6,7 +6,6 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.InvalidationListener
-import javafx.beans.value.ChangeListener
 import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.Label
@@ -19,9 +18,6 @@ class GroupDisplay : ItemDisplay() {
     private val grid: GridView<Item> = GridView<Item>()
     private val title: Label = Label()
 
-    private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
-        runOnUIThread { title.text = newValue }
-    }
     private val groupItemsListener: InvalidationListener = InvalidationListener {
         runOnUIThread {
             grid.items.apply {
@@ -50,16 +46,14 @@ class GroupDisplay : ItemDisplay() {
             style {
                 fontSize = 24.px
             }
-            textProperty().bind(itemProperty.map { if (it is GroupItem) it.title else null })
+            textProperty().bind(itemProperty.flatMap { if (it is GroupItem) it.titleProperty else null })
         }
 
         itemProperty.addListener { _, oldValue, newValue ->
             if (oldValue is GroupItem) {
-                oldValue.titleProperty.removeListener(groupTitleListener)
                 oldValue.items.removeListener(groupItemsListener)
             }
             if (newValue is GroupItem) {
-                newValue.titleProperty.addListener(groupTitleListener)
                 newValue.items.addListener(groupItemsListener)
             }
 

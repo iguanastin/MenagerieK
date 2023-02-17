@@ -20,7 +20,11 @@ object PatchNotes {
                 "- Fix long tag names clipping the frequency of all tags"
         notes["1.2.0"] = "Features:\n" +
                 "- Video playback support\n" +
-                "- Video thumbnails"
+                "- Video thumbnails\n" +
+                "\n" +
+                "Bug fixes:\n" +
+                "- Handle Http 429 responses better\n" +
+                "- Improve autotagger stability"
     }
 
     fun get(version: String): String {
