@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.duplicates.remote
 
+import mu.KotlinLogging
 import org.apache.http.client.HttpResponseException
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.CloseableHttpClient
@@ -9,7 +10,12 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.stream.Collectors
 
+private val log = KotlinLogging.logger {}
+
 object SourceTagParser {
+
+    private const val userAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
 
     private val gelRegex = Regex("^https://gelbooru\\.com/.+page=post.+")
     private val danRegex = Regex("^https://danbooru\\.donmai\\.us/posts?/.+")
@@ -23,7 +29,9 @@ object SourceTagParser {
 
 
     fun canGetTagsFrom(url: String): Boolean {
-        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url) || sanRegex.matches(url) || e62Regex.matches(url)
+        return gelRegex.matches(url) || danRegex.matches(url) || yanRegex.matches(url) || sanRegex.matches(url) || e62Regex.matches(
+            url
+        )
     }
 
     fun getTags(url: String, client: CloseableHttpClient): List<String> {
@@ -32,7 +40,10 @@ object SourceTagParser {
         val doc = try {
             get(url, client)
         } catch (e: HttpResponseException) {
-            if (e.statusCode == 451) return emptyList()
+            if (e.statusCode == 451 || e.statusCode == 403) {
+                log.warn("Failed to get tags from source: $url", e)
+                return emptyList()
+            }
             throw e
         }
 
@@ -51,7 +62,12 @@ object SourceTagParser {
         }
     }
 
-    private fun processTag(tag: String, list: MutableList<String>, optionalPrefix: String? = null, splitParentheses: Boolean = false) {
+    private fun processTag(
+        tag: String,
+        list: MutableList<String>,
+        optionalPrefix: String? = null,
+        splitParentheses: Boolean = false
+    ) {
         val name = tag.trim().replace(" ", "_")
         list.add(name)
 
@@ -195,7 +211,7 @@ object SourceTagParser {
 
     private fun get(url: String, client: CloseableHttpClient): Document {
         val get = HttpGet(url)
-        get.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+        get.addHeader("User-Agent", userAgent)
         client.execute(get).use { response ->
             if (response.statusLine.statusCode != 200) {
                 throw HttpResponseException(response.statusLine.statusCode, response.statusLine.reasonPhrase)

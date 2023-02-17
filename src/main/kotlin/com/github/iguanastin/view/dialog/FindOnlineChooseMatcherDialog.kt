@@ -14,6 +14,7 @@ import javafx.scene.input.KeyCode
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import mu.KotlinLogging
+import org.apache.http.client.HttpResponseException
 import tornadofx.*
 
 private val log = KotlinLogging.logger {}
@@ -116,25 +117,41 @@ class FindOnlineChooseMatcherDialog(private val context: MenagerieContext, priva
         val parent = this@FindOnlineChooseMatcherDialog.parent
         close()
 
-        val progress = ProgressDialog(header = "Fetching tags", "0/${items.size}").also { parent.add(it) }
+        val progress = ProgressDialog(header = "Fetching tags", "").also { parent.add(it) }
+        updateProgress(progress, 0)
 
         var i = 0
-        val tagger = AutoTagger(context, items, source, onFoundTagsForItem = {
-            i++
-            runOnUIThread {
-                progress.progress = i.toDouble() / items.size
-                progress.message = "$i/${items.size}"
-            }
+        val tagger = AutoTagger(context, items, source, finishedCheckingItem = {
+            updateProgress(progress, i++)
         }, onFinished = {
             source.close()
             runOnUIThread { progress.close() }
         }, onError = { error ->
             log.error("Auto tagger error", error)
-            runOnUIThread { parent.add(InfoStackDialog(header = "Auto tagger error", message = error.message ?: "Unknown error")) }
+            if (error is HttpResponseException && error.statusCode == 429) {
+                runOnUIThread { progress.message = "Too many requests, cooling down for 30 seconds..." }
+                Thread.sleep(30000)
+            } else {
+                runOnUIThread {
+                    parent.add(
+                        InfoStackDialog(
+                            header = "Auto tagger error",
+                            message = error.message ?: "Unknown error"
+                        )
+                    )
+                }
+            }
         }).apply { start() }
 
         progress.onClose = {
             tagger.close()
+        }
+    }
+
+    private fun updateProgress(progress: ProgressDialog, i: Int) {
+        runOnUIThread {
+            progress.progress = i.toDouble() / items.size
+            progress.message = "$i/${items.size}"
         }
     }
 

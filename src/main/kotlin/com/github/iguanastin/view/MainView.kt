@@ -790,7 +790,8 @@ class MainView : View("Menagerie") {
             new?.tags?.addListener(displayTagChangeListener)
 
             runOnUIThread {
-                tagView.items.clearAndAddAll(new?.tags?.sortedWith(MyApp.displayTagSorter) ?: return@runOnUIThread)
+                tagView.items.clear()
+                if (new != null) tagView.items.addAll(new.tags.sortedWith(MyApp.displayTagSorter))
             }
         })
     }

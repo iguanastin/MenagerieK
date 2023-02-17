@@ -12,7 +12,7 @@ class AutoTagger(
     private val context: MenagerieContext,
     private val items: List<Item>,
     private val source: OnlineMatchFinder,
-    private val onFoundTagsForItem: (Item) -> Unit = {},
+    private val finishedCheckingItem: (Item) -> Unit = {},
     private val onFinished: () -> Unit = {},
     private val onError: (Throwable) -> Unit = { log.error("Auto tagger error", it) }
 ) :
@@ -33,6 +33,7 @@ class AutoTagger(
             source.findMatches(set)
             set.error?.also {
                 onError(it)
+                finishedCheckingItem(item)
                 return@forEach
             }
 
@@ -47,12 +48,14 @@ class AutoTagger(
                 val sourceName =
                     match.sourceUrl.substring(0, match.sourceUrl.indexOf("/", match.sourceUrl.indexOf("//") + 2))
                 @Suppress("LABEL_NAME_CLASH")
-                if (sourcesUsed.contains(sourceName)) return@forEach
-                sourcesUsed.add(sourceName)
 
                 try {
                     val tags = SourceTagParser.getTags(match.sourceUrl, source.client!!)
                     if (closed) return
+                    if (tags.isEmpty()) return@forEach
+
+                    if (sourcesUsed.contains(sourceName)) return@forEach
+                    sourcesUsed.add(sourceName)
 
                     runOnUIThread {
                         tags.forEach { tag ->
@@ -64,7 +67,7 @@ class AutoTagger(
                 }
             }
 
-            onFoundTagsForItem(item)
+            finishedCheckingItem(item)
         }
 
         onFinished()
