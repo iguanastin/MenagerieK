@@ -581,6 +581,18 @@ class MainView : View("Menagerie") {
     }
 
     private fun initItemGrid() {
+        itemGrid.bindVisibleShortcut(
+            KeyCode.M,
+            desc = "Mute video player",
+            context = "Main Screen",
+            autoConsume = false
+        ) { event ->
+            if (itemDisplay.item is VideoItem) {
+                event.consume()
+                itemDisplay.videoDisplay.muteProperty.toggle()
+            }
+        }
+
         itemGrid.cellFactory = ItemCellFactory.factory {
             addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
                 if (event.button == MouseButton.PRIMARY && event.clickCount == 2) {

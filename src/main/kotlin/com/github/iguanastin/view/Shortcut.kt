@@ -13,12 +13,13 @@ class Shortcut(
     val type: EventType<KeyEvent> = KeyEvent.KEY_PRESSED,
     val desc: String? = null,
     val context: String? = null,
+    val autoConsume: Boolean = true,
     handler: (event: KeyEvent) -> Unit
 ) {
 
     private val _handler: (event: KeyEvent) -> Unit = { event ->
         if (event.code == key && event.isShortcutDown == ctrl && event.isAltDown == alt && event.isShiftDown == shift) {
-            event.consume()
+            if (autoConsume) event.consume()
             handler(event)
         }
     }
@@ -47,7 +48,8 @@ fun Node.bindShortcut(
     type: EventType<KeyEvent> = KeyEvent.KEY_PRESSED,
     desc: String? = null,
     context: String? = null,
+    autoConsume: Boolean = true,
     handler: (event: KeyEvent) -> Unit
 ): Shortcut {
-    return Shortcut(key, ctrl, alt, shift, type, desc, context, handler).apply { bindTo(this@bindShortcut) }
+    return Shortcut(key, ctrl, alt, shift, type, desc, context, autoConsume, handler).apply { bindTo(this@bindShortcut) }
 }

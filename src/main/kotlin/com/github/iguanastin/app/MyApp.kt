@@ -1019,7 +1019,8 @@ fun Node.bindVisibleShortcut(
     type: EventType<KeyEvent> = KeyEvent.KEY_PRESSED,
     desc: String? = null,
     context: String? = null,
+    autoConsume: Boolean = true,
     handler: (event: KeyEvent) -> Unit
 ): Shortcut {
-    return bindShortcut(key, ctrl, alt, shift, type, desc, context, handler).also { MyApp.shortcuts.add(it) }
+    return bindShortcut(key, ctrl, alt, shift, type, desc, context, autoConsume, handler).also { MyApp.shortcuts.add(it) }
 }
