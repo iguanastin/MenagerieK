@@ -23,6 +23,7 @@ import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer
 import java.time.Duration
+import kotlin.concurrent.fixedRateTimer
 
 class VideoDisplay : ItemDisplay() {
 
@@ -32,10 +33,10 @@ class VideoDisplay : ItemDisplay() {
         Image(VideoDisplay::class.java.getResource("/imgs/volume_off.png")?.toExternalForm(), true)
     private val volumeUpImage =
         Image(VideoDisplay::class.java.getResource("/imgs/volume_up.png")?.toExternalForm(), true)
-    private val volumeDownImage =
-        Image(VideoDisplay::class.java.getResource("/imgs/volume_down.png")?.toExternalForm(), true)
-    private val fullscreenImage =
-        Image(VideoDisplay::class.java.getResource("/imgs/fullscreen.png")?.toExternalForm(), true)
+//    private val volumeDownImage =
+//        Image(VideoDisplay::class.java.getResource("/imgs/volume_down.png")?.toExternalForm(), true)
+//    private val fullscreenImage =
+//        Image(VideoDisplay::class.java.getResource("/imgs/fullscreen.png")?.toExternalForm(), true)
     private val repeatOnImage =
         Image(VideoDisplay::class.java.getResource("/imgs/repeat_on.png")?.toExternalForm(), true)
     private val repeatOffImage =
@@ -68,6 +69,7 @@ class VideoDisplay : ItemDisplay() {
     private var time: Long
         get() = timeProperty.value
         set(value) = timeProperty.set(value)
+
     private val mediaLengthProperty = SimpleLongProperty()
     private var mediaLength: Long
         get() = mediaLengthProperty.value
@@ -115,18 +117,29 @@ class VideoDisplay : ItemDisplay() {
                             override fun positionChanged(mediaPlayer: MediaPlayer?, newPosition: Float) {
                                 runOnUIThread {
                                     if (!isValueChanging) {
-                                        value =
-                                            newPosition.toDouble() // TODO this is only updated once every 150-300ms at basically random; make it smoother
+                                        value = newPosition.toDouble()
                                     }
                                 }
                             }
                         })
+                        // Seek video
                         valueProperty().addListener { _, _, new ->
                             if (isValueChanging) mediaPlayer.controls().setPosition(new.toFloat())
                         }
+                        valueChangingProperty().addListener { _, _, new -> isPaused = new }
+
+                        // Workaround to fix dragging with mouse when you DON'T click on the thumb to start the drag
                         addEventFilter(MouseEvent.MOUSE_PRESSED) { isValueChanging = true }
                         addEventFilter(MouseEvent.MOUSE_RELEASED) { isValueChanging = false }
-                        valueChangingProperty().addListener { _, _, new -> isPaused = new }
+
+                        // Seek bar smoothing
+                        val millis = 33L
+                        val timer = fixedRateTimer("Video player seek smoother", daemon = true, millis, millis) {
+                            if (item != null && !isValueChanging && !isPaused) {
+                                runOnUIThread { value += (millis.toDouble() / mediaLength).coerceIn(0.0, 1.0) }
+                            }
+                        }
+                        sceneProperty().addListener { _ -> if (scene == null) timer.cancel() }
                     }
                     label {
                         val update = {
@@ -183,6 +196,8 @@ class VideoDisplay : ItemDisplay() {
                 mediaLength = 0
                 mediaPlayer.submit {
                     mediaPlayer.media().play(file.absolutePath)
+                    mediaPlayer.audio().isMute = isMuted
+                    isPaused = false
                 }
             } else {
                 mediaPlayer.submit {
@@ -190,8 +205,7 @@ class VideoDisplay : ItemDisplay() {
                     mediaPlayer.media().prepare("") // Clear current media to stop it from holding a file lock
                     // VLC seems to do a long blocking operation the first time it's loading a file from a folder with thousands of files in it.
                     // I don't see why it's necessary for VLC to walk all the files in a folder when it has a direct path to a file.
-                    videoSurface.image =
-                        null // TODO this is an attempt to avoid confusing leftover frames when loading a video that takes a while to process. I don't know if it works yet
+                    videoSurface.image = null
                 }
             }
         }
@@ -209,9 +223,11 @@ class VideoDisplay : ItemDisplay() {
             }
 
             override fun finished(mediaPlayer: MediaPlayer) {
-                mediaPlayer.submit {
-                    if (!isRepeat) isPaused = true
-                }
+                mediaPlayer.submit { if (!isRepeat) isPaused = true }
+            }
+
+            override fun mediaPlayerReady(mediaPlayer: MediaPlayer) {
+                mediaPlayer.submit { mediaPlayer.audio().isMute = isMuted }
             }
         })
 
@@ -219,11 +235,13 @@ class VideoDisplay : ItemDisplay() {
         repeatProperty.addListener { _, _, new -> mediaPlayer.controls().repeat = new }
         pausedProperty.addListener { _, _, new ->
             if (!new && !isRepeat && mediaPlayer.status().position() == -1f) {
+                // Restart if paused at end of media
                 mediaPlayer.controls().setPosition(0f)
                 mediaPlayer.controls().play()
             } else {
                 mediaPlayer.controls().setPause(new)
             }
+            if (!new) mediaPlayer.audio().isMute = isMuted
         }
         mediaPlayer.controls().apply {
             repeat = isRepeat
@@ -231,6 +249,8 @@ class VideoDisplay : ItemDisplay() {
         }
         muteProperty.addListener { _, _, new -> mediaPlayer.audio().isMute = new }
         mediaPlayer.audio().isMute = isMuted
+
+        disabledProperty().addListener { _, _, new -> if (new) isPaused = true }
     }
 
     override fun canDisplay(item: Item?): Boolean {
