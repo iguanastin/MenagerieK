@@ -592,6 +592,17 @@ class MainView : View("Menagerie") {
                 itemDisplay.videoDisplay.muteProperty.toggle()
             }
         }
+        itemGrid.bindVisibleShortcut(
+            KeyCode.SPACE,
+            desc = "Pause video player",
+            context = "Main Screen",
+            autoConsume = false
+        ) { event ->
+            if (itemDisplay.item is VideoItem) {
+                event.consume()
+                itemDisplay.videoDisplay.pausedProperty.toggle()
+            }
+        }
 
         itemGrid.cellFactory = ItemCellFactory.factory {
             addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
