@@ -1,7 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
 import javafx.scene.image.Image
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
@@ -9,12 +8,21 @@ import kotlin.concurrent.thread
 class Thumbnail(val item: Item) {
 
     companion object {
-        private val imageQueue: BlockingQueue<Thumbnail> = LinkedBlockingQueue()
+        private val normalQueue = LinkedBlockingQueue<Thumbnail>()
+        private val videoQueue = LinkedBlockingQueue<Thumbnail>()
 
         init {
             thread(start = true, name = "Image thumbnailer", isDaemon = true) {
                 while (true) {
-                    val thumb = imageQueue.take()
+                    val thumb = normalQueue.take()
+                    if (!thumb.isWanted()) continue
+
+                    thumb.load()
+                }
+            }
+            thread(start = true, name = "Video thumbnailer", isDaemon = true) {
+                while (true) {
+                    val thumb = videoQueue.take()
                     if (!thumb.isWanted()) continue
 
                     thumb.load()
@@ -54,7 +62,8 @@ class Thumbnail(val item: Item) {
             onReady(this)
         } else {
             synchronized(wanting) { wanting[you] = onReady }
-            if (this !in imageQueue) imageQueue.put(this)
+            val queue = if (item is VideoItem) videoQueue else normalQueue
+            if (this !in queue) queue.put(this)
         }
     }
 

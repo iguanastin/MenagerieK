@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.model
 import javafx.scene.image.Image
 import mu.KotlinLogging
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import java.io.File
@@ -16,7 +17,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
 
     companion object {
 
-        private val thumbnailerMediaPlayer: MediaPlayer = MediaPlayerFactory(
+        private val thumbnailerMediaPlayer: MediaPlayer? = if (NativeDiscovery().discover()) MediaPlayerFactory(
             "--intf", "dummy",
             "--vout", "dummy",
             "--no-audio",
@@ -32,7 +33,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
             val player = it.mediaPlayers().newMediaPlayer()
             it.release()
             return@let player
-        }
+        } else null
 
         val fileExtensions = listOf("webm", "mp4", "mov", "flv", "avi", "wmv", "3gp", "mpg", "m4v", "mkv")
 
@@ -41,7 +42,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         }
 
         fun releaseThumbnailer() {
-            thumbnailerMediaPlayer.release()
+            thumbnailerMediaPlayer?.release()
         }
 
     }
@@ -66,10 +67,10 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
                 snapshotLatch.countDown()
             }
         }
-        thumbnailerMediaPlayer.events().addMediaPlayerEventListener(eventListener)
+        thumbnailerMediaPlayer?.events()?.addMediaPlayerEventListener(eventListener)
 
         try {
-            if (thumbnailerMediaPlayer.media().start(file.absolutePath)) {
+            if (thumbnailerMediaPlayer?.media()?.start(file.absolutePath) == true) {
                 if (!inPositionLatch.await(2, TimeUnit.SECONDS)) return super.loadThumbnail()
 
                 if (thumbnailerMediaPlayer.video().videoDimension() != null) {
@@ -94,8 +95,8 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         } catch (t: Throwable) {
             log.warn("Error while trying to create video thumbnail: $file", t)
         } finally {
-            thumbnailerMediaPlayer.controls().stop()
-            thumbnailerMediaPlayer.events().removeMediaPlayerEventListener(eventListener)
+            thumbnailerMediaPlayer?.controls()?.stop()
+            thumbnailerMediaPlayer?.events()?.removeMediaPlayerEventListener(eventListener)
         }
 
         return result ?: super.loadThumbnail()

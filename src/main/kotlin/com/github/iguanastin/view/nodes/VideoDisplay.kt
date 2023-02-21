@@ -18,10 +18,13 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Priority
 import tornadofx.*
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery
 import uk.co.caprica.vlcj.javafx.videosurface.ImageViewVideoSurface
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer
+import java.awt.Desktop
+import java.net.URI
 import java.time.Duration
 import kotlin.concurrent.fixedRateTimer
 
@@ -33,7 +36,8 @@ class VideoDisplay : ItemDisplay() {
         Image(VideoDisplay::class.java.getResource("/imgs/volume_off.png")?.toExternalForm(), true)
     private val volumeUpImage =
         Image(VideoDisplay::class.java.getResource("/imgs/volume_up.png")?.toExternalForm(), true)
-//    private val volumeDownImage =
+
+    //    private val volumeDownImage =
 //        Image(VideoDisplay::class.java.getResource("/imgs/volume_down.png")?.toExternalForm(), true)
 //    private val fullscreenImage =
 //        Image(VideoDisplay::class.java.getResource("/imgs/fullscreen.png")?.toExternalForm(), true)
@@ -44,11 +48,12 @@ class VideoDisplay : ItemDisplay() {
 
     private lateinit var videoSurface: ImageView
 
-    private val mediaPlayer: EmbeddedMediaPlayer = MediaPlayerFactory("--no-metadata-network-access").let {
-        val player = it.mediaPlayers().newEmbeddedMediaPlayer()
-        it.release()
-        return@let player
-    }
+    private val mediaPlayer: EmbeddedMediaPlayer? =
+        if (NativeDiscovery().discover()) MediaPlayerFactory("--no-metadata-network-access").let {
+            val player = it.mediaPlayers().newEmbeddedMediaPlayer()
+            it.release()
+            return@let player
+        } else null
 
     val repeatProperty = SimpleBooleanProperty(true)
     var isRepeat: Boolean
@@ -76,6 +81,22 @@ class VideoDisplay : ItemDisplay() {
         set(value) = mediaLengthProperty.set(value)
 
     init {
+        if (mediaPlayer != null) {
+            initWithVLCJ()
+        } else {
+            center = vbox(25) {
+                alignment = Pos.CENTER
+                label("Please install VLC version 3.x.x and restart Menagerie for video support")
+                hyperlink("https://www.videolan.org/vlc/") {
+                    onActionConsuming {
+                        Desktop.getDesktop().browse(URI("https://www.videolan.org/vlc/"))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initWithVLCJ() {
         center = stackpane {
             videoSurface = dynamicImageView {
                 addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
@@ -113,7 +134,7 @@ class VideoDisplay : ItemDisplay() {
                     slider(0.0, 1.0) {
                         isFocusTraversable = false
                         hgrow = Priority.ALWAYS
-                        mediaPlayer.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
+                        mediaPlayer?.events()?.addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
                             override fun positionChanged(mediaPlayer: MediaPlayer?, newPosition: Float) {
                                 runOnUIThread {
                                     if (!isValueChanging) {
@@ -124,7 +145,7 @@ class VideoDisplay : ItemDisplay() {
                         })
                         // Seek video
                         valueProperty().addListener { _, _, new ->
-                            if (isValueChanging) mediaPlayer.controls().setPosition(new.toFloat())
+                            if (isValueChanging) mediaPlayer?.controls()?.setPosition(new.toFloat())
                         }
                         valueChangingProperty().addListener { _, _, new -> isPaused = new }
 
@@ -168,19 +189,19 @@ class VideoDisplay : ItemDisplay() {
                     }
 
                     // TODO fullscreen behavior?
-//                    button {
-//                        tooltip("Fullscreen")
-//                        graphic = imageview(fullscreenImage)
-//                        onActionConsuming {
-//                            // fullscreen it here
-//                        }
-//                    }
+    //                    button {
+    //                        tooltip("Fullscreen")
+    //                        graphic = imageview(fullscreenImage)
+    //                        onActionConsuming {
+    //                            // fullscreen it here
+    //                        }
+    //                    }
                 }
             }
         }
 
         // Attach media player to surface
-        mediaPlayer.videoSurface().set(ImageViewVideoSurface(videoSurface))
+        mediaPlayer?.videoSurface()?.set(ImageViewVideoSurface(videoSurface))
 
         // Release VLCJ natives when removed from scene
         sceneProperty().addListener { _ ->
@@ -194,13 +215,13 @@ class VideoDisplay : ItemDisplay() {
             if (file != null) {
                 time = 0
                 mediaLength = 0
-                mediaPlayer.submit {
+                mediaPlayer?.submit {
                     mediaPlayer.media().play(file.absolutePath)
                     mediaPlayer.audio().isMute = isMuted
                     isPaused = false
                 }
             } else {
-                mediaPlayer.submit {
+                mediaPlayer?.submit {
                     mediaPlayer.controls().stop()
                     mediaPlayer.media().prepare("") // Clear current media to stop it from holding a file lock
                     // VLC seems to do a long blocking operation the first time it's loading a file from a folder with thousands of files in it.
@@ -213,7 +234,7 @@ class VideoDisplay : ItemDisplay() {
 
     private fun initControls() {
         // Init time event handler
-        mediaPlayer.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
+        mediaPlayer?.events()?.addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
             override fun lengthChanged(mediaPlayer: MediaPlayer, newLength: Long) {
                 mediaLength = newLength
             }
@@ -232,23 +253,23 @@ class VideoDisplay : ItemDisplay() {
         })
 
         // Init simple controls
-        repeatProperty.addListener { _, _, new -> mediaPlayer.controls().repeat = new }
+        repeatProperty.addListener { _, _, new -> mediaPlayer?.controls()?.repeat = new }
         pausedProperty.addListener { _, _, new ->
-            if (!new && !isRepeat && mediaPlayer.status().position() == -1f) {
+            if (!new && !isRepeat && mediaPlayer?.status()?.position() == -1f) {
                 // Restart if paused at end of media
                 mediaPlayer.controls().setPosition(0f)
                 mediaPlayer.controls().play()
             } else {
-                mediaPlayer.controls().setPause(new)
+                mediaPlayer?.controls()?.setPause(new)
             }
-            if (!new) mediaPlayer.audio().isMute = isMuted
+            if (!new) mediaPlayer?.audio()?.isMute = isMuted
         }
-        mediaPlayer.controls().apply {
+        mediaPlayer?.controls()?.apply {
             repeat = isRepeat
             setPause(isPaused)
         }
-        muteProperty.addListener { _, _, new -> mediaPlayer.audio().isMute = new }
-        mediaPlayer.audio().isMute = isMuted
+        muteProperty.addListener { _, _, new -> mediaPlayer?.audio()?.isMute = new }
+        mediaPlayer?.audio()?.isMute = isMuted
 
         disabledProperty().addListener { _, _, new -> if (new) isPaused = true }
     }
@@ -274,8 +295,8 @@ class VideoDisplay : ItemDisplay() {
     }
 
     fun release() {
-        mediaPlayer.controls().stop()
-        mediaPlayer.release()
+        mediaPlayer?.controls()?.stop()
+        mediaPlayer?.release()
     }
 
 }
