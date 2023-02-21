@@ -23,6 +23,7 @@ object PatchNotes {
                 "- Video thumbnails\n" +
                 "\n" +
                 "Bug fixes:\n" +
+                "- Fixed unhandled errors in filter parsing\n" +
                 "- Handle Http 429 responses better\n" +
                 "- Improve autotagger stability"
     }

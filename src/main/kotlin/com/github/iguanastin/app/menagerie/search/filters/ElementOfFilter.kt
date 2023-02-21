@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 
 class ElementOfFilter(val group: GroupItem?, exclude: Boolean): SearchFilter(exclude) {
 
@@ -24,13 +25,19 @@ class ElementOfFilter(val group: GroupItem?, exclude: Boolean): SearchFilter(exc
 
         fun fromSearchQuery(query: String, exclude: Boolean, menagerie: Menagerie): ElementOfFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")
+            if (query.lowercase() in autocomplete) throw FilterParseException("Missing group ID parameter in query: \"$query\"")
 
             val parameter = query.substring(prefix.length)
             if (parameter.equals("any", true)) {
                 return ElementOfFilter(null, exclude)
             } else {
-                val item = menagerie.getItem(parameter.toInt())
-                if (item !is GroupItem) throw NullPointerException("No group with ID: $parameter")
+                val id = try {
+                    parameter.toInt()
+                } catch (e: NumberFormatException) {
+                    throw FilterParseException("$parameter is not a valid ID number")
+                }
+                val item = menagerie.getItem(id) ?: throw FilterParseException("No item with ID: $id")
+                if (item !is GroupItem) throw FilterParseException("ID: $id is not a group")
 
                 return ElementOfFilter(item, exclude)
             }

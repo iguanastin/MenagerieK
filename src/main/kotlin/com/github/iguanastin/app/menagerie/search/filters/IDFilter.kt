@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 
 class IDFilter(private val id: Int, private val type: Type, exclude: Boolean): SearchFilter(exclude) {
 
@@ -31,18 +32,25 @@ class IDFilter(private val id: Int, private val type: Type, exclude: Boolean): S
 
         fun fromSearchString(query: String, exclude: Boolean): IDFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")
+            if (query.lowercase() in autocomplete) throw FilterParseException("Missing ID parameter in query: \"$query\"")
 
             var type = Type.EQUALS
-            val id: Int
-            if (query[prefix.length] == '<') {
+            val idString = if (query[prefix.length] == '<') {
                 type = Type.LESS_THAN
-                id = query.substring(prefix.length + 1).toInt()
+                query.substring(prefix.length + 1)
             } else if (query[prefix.length] == '>') {
                 type = Type.GREATER_THAN
-                id = query.substring(prefix.length + 1).toInt()
+                query.substring(prefix.length + 1)
             } else {
-                id = query.substring(prefix.length).toInt()
+                query.substring(prefix.length)
             }
+            val id: Int = try {
+                idString.toInt()
+            } catch (e: NumberFormatException) {
+                throw FilterParseException("$idString is not a valid ID number")
+            }
+
+            if (id < 0) throw FilterParseException("ID number must not be negative: $id")
 
             return IDFilter(id, type, exclude)
         }

@@ -36,10 +36,8 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import mu.KotlinLogging
 import tornadofx.*
-import java.io.PrintWriter
-import java.io.StringWriter
 
-private val log = KotlinLogging.logger {}
+private val myLog = KotlinLogging.logger {}
 
 class MainView : View("Menagerie") {
 
@@ -438,25 +436,19 @@ class MainView : View("Menagerie") {
 
     private fun initEditTagsAutoComplete() {
         editTags.bindAutoComplete { predict ->
-            val result = mutableListOf<Tag>()
             var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
+            val maxResults = 8
 
-            if (exclude) {
-                itemGrid.selected.forEach { item ->
-                    item.tags.forEach { tag ->
-                        if (tag.name.startsWith(word) && tag !in result) result.add(tag)
-                    }
-                }
+            val result: List<Tag> = if (exclude) {
+                itemGrid.selected.flatMap { item -> item.tags }.toSet()
             } else {
-                currentSearch?.menagerie?.tags?.forEach { tag ->
-                    if (tag.name.startsWith(word)) result.add(tag)
-                }
-            }
-            result.sortByDescending { it.frequency }
+                currentSearch?.menagerie?.tags ?: emptySet()
+            }.filter { tag -> tag.name.startsWith(word) }.sortedByDescending { it.frequency }
 
-            result.subList(0, 8.coerceAtMost(result.size)).map { if (exclude) "-${it.name}" else it.name }
+            return@bindAutoComplete result.subList(0, maxResults.coerceAtMost(result.size))
+                .map { if (exclude) "-${it.name}" else it.name }
         }
     }
 
@@ -465,19 +457,21 @@ class MainView : View("Menagerie") {
             var word = predict.lowercase()
             val exclude = word.startsWith('-')
             if (exclude) word = word.substring(1)
-
-            val tags = mutableListOf<Tag>()
-            currentSearch?.menagerie?.tags?.forEach { tag ->
-                if (tag.name.startsWith(word)) tags.add(tag)
-            }
-            tags.sortByDescending { it.frequency }
+            val maxResults = 8
 
             val result = mutableListOf<String>()
-            tags.forEach { result.add(if (exclude) "-${it.name}" else it.name) }
+
+            val search = currentSearch
+            if (search != null) {
+                result.addAll(search.menagerie.tags.sortedByDescending { it.frequency }
+                    .filter { tag -> tag.name.startsWith(word) }
+                    .map { it.name })
+            }
 
             FilterFactory.filterPrefixes.forEach { if (it.startsWith(word)) result.add(it) }
 
-            return@bindAutoComplete result.subList(0, 8.coerceAtMost(result.size))
+            return@bindAutoComplete result.subList(0, maxResults.coerceAtMost(result.size))
+                .map { if (exclude) "-$it" else it }
         }
     }
 
@@ -500,20 +494,13 @@ class MainView : View("Menagerie") {
         val filters = try {
             FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
         } catch (e: FilterParseException) {
-            log.severe {
-                val sw = StringWriter()
-                sw.append("Likely because no tag with given name exists\n")
-                val pw = PrintWriter(sw)
-                e.printStackTrace(pw)
-                pw.close()
-                return@severe sw.toString()
-            }
+            myLog.warn(e.message)
             information(
                 "Error while parsing filters",
                 e.message,
                 ButtonType.OK,
                 owner = currentWindow
-            ) // TODO: better error message?
+            )
             return
         }
 

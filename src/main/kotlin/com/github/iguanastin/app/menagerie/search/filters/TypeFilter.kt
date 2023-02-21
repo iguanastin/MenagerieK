@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.search.filters
 
 import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.menagerie.search.FilterParseException
 
 class TypeFilter(val type: Type, exclude: Boolean): SearchFilter(exclude) {
 
@@ -35,9 +36,10 @@ class TypeFilter(val type: Type, exclude: Boolean): SearchFilter(exclude) {
 
         fun fromSearchString(query: String, exclude: Boolean): TypeFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")
-            val temp = query.substring(prefix.length)
+            if (query.lowercase() == prefix || query.lowercase() in autocomplete) throw FilterParseException("Missing type parameter in query: \"$query\"")
 
-            return TypeFilter(stringToType(temp), exclude)
+            val parameter = query.substring(prefix.length)
+            return TypeFilter(stringToType(parameter), exclude)
         }
 
         private fun stringToType(str: String): Type {
@@ -45,7 +47,7 @@ class TypeFilter(val type: Type, exclude: Boolean): SearchFilter(exclude) {
                 if (type.name.equals(str, ignoreCase = true)) return type
             }
 
-            throw IllegalArgumentException("No such type: $str")
+            throw FilterParseException("No such type: $str")
         }
 
         private fun typeToString(type: Type): String {
