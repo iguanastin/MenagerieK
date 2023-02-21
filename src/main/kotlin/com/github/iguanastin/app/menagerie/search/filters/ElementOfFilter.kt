@@ -25,7 +25,7 @@ class ElementOfFilter(val group: GroupItem?, exclude: Boolean): SearchFilter(exc
 
         fun fromSearchQuery(query: String, exclude: Boolean, menagerie: Menagerie): ElementOfFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")
-            if (query.lowercase() in autocomplete) throw FilterParseException("Missing group ID parameter in query: \"$query\"")
+            if (query.lowercase() == prefix) throw FilterParseException("Missing group ID parameter in query: \"$query\"")
 
             val parameter = query.substring(prefix.length)
             if (parameter.equals("any", true)) {
