@@ -53,7 +53,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.2.0" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.2.1" // When updating version, update it in pom.xml as well
         private const val githubRoot = "/iguanastin/menageriek"
         const val githubURL = "https://github.com$githubRoot"
         const val githubReleasesURL = "$githubURL/releases/latest"

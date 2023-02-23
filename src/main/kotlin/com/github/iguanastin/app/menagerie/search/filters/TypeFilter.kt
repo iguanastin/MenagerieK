@@ -36,7 +36,7 @@ class TypeFilter(val type: Type, exclude: Boolean): SearchFilter(exclude) {
 
         fun fromSearchString(query: String, exclude: Boolean): TypeFilter {
             if (!query.startsWith(prefix, true)) throw IllegalArgumentException("Expected \"$prefix\" prefix")
-            if (query.lowercase() == prefix || query.lowercase() in autocomplete) throw FilterParseException("Missing type parameter in query: \"$query\"")
+            if (query.lowercase() == prefix) throw FilterParseException("Missing type parameter in query: \"$query\"")
 
             val parameter = query.substring(prefix.length)
             return TypeFilter(stringToType(parameter), exclude)

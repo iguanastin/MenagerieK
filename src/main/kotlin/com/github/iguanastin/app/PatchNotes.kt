@@ -27,6 +27,8 @@ object PatchNotes {
                 "- Handle Http 429 responses better\n" +
                 "- Improve autotagger stability\n" +
                 "- Support JFIF image format"
+        notes["1.2.1"] = "Bug fixes:\n" +
+                "- Fix 'is:____' special search term error when used correctly"
     }
 
     fun get(version: String): String {
