@@ -32,7 +32,7 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
 
     companion object {
         const val noSimilarMax: Double = 0.9
-        val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp")
+        val fileExtensions = listOf("png", "jpg", "jpeg", "gif", "bmp", "jfif")
 
         fun isImage(file: File): Boolean {
             return fileExtensions.contains(file.extension.lowercase())

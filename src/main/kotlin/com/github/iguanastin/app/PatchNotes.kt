@@ -25,7 +25,8 @@ object PatchNotes {
                 "Bug fixes:\n" +
                 "- Fixed unhandled errors in filter parsing\n" +
                 "- Handle Http 429 responses better\n" +
-                "- Improve autotagger stability"
+                "- Improve autotagger stability\n" +
+                "- Support JFIF image format"
     }
 
     fun get(version: String): String {
