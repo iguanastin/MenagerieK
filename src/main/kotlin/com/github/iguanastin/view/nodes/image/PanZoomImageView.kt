@@ -1,5 +1,6 @@
 package com.github.iguanastin.view.nodes.image
 
+import com.github.iguanastin.app.utils.addIfUnique
 import com.github.iguanastin.view.afterLoaded
 import com.github.iguanastin.view.runOnUIThread
 import javafx.application.Platform
@@ -18,7 +19,7 @@ import kotlin.math.abs
 class PanZoomImageView : DynamicImageView() {
 
     companion object {
-        private val SCALES = doubleArrayOf(0.1, 0.13, 0.18, 0.24, 0.32, 0.42, 0.56, 0.75, 1.0, 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3)
+        private val SCALES = arrayOf(0.1, 0.13, 0.18, 0.24, 0.32, 0.42, 0.56, 0.75, 1.0, 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3)
         private const val scaleAsyncGreaterThan = 1.0
     }
 
@@ -93,31 +94,15 @@ class PanZoomImageView : DynamicImageView() {
             }
         }
         addEventHandler(ScrollEvent.SCROLL) { event: ScrollEvent ->
+            if (event.deltaY == 0.0) return@addEventHandler
             val image = trueImage ?: return@addEventHandler
 
-            val fitScale = getFitScale(image)
-            val work: MutableList<Double> = ArrayList()
-            for (v in SCALES) {
-                work.add(v)
+            mutableListOf(*SCALES).apply {
+                addIfUnique(scale, getFitScale(image))
+                if (event.deltaY < 0) sort() else sortDescending()
+                scale = this[(indexOf(scale) + 1).coerceIn(0, size - 1)]
             }
-            work.add(fitScale)
-            work.sort()
-            if (event.deltaY < 0) {
-                for (d in work) {
-                    if (d > scale) {
-                        scale = d
-                        break
-                    }
-                }
-            } else {
-                work.reverse()
-                for (d in work) {
-                    if (d < scale) {
-                        scale = d
-                        break
-                    }
-                }
-            }
+
             updateViewPort()
             event.consume()
         }

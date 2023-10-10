@@ -84,3 +84,7 @@ fun <E> MutableCollection<E>.clearAndAdd(add: E) {
     clear()
     add(add)
 }
+
+fun <E> MutableList<E>.addIfUnique(vararg add: E) {
+    add.forEach { if (!contains(it)) add(it) }
+}
