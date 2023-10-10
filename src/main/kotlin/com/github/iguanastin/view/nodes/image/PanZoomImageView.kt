@@ -237,8 +237,8 @@ class PanZoomImageView : DynamicImageView() {
         val fitWidth = fitWidth * scale
         val fitHeight = fitHeight * scale
 
-        val imageWidth = image.width
-        val imageHeight = image.height
+        val imageWidth = if (isScaleApplied) image.width / scale else image.width
+        val imageHeight = if (isScaleApplied) image.height / scale else image.height
         deltaX = deltaX.coerceIn(-imageWidth / 2, imageWidth / 2)
         deltaY = deltaY.coerceIn(-imageWidth / 2, imageWidth / 2)
 
