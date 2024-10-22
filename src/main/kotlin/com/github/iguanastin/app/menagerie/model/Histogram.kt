@@ -2,10 +2,12 @@ package com.github.iguanastin.app.menagerie.model
 
 import com.github.iguanastin.view.blockUntilLoaded
 import javafx.scene.image.Image
+import javafx.scene.image.PixelFormat
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.ByteBuffer
+import java.nio.IntBuffer
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -80,9 +82,14 @@ class Histogram private constructor(
             image.blockUntilLoaded()
             val pixelReader = image.pixelReader ?: return null
 
-            for (y in 0 until image.height.toInt()) {
-                for (x in 0 until image.width.toInt()) {
-                    val color = pixelReader.getArgb(x, y)
+            val bufferRows = 10 // Buffer n rows at a time
+            val width = image.width.toInt()
+            val buffer = IntBuffer.wrap(IntArray(width * bufferRows))
+            val format = PixelFormat.getIntArgbInstance()
+            for (y in 0 until image.height.toInt() / bufferRows) {
+                pixelReader.getPixels(0, y * bufferRows, width, bufferRows, format, buffer, width)
+                while (buffer.hasRemaining()) {
+                    val color = buffer.get()
                     val a = 0xff and (color shr 24)
                     val r = 0xff and (color shr 16)
                     val g = 0xff and (color shr 8)
@@ -93,6 +100,7 @@ class Histogram private constructor(
                     hist.green[g / (256 / BIN_SIZE)]++
                     hist.blue[b / (256 / BIN_SIZE)]++
                 }
+                buffer.clear()
             }
 
             val pixelCount = (image.width * image.height).toLong()
