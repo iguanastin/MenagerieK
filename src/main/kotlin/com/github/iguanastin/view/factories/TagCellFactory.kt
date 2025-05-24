@@ -30,7 +30,7 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
                 }
             }
             val freqListener: ChangeListener<Number> = ChangeListener { _, _, newValue ->
-                runOnUIThread {
+                if (item?.temporary == false) runOnUIThread {
                     freqLabel.text = "$newValue"
                 }
             }
