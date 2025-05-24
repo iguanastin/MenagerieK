@@ -3,7 +3,6 @@ package com.github.iguanastin.view.nodes.image
 import com.github.iguanastin.app.utils.addIfUnique
 import com.github.iguanastin.view.afterLoaded
 import com.github.iguanastin.view.runOnUIThread
-import javafx.application.Platform
 import javafx.beans.property.*
 import javafx.event.EventTarget
 import javafx.geometry.Rectangle2D
@@ -14,12 +13,33 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.input.ScrollEvent
 import tornadofx.*
 import kotlin.math.abs
+import kotlin.math.max
 
 
 class PanZoomImageView : DynamicImageView() {
 
     companion object {
-        private val SCALES = arrayOf(0.1, 0.13, 0.18, 0.24, 0.32, 0.42, 0.56, 0.75, 1.0, 1.25, 1.56, 1.95, 2.44, 3.05, 3.81, 4.76, 5.95, 7.44, 9.3)
+        private val SCALES = arrayOf(
+            0.1,
+            0.13,
+            0.18,
+            0.24,
+            0.32,
+            0.42,
+            0.56,
+            0.75,
+            1.0,
+            1.25,
+            1.56,
+            1.95,
+            2.44,
+            3.05,
+            3.81,
+            4.76,
+            5.95,
+            7.44,
+            9.3
+        )
         private const val scaleAsyncGreaterThan = 1.0
     }
 
@@ -114,54 +134,47 @@ class PanZoomImageView : DynamicImageView() {
             this.image = image
             isScaleApplied = false
 
-            if (image != null) {
-                image.afterLoaded {
-                    runOnUIThread { fitImageToView() }
-                }
-                updateViewPort()
-            } else {
-                fitImageToView()
+            image?.afterLoaded {
+                runOnUIThread { fitImageToView() }
             }
         }
 
         scaleProperty.addListener { _, _, newValue ->
+            val newScale = newValue.toDouble()
             if (isScaleApplied) {
                 isScaleApplied = false
-                deltaX *= newValue.toDouble()
-                deltaY *= newValue.toDouble()
+                deltaX *= newScale
+                deltaY *= newScale
                 image = trueImage
             }
-            if (applyScaleAsync && newValue.toDouble() >= scaleAsyncGreaterThan) {
-                val img = trueImage
-                if (img != null) {
-                    scalerThread?.enqueue(ImageScaleJob(img, newValue.toDouble(), { image ->
-                        if (scale == newValue.toDouble() && img == trueImage) Platform.runLater { setAppliedScaleImage(image) }
-                    }))
-                }
-            }
+            tryEnqueueScaleAsync(newScale)
         }
 
-        applyScaleAsyncProperty.addListener { _, _, new ->
+        applyScaleAsyncProperty.addListener { _, _, scaleAsync ->
             scalerThread?.close()
             scalerThread = null
 
-            if (new) {
+            if (scaleAsync) {
                 scalerThread = ImageScalerThread().apply {
                     isDaemon = true
                     start()
                 }
 
-                val img = trueImage
-                if (!isScaleApplied && img != null && scale >= scaleAsyncGreaterThan) {
-                    val tempScale = scale
-                    scalerThread?.enqueue(ImageScaleJob(img, tempScale, { image ->
-                        if (tempScale == scale && img == trueImage) Platform.runLater { setAppliedScaleImage(image) }
-                    }))
-                }
+                tryEnqueueScaleAsync(scale)
             }
         }
     }
 
+    private fun tryEnqueueScaleAsync(newScale: Double) {
+        if (!applyScaleAsync || newScale < scaleAsyncGreaterThan) return
+
+        trueImage?.also { sourceImage ->
+            scalerThread?.enqueue(ImageScaleJob(sourceImage, newScale, { scaledImage ->
+                if (scale != newScale || trueImage != sourceImage) return@ImageScaleJob
+                runOnUIThread { setAppliedScaleImage(scaledImage) }
+            }))
+        }
+    }
 
     fun fitImageToView() {
         deltaY = 0.0
@@ -170,27 +183,19 @@ class PanZoomImageView : DynamicImageView() {
 
         updateViewPort()
 
-        val img = image
-        if (img != null) {
+        image?.also { img ->
             val fit = {
                 scale = getFitScale(img)
                 updateViewPort()
             }
-            if (img.isBackgroundLoading && img.progress != 1.0) {
-                img.afterLoaded {
-                    if (image == this) runOnUIThread(fit)
-                }
-            } else {
-                fit()
+            img.afterLoaded {
+                if (image == this) runOnUIThread(fit)
             }
         }
     }
 
     private fun getFitScale(img: Image): Double {
-        var s = img.width / fitWidth
-        if (img.height / fitHeight > s) s = img.height / fitHeight
-        if (s < 1) s = 1.0
-        return s
+        return max(img.width / fitWidth, img.height/ fitHeight).coerceAtLeast(1.0)
     }
 
     private fun setAppliedScaleImage(image: Image?) {
@@ -225,7 +230,7 @@ class PanZoomImageView : DynamicImageView() {
         val imageWidth = if (isScaleApplied) image.width / scale else image.width
         val imageHeight = if (isScaleApplied) image.height / scale else image.height
         deltaX = deltaX.coerceIn(-imageWidth / 2, imageWidth / 2)
-        deltaY = deltaY.coerceIn(-imageWidth / 2, imageWidth / 2)
+        deltaY = deltaY.coerceIn(-imageHeight / 2, imageHeight / 2)
 
         val viewportX = (imageWidth - fitWidth) / 2 + deltaX
         val viewportY = (imageHeight - fitHeight) / 2 + deltaY
