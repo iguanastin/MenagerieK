@@ -53,7 +53,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.2.2" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.2.3" // When updating version, update it in pom.xml as well
         private const val githubRoot = "/iguanastin/menageriek"
         const val githubURL = "https://github.com$githubRoot"
         const val githubReleasesURL = "$githubURL/releases/latest"
@@ -952,12 +952,22 @@ class MyApp : App(MainView::class, Styles::class) {
                             })
                     }
                 } else {
-                    error(
-                        title = "Incompatible database",
-                        header = "Database v${database.version} is not supported!",
-                        content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database",
-                        owner = stage
-                    )
+                    if (database.version < MenagerieDatabase.MINIMUM_DATABASE_VERSION) {
+                        error(
+                            title = "Incompatible database",
+                            header = "Database v${database.version} is not supported!",
+                            content = "Update to database version 8 with the latest Java Menagerie application\n-OR-\nCreate a new database",
+                            owner = stage
+                        )
+                    } else {
+                        error(
+                            title = "Incompatible database",
+                            header = "Database v${database.version} is not supported",
+                            content = "Maximum supported database version for Menagerie v${MyApp.VERSION} is database v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}",
+                            owner = stage
+                        )
+                    }
+                    database.close()
                 }
             } else {
                 load()

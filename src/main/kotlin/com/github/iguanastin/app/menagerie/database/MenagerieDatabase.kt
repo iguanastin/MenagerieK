@@ -3,6 +3,7 @@ package com.github.iguanastin.app.menagerie.database
 import com.github.iguanastin.app.menagerie.database.migration.DatabaseMigration
 import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabaseV8
 import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
+import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase9To10
 import com.github.iguanastin.app.menagerie.database.updates.*
 import com.github.iguanastin.app.menagerie.model.*
 import javafx.collections.ListChangeListener
@@ -25,7 +26,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         const val MINIMUM_DATABASE_VERSION = 8
         const val REQUIRED_DATABASE_VERSION = 9
 
-        val migrations: List<DatabaseMigration> = listOf(InitializeDatabaseV8(), MigrateDatabase8To9())
+        val migrations: List<DatabaseMigration> = listOf(
+            InitializeDatabaseV8(),
+            MigrateDatabase8To9(),
+            MigrateDatabase9To10()
+        )
     }
 
     var db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
@@ -202,11 +207,11 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     }
 
     fun needsMigration(): Boolean {
-        return version < REQUIRED_DATABASE_VERSION
+        return version < REQUIRED_DATABASE_VERSION || version > REQUIRED_DATABASE_VERSION
     }
 
     fun canMigrate(): Boolean {
-        if (version in 0 until MINIMUM_DATABASE_VERSION) return false
+        if (version < MINIMUM_DATABASE_VERSION || version > REQUIRED_DATABASE_VERSION) return false
 
         var v = version
         while (v < REQUIRED_DATABASE_VERSION) {
