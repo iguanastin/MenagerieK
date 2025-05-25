@@ -29,6 +29,9 @@ object PatchNotes {
                 "- Support JFIF image format"
         notes["1.2.1"] = "Bug fixes:\n" +
                 "- Fix 'is:____' special search term error when used correctly"
+        notes["1.2.2"] = "Bug Fixes:\n" +
+                "- Incorrect pan bounds on image previews (#9)\n" +
+                "- TEMP tag label changing to tag count in some circumstances (#4)"
     }
 
     fun get(version: String): String {

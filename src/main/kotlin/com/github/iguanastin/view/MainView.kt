@@ -39,7 +39,7 @@ import tornadofx.*
 
 private val myLog = KotlinLogging.logger {}
 
-class MainView : View("Menagerie") {
+class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
     lateinit var itemDisplay: MultiTypeItemDisplay
     lateinit var itemGrid: MultiSelectGridView<Item>
