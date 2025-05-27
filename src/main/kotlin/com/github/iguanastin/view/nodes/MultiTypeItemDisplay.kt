@@ -28,9 +28,13 @@ private val log = KotlinLogging.logger {}
 
 class MultiTypeItemDisplay : StackPane() {
 
-    val groupDisplay: GroupDisplay
-    val imageDisplay: ImageDisplay
-    val videoDisplay: VideoDisplay
+    val groupDisplay = GroupDisplay()
+    val imageDisplay = ImageDisplay()
+    val videoDisplay = VideoDisplay()
+    val plaintextDisplay = PlainTextDisplay()
+
+    private val displays: List<ItemDisplay> = listOf(groupDisplay, imageDisplay, videoDisplay, plaintextDisplay)
+
     private lateinit var infoLabel: Label
 
     private val infoPadding: Double = 5.0
@@ -78,14 +82,9 @@ class MultiTypeItemDisplay : StackPane() {
             }
         })
 
-        groupDisplay = groupdisplay {
-            isVisible = false
-        }
-        imageDisplay = imagedisplay {
-            isVisible = false
-        }
-        videoDisplay = videodisplay {
-            isVisible = false
+        displays.forEach { d ->
+            add(d)
+            d.isVisible = false
         }
 
         anchorpane {
@@ -113,18 +112,9 @@ class MultiTypeItemDisplay : StackPane() {
 
 
     private fun display(item: Item?) {
-        // Reset displays
-        groupDisplay.apply {
-            this.item = if (canDisplay(item)) item else null
-            isVisible = this.item != null
-        }
-        imageDisplay.apply {
-            this.item = if (canDisplay(item)) item else null
-            isVisible = this.item != null
-        }
-        videoDisplay.apply {
-            this.item = if (canDisplay(item)) item else null
-            isVisible = this.item != null
+        displays.forEach { d ->
+            d.item = if (d.canDisplay(item)) item else null
+            d.isVisible = d.item != null
         }
 
         updateInfo(item)

@@ -32,6 +32,7 @@ class Styles : Stylesheet() {
         val itemGrid by cssclass()
         val importCellSource by cssclass()
         val importCellStatus by cssclass()
+        val textDisplay by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -214,6 +215,17 @@ class Styles : Stylesheet() {
         }
         importCellStatus {
             textFill = c("white")
+        }
+
+        textDisplay {
+            padding = box(25.px)
+
+            textArea {
+                textFill = c("white")
+                content {
+                    backgroundColor = multi(c("#222426"))
+                }
+            }
         }
     }
 }
