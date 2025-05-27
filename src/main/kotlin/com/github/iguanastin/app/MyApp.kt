@@ -608,11 +608,15 @@ class MyApp : App(MainView::class, Styles::class) {
                         settings.duplicate.confidence.value
                     )
                 }
-                if (pairs is MutableList) pairs.removeIf { menagerie.hasNonDupe(it) }
+                var new = 0
+                pairs.forEach {
+                    p -> menagerie.addSimilarity(p)
+                    new++
+                }
 
                 runOnUIThread {
                     progress.close()
-                    root.root.add(DuplicateResolverDialog(pairs.asObservable(), context))
+                    root.root.add(InfoStackDialog(header = "Found duplicates", message = "Found $new new duplicate(s)"))
                 }
             } catch (e: Exception) {
                 log.error("Error while finding duplicates", e)

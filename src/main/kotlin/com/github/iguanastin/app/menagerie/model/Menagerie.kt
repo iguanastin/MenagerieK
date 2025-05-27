@@ -137,7 +137,7 @@ class Menagerie {
     }
 
     fun addSimilarity(pair: SimilarPair<Item>): Boolean {
-        if (pair in _similarPairs) return false
+        if (pair in _similarPairs || pair in _knownNonDupes) return false
         return _similarPairs.add(pair)
     }
 
