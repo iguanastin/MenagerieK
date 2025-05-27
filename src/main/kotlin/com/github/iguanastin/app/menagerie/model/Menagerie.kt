@@ -21,6 +21,9 @@ class Menagerie {
     private val _knownNonDupes: ObservableSet<SimilarPair<Item>> = FXCollections.observableSet()
     val knownNonDupes: ObservableSet<SimilarPair<Item>> = _knownNonDupes.asUnmodifiable()
 
+    private val _similarPairs: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
+    val similarPairs = _similarPairs.asUnmodifiable()
+
 
     init {
         items.addListener(ListChangeListener { change ->
@@ -32,6 +35,8 @@ class Menagerie {
                         it.elementOf?.removeItem(it)
                     }
                     it.invalidate()
+
+                    _similarPairs.removeIf{ p -> p.contains(it) } // Remove similar pairs containing removed item
                 }
                 change.addedSubList.forEach {
                     itemIdMap[it.id] = it
@@ -129,6 +134,19 @@ class Menagerie {
 
     fun removeNonDupe(dupe: SimilarPair<Item>): Boolean {
         return _knownNonDupes.remove(dupe)
+    }
+
+    fun addSimilarity(pair: SimilarPair<Item>): Boolean {
+        if (pair in _similarPairs) return false
+        return _similarPairs.add(pair)
+    }
+
+    fun removeSimilarity(pair: SimilarPair<Item>): Boolean {
+        return _similarPairs.remove(pair)
+    }
+
+    fun purgeSimilarNonDupes() {
+        _similarPairs.removeIf{ p -> hasNonDupe(p) }
     }
 
 }

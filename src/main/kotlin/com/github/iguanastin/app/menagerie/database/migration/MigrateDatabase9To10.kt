@@ -11,7 +11,6 @@ class MigrateDatabase9To10: DatabaseMigration() {
 
     override fun migrate(db: Connection) {
         db.createStatement().use { s ->
-            s.executeUpdate("CREATE TABLE imports(url NVARCHAR(4096) NOT NULL);") // TODO incorrect database info
             s.executeUpdate("CREATE TABLE similar(id1 INT NOT NULL, id2 INT NOT NULL, similarity DOUBLE PRECISION NOT NULL, FOREIGN KEY (id1) REFERENCES items(id) ON DELETE CASCADE, FOREIGN KEY (id2) REFERENCES items(id) ON DELETE CASCADE);")
 
             // Add migration time to version table

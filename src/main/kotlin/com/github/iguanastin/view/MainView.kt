@@ -68,9 +68,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     val imports: ObservableList<ImportNotification> = observableListOf()
 
     // Should probably be in MyApp
-    val similar: ObservableList<SimilarPair<Item>> = observableListOf()
-
-    // Should probably be in MyApp
     private val history: ObservableList<SearchHistory> = observableListOf()
 
     private val myApp = (app as MyApp)
@@ -78,6 +75,8 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     var context: MenagerieContext? = null
         set(value) {
             field = value
+
+            if (value != null) initSimilarButton(value.menagerie)
 
             // Bi-directionally bind main video mute and repeat to prefs
             value?.apply {
@@ -256,7 +255,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         initEditTagsAutoComplete()
         initSelectedItemCounterListeners()
         initImportsButton()
-        initSimilarButton()
 
         Platform.runLater { itemGrid.requestFocus() }
     }
@@ -367,32 +365,31 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         }
     }
 
-    private fun initSimilarButton() {
-        similar.addListener(ListChangeListener { change ->
+    private fun initSimilarButton(menagerie: Menagerie) {
+        runOnUIThread { updateSimilarButtonState(menagerie.similarPairs.size) }
+        menagerie.similarPairs.addListener(ListChangeListener { change ->
             while (change.next()) {
-                runOnUIThread {
-                    val count = change.list.size
-                    similarButton.text = "Similar: $count"
-                    if (count > 0) {
-                        if (!similarButton.hasClass(Styles.blueBase)) similarButton.addClass(Styles.blueBase)
-                    } else {
-                        similarButton.removeClass(Styles.blueBase)
-                    }
-                    similarButton.applyCss()
-                }
+                runOnUIThread { updateSimilarButtonState(change.list.size) }
             }
         })
 
         similarButton.onActionConsuming { openSimilarDialog() }
     }
 
+    private fun updateSimilarButtonState(count: Int) {
+        similarButton.text = "Similar: $count"
+        if (count > 0) {
+            if (!similarButton.hasClass(Styles.blueBase)) similarButton.addClass(Styles.blueBase)
+        } else {
+            similarButton.removeClass(Styles.blueBase)
+        }
+    }
+
     fun openSimilarDialog() {
-        this.add(DuplicateResolverDialog(similar, myApp.context).apply {
+        val pairs = context?.menagerie?.similarPairs ?: return
+        this.add(DuplicateResolverDialog(pairs, myApp.context).apply {
             onClose = {
-                if (similar.isNotEmpty()) {
-                    val menagerie = similar.first().obj1.menagerie
-                    similar.removeIf { menagerie.hasNonDupe(it) }
-                }
+                context!!.menagerie.purgeSimilarNonDupes()
             }
         })
     }

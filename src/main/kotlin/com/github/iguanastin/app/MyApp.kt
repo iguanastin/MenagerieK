@@ -22,7 +22,6 @@ import com.github.iguanastin.view.*
 import com.github.iguanastin.view.dialog.*
 import com.sun.jna.platform.FileUtils
 import javafx.application.Platform
-import javafx.collections.ListChangeListener
 import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
 import javafx.event.EventType
@@ -156,6 +155,7 @@ class MyApp : App(MainView::class, Styles::class) {
         purgeUnusedTags(context.menagerie)
         initImporterListeners(context)
 
+
         context.menagerie.tags.addListener(SetChangeListener { change ->
             val colorRules = context.prefs.tags.autoColorTags
             if (change.wasAdded()) colorRules.applyRulesTo(change.elementAdded)
@@ -270,17 +270,8 @@ class MyApp : App(MainView::class, Styles::class) {
                 false
             )
 
-            runOnUIThread { root.similar.addAll(0, similar.filter { it !in root.similar }) }
+            similar.forEach { p -> context.menagerie.addSimilarity(p) }
         }
-
-        // Listen to item list and remove similar pairs containing removed items
-        context.menagerie.items.addListener(ListChangeListener { change ->
-            while (change.next()) {
-                if (change.removedSize > 0) {
-                    runOnUIThread { root.similar.removeIf { it.obj1 in change.removed || it.obj2 in change.removed } }
-                }
-            }
-        })
     }
 
     private fun checkVersionAndPatchNotes() {
