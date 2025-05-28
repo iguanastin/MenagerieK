@@ -1,7 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
-import com.github.iguanastin.view.image
 import javafx.collections.*
 import tornadofx.*
 import java.io.File
@@ -172,19 +171,7 @@ class Menagerie {
 
         val item = when {
             ImageItem.isImage(file) -> {
-                val histogram = Histogram.from(image(file))
-
-                var noSimilar = true
-                if (histogram != null) {
-                    items.forEach { i ->
-                        if (i is ImageItem && (i.histogram?.similarityTo(histogram) ?: 0.0) > ImageItem.noSimilarMax) {
-                            noSimilar = false
-                            i.noSimilar = false
-                        }
-                    }
-                }
-
-                ImageItem(id, added, this, md5, file, noSimilar, histogram)
+                ImageItem(id, added, this, md5, file).apply { buildHistogram() }
             }
             VideoItem.isVideo(file) -> {
                 VideoItem(id, added, this, md5, file)
@@ -197,7 +184,12 @@ class Menagerie {
         item.addTag(getOrMakeTag("tagme"))
         addItem(item)
 
-        // Find similar items
+        findSimilarToSingle(item)
+
+        return item
+    }
+
+    fun findSimilarToSingle(item: FileItem): List<SimilarPair<Item>> {
         // TODO might not want it to be threaded
         val similar = CPUDuplicateFinder.findDuplicates(
             listOf(item),
@@ -206,8 +198,7 @@ class Menagerie {
         )
 
         similar.forEach { p -> addSimilarity(p) }
-
-        return item
+        return similar
     }
 
 }

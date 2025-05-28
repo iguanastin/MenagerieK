@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.model
 
+import com.github.iguanastin.view.image
 import javafx.beans.property.BooleanProperty
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleBooleanProperty
@@ -62,6 +63,23 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         noSimilar = with.noSimilar
 
         return true
+    }
+
+    fun buildHistogram(): Histogram? {
+        val histogram = Histogram.from(image(file))
+
+        noSimilar = true
+        if (histogram != null) {
+            menagerie.items.forEach { i ->
+                if (i is ImageItem && (i.histogram?.similarityTo(histogram) ?: 0.0) > noSimilarMax) {
+                    noSimilar = false
+                    i.noSimilar = false
+                }
+            }
+        }
+
+        this.histogram = histogram
+        return histogram
     }
 
 }
