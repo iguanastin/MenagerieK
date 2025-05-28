@@ -1,5 +1,7 @@
 package com.github.iguanastin.app.menagerie.model
 
+import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
+import com.github.iguanastin.view.image
 import javafx.collections.*
 import tornadofx.*
 import java.io.File
@@ -23,6 +25,8 @@ class Menagerie {
 
     private val _similarPairs: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
     val similarPairs = _similarPairs.asUnmodifiable()
+
+    var similarityConfidence: Double = 0.95
 
 
     init {
@@ -147,6 +151,63 @@ class Menagerie {
 
     fun purgeSimilarNonDupes() {
         _similarPairs.removeIf{ p -> hasNonDupe(p) }
+    }
+
+    fun createGroup(title: String): GroupItem {
+        val g = GroupItem(reserveItemID(), System.currentTimeMillis(), this, title)
+        addItem(g)
+        g.addTag(getOrMakeTag("tagme"))
+        return g
+    }
+
+    /**
+     LONG BLOCKING CALL
+     */
+    fun createFileItem(file: File): FileItem {
+        if (hasFile(file)) throw IllegalArgumentException("File already present: ${file.path}")
+
+        val id = reserveItemID()
+        val md5 = FileItem.fileHash(file)
+        val added = System.currentTimeMillis()
+
+        val item = when {
+            ImageItem.isImage(file) -> {
+                val histogram = Histogram.from(image(file))
+
+                var noSimilar = true
+                if (histogram != null) {
+                    items.forEach { i ->
+                        if (i is ImageItem && (i.histogram?.similarityTo(histogram) ?: 0.0) > ImageItem.noSimilarMax) {
+                            noSimilar = false
+                            i.noSimilar = false
+                        }
+                    }
+                }
+
+                ImageItem(id, added, this, md5, file, noSimilar, histogram)
+            }
+            VideoItem.isVideo(file) -> {
+                VideoItem(id, added, this, md5, file)
+            }
+            else -> {
+                FileItem(id, added, this, md5, file)
+            }
+        }
+
+        item.addTag(getOrMakeTag("tagme"))
+        addItem(item)
+
+        // Find similar items
+        // TODO might not want it to be threaded
+        val similar = CPUDuplicateFinder.findDuplicates(
+            listOf(item),
+            items,
+            similarityConfidence
+        )
+
+        similar.forEach { p -> addSimilarity(p) }
+
+        return item
     }
 
 }

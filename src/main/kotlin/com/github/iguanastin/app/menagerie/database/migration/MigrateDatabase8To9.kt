@@ -14,9 +14,6 @@ class MigrateDatabase8To9 : DatabaseMigration() {
 
 
     override fun migrate(db: Connection) {
-        log.info("Migrating database from v$fromVersion to v$toVersion")
-        val t = System.currentTimeMillis()
-
         db.createStatement().use { s ->
             // New grouping data
             log.info("Adding items column to groups table")
@@ -72,11 +69,7 @@ class MigrateDatabase8To9 : DatabaseMigration() {
             s.executeUpdate("ALTER TABLE media DROP COLUMN md5;")
             s.executeUpdate("ALTER TABLE media DROP COLUMN path;")
             s.executeUpdate("ALTER TABLE media RENAME TO images;")
-
-            s.executeUpdate("INSERT INTO version(version) VALUES (9);")
         }
-
-        log.info("Finished migrating from v$fromVersion to v$toVersion in %.2fs".format((System.currentTimeMillis() - t) / 1000.0))
     }
 
 }

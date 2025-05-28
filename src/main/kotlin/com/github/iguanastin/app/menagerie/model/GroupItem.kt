@@ -43,9 +43,9 @@ class GroupItem(id: Int, added: Long, menagerie: Menagerie, title: String = "") 
             if (index == 0 || _items.size == 1) invalidateThumbnail()
 
             return true
-        } else {
-            return false
         }
+
+        return false
     }
 
     override fun loadThumbnail(): Image {

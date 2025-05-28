@@ -16,10 +16,6 @@ class MigrateDatabase9To10: DatabaseMigration() {
             // Add migration time to version table
             s.executeUpdate("ALTER TABLE version ADD COLUMN time TIMESTAMP WITH TIME ZONE;")
             s.executeUpdate("ALTER TABLE version ALTER COLUMN time SET DEFAULT CURRENT_TIMESTAMP;")
-
-            s.executeUpdate("INSERT INTO version(version) VALUES (10);")
-
-            log.info("Finished migrating from v$fromVersion to v$toVersion")
         }
     }
 

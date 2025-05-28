@@ -241,7 +241,12 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 ?: throw MenagerieDatabaseException("No database migration path from v$version to v$REQUIRED_DATABASE_VERSION")
 
             try {
+                log.info("Migrating database from v${migration.fromVersion} to v${migration.toVersion}")
+
                 migration.migrate(db) // TODO if any error occurs, revert to backup database and throw error
+
+                genericStatement.executeUpdate("INSERT INTO version(version) VALUES (${migration.toVersion});")
+                log.info("Finished migrating from v${migration.fromVersion} to v${migration.toVersion}")
             } catch (e: Exception) {
                 throw MenagerieDatabaseException(
                     "Exception during migration from v$version to v${migration.toVersion}",

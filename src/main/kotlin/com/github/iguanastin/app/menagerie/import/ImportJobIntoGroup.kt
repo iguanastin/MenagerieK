@@ -25,11 +25,8 @@ class ImportJobIntoGroup private constructor(job: ImportJob, val group: ObjectPr
     override fun import(menagerie: Menagerie): FileItem {
         var g: GroupItem? = group.get()
         if (g == null) {
-            g = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, groupTitle)
-
+            g = menagerie.createGroup(groupTitle)
             g.addTag(menagerie.getOrMakeTag("tagme"))
-
-            menagerie.addItem(g)
 
             group.set(g)
         }

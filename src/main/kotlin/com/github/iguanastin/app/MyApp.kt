@@ -120,6 +120,9 @@ class MyApp : App(MainView::class, Styles::class) {
             onMenagerieLoaded(context)
 
             checkVersionAndPatchNotes()
+
+            context.menagerie.similarityConfidence = settings.duplicate.confidence.value
+            settings.duplicate.confidence.changeListeners.add { d -> context.menagerie.similarityConfidence = d }
         }
     }
 
@@ -550,7 +553,7 @@ class MyApp : App(MainView::class, Styles::class) {
         val menagerie = context?.menagerie ?: return
 
         root.root.add(TextInputDialog("Create group", prompt = "Title", onAccept = { title ->
-            val group = GroupItem(menagerie.reserveItemID(), System.currentTimeMillis(), menagerie, title)
+            val group = menagerie.createGroup(title)
             val tags = mutableSetOf<Tag>()
 
             for (item in ArrayList(root.itemGrid.selected)) {
@@ -573,8 +576,6 @@ class MyApp : App(MainView::class, Styles::class) {
             tags.forEach { group.addTag(it) }
 
             group.addTag(menagerie.getOrMakeTag("tagme"))
-
-            menagerie.addItem(group)
 
             Platform.runLater {
                 root.itemGrid.select(group)
@@ -609,8 +610,8 @@ class MyApp : App(MainView::class, Styles::class) {
                     )
                 }
                 var new = 0
-                pairs.forEach {
-                    p -> menagerie.addSimilarity(p)
+                pairs.forEach { p ->
+                    menagerie.addSimilarity(p)
                     new++
                 }
 
