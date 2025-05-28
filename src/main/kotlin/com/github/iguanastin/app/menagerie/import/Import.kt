@@ -3,9 +3,7 @@ package com.github.iguanastin.app.menagerie.import
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
-import javafx.beans.property.ObjectProperty
 import mu.KotlinLogging
-import tornadofx.*
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -14,7 +12,7 @@ import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
 
-class Import(val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null) {
+class Import private constructor(val id: Int, val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null): Thread() {
 
     enum class Status {
         READY,
@@ -42,34 +40,105 @@ class Import(val url: String? = null, var file: File, val group: ImportGroup? = 
             Pair("video/mpeg", listOf(".mpg")),
             Pair("video/x-matroska", listOf(".mkv")),
         )
+
+        fun fromWeb(id: Int, url: String, intoDirectory: File, tags: List<Tag>? = null): Import {
+            return Import(id, url, intoDirectory, addTags = tags)
+        }
+
+        fun fromLocal(id: Int, file: File, intoGroup: ImportGroup? = null, tags: List<Tag>? = null): Import {
+            return Import(id, file = file, group = intoGroup, addTags = tags)
+        }
+
+        fun groupFromLocal(id: Int, files: List<File>, groupTitle: String, tempGroupId: Int, tags: List<Tag>? = null): List<Import> {
+            val group = ImportGroup(groupTitle, tempGroupId)
+            return files.map { file -> fromLocal(id, file, group, tags) }
+        }
     }
 
-    val status: ObjectProperty<Status> = objectProperty(Status.READY)
+    private lateinit var menagerie: Menagerie
+
+    @Volatile
+    var status: Status = Status.READY
+
+    private var downloaded = false
+    private var imported = false
+    private var item: FileItem? = null
+
+    @Volatile
+    private var cancelled = false
 
 
-    fun import(menagerie: Menagerie): FileItem {
+    fun start(menagerie: Menagerie) {
+        if (status != Status.READY) return
+        this.menagerie = menagerie
+        start()
+    }
+
+    override fun run() {
         try {
             if (url != null) {
-                status.value = Status.DOWNLOADING
-                log.info { "Downloading file from URL: $url" }
+                updateStatus(Status.DOWNLOADING) { "Downloading file from URL: $url" }
                 download()
+                downloaded = true
             }
+            if (checkCancel()) return
 
-            status.value = Status.IMPORTING
-            log.info { "Importing file: ${file.path}" }
-            val item = menagerie.createFileItem(file)
+            updateStatus(Status.IMPORTING) { "Importing file: ${file.absolutePath}" }
+            item = menagerie.createFileItem(file)
+            menagerie.findSimilarToSingle(item!!)
+            imported = true
+            if (checkCancel()) return
 
-            group?.getRealGroup(menagerie)?.addItem(item)
+            group?.getRealGroup(menagerie)?.addItem(item!!)
 
-            addTags?.forEach { tag -> item.addTag(tag) }
+            addTags?.forEach { tag -> item!!.addTag(tag) }
 
-            status.value = Status.SUCCESS
-            log.info { "Successfully imported file: ${file.path}" }
-            return item
+            updateStatus(Status.SUCCESS) { "Successfully imported file: ${file.absolutePath}" }
+            if (checkCancel()) return
         } catch (e: Exception) {
-            status.value = Status.FAILED
+            status = Status.FAILED
+            undoImport()
             throw e
         }
+    }
+
+    private fun checkCancel(): Boolean {
+        if (cancelled) {
+            undoImport()
+            updateStatus(Status.CANCELLED) { "Cancelled import: ${file.absolutePath}" }
+        }
+        return cancelled
+    }
+
+    fun cancel() {
+        if (status in listOf(Status.SUCCESS, Status.CANCELLED, Status.FAILED)) return
+
+        cancelled = true
+        status = Status.CANCELLED
+    }
+
+    private fun updateStatus(stat: Status, msg: () -> Any) {
+        status = stat
+        log.info(msg)
+    }
+
+    private fun undoImport() {
+        item?.also { item ->
+            if (imported) {
+                item.menagerie.removeItem(item)
+                log.info { "Removed item ($item) from menagerie" }
+            }
+        }
+        if (downloaded) {
+            file.delete()
+            log.info { "Deleted downloaded file: $file" }
+        }
+
+        imported = false
+        downloaded = false
+        item = null
+        status = Status.CANCELLED
+        cancelled = true
     }
 
     private fun download() {
@@ -116,7 +185,7 @@ class Import(val url: String? = null, var file: File, val group: ImportGroup? = 
         if (mime !in mimeExtensions) return
 
         val ext = if (file.extension.isEmpty()) "" else ".${file.extension}"
-        if (ext in mimeExtensions[mime]!!) return
+        if (ext.lowercase() in mimeExtensions[mime]!!) return
 
         file = File("${file.parent}${File.separator}${file.nameWithoutExtension}${mimeExtensions[mime]!![0]}")
     }

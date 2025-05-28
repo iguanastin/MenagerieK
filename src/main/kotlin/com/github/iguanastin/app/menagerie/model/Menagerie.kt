@@ -184,8 +184,6 @@ class Menagerie {
         item.addTag(getOrMakeTag("tagme"))
         addItem(item)
 
-        findSimilarToSingle(item)
-
         return item
     }
 

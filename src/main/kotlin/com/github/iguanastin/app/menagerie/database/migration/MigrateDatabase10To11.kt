@@ -11,7 +11,7 @@ class MigrateDatabase10To11: DatabaseMigration() {
 
     override fun migrate(db: Connection) {
         db.createStatement().use { s ->
-            s.executeUpdate("CREATE TABLE imports(url NVARCHAR(1024), file NVARCHAR(1024), group_id INT, group_title NVARCHAR(1024), tags NCLOB);")
+            s.executeUpdate("CREATE TABLE imports(id INT NOT NULL, url NVARCHAR(1024), file NVARCHAR(1024), group_id INT, group_title NVARCHAR(1024), tags NCLOB);")
         }
     }
 

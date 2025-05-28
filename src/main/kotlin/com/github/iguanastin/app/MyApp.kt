@@ -636,20 +636,12 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         val folderPath = settings.general.downloadFolder.value
-
-        if (folderPath.isBlank()) {
+        if (folderPath.isBlank() || !File(folderPath).isDirectory) {
             val dc = DirectoryChooser()
             dc.title = "Download into folder"
             download(dc.showDialog(root.currentWindow))
         } else {
-            val folder = File(folderPath)
-            if (folder.exists() && folder.isDirectory) {
-                download(folder)
-            } else {
-                val dc = DirectoryChooser()
-                dc.title = "Download into folder"
-                download(dc.showDialog(root.currentWindow))
-            }
+            download(File(folderPath))
         }
     }
 
@@ -767,7 +759,7 @@ class MyApp : App(MainView::class, Styles::class) {
         if (!folder.isDirectory) return listOf(folder)
 
         val result = mutableListOf<File>()
-        folder.listFiles()?.sortedWith(WindowsExplorerComparator())!!.forEach {
+        folder.listFiles()!!.sortedWith(WindowsExplorerComparator()).forEach {
             if (it.isDirectory) {
                 result.addAll(getFilesRecursively(it))
             } else {
