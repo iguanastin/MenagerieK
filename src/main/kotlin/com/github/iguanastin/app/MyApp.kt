@@ -2,6 +2,7 @@ package com.github.iguanastin.app
 
 import com.github.iguanastin.app.context.Edit
 import com.github.iguanastin.app.context.MenagerieContext
+import com.github.iguanastin.app.menagerie.database.DatabaseMigrator
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
@@ -862,6 +863,7 @@ class MyApp : App(MainView::class, Styles::class) {
     ) {
         try {
             val database = MenagerieDatabase(dbURL, dbUser, dbPass)
+            val migrator = DatabaseMigrator(database)
 
             val load: () -> Unit = {
                 runOnUIThread {
@@ -900,7 +902,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
                     thread(name = "Database migrator thread", start = true) {
                         try {
-                            database.migrateDatabase()
+                            migrator.migrate()
                             runOnUIThread { progress.close() }
 
                             load()
@@ -920,8 +922,8 @@ class MyApp : App(MainView::class, Styles::class) {
                 }
             }
 
-            if (database.needsMigration()) {
-                if (database.canMigrate()) {
+            if (migrator.needsMigration()) {
+                if (migrator.canMigrate()) {
                     if (database.version == -1) {
                         confirm(
                             title = "Database initialization",

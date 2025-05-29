@@ -1,6 +1,5 @@
 package com.github.iguanastin.app.menagerie.database
 
-import com.github.iguanastin.app.menagerie.database.migration.*
 import com.github.iguanastin.app.menagerie.database.updates.*
 import com.github.iguanastin.app.menagerie.import.Import
 import com.github.iguanastin.app.menagerie.import.ImportGroup
@@ -24,13 +23,6 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
         const val REQUIRED_DATABASE_VERSION = 11
-
-        val migrations: List<DatabaseMigration> = listOf(
-            InitializeDatabaseV8(),
-            MigrateDatabase8To9(),
-            MigrateDatabase9To10(),
-            MigrateDatabase10To11(),
-        )
     }
 
     var db: Connection = DriverManager.getConnection("jdbc:h2:$url", user, password)
@@ -222,62 +214,6 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
                 change.addedSubList.forEach { p -> updateQueue.put(DatabaseCreateImport(p)) }
             }
         })
-    }
-
-    fun needsMigration(): Boolean {
-        return version < REQUIRED_DATABASE_VERSION || version > REQUIRED_DATABASE_VERSION
-    }
-
-    fun canMigrate(): Boolean {
-        if (version < MINIMUM_DATABASE_VERSION || version > REQUIRED_DATABASE_VERSION) return false
-
-        var v = version
-        while (v < REQUIRED_DATABASE_VERSION) {
-            val migration = getBestMigrationFor(v) ?: return false
-            v = migration.toVersion
-        }
-
-        return true
-    }
-
-    fun migrateDatabase() {
-        log.info("Attempting to migrate database from v$version to v$REQUIRED_DATABASE_VERSION")
-        if (version in 0 until MINIMUM_DATABASE_VERSION) throw MenagerieDatabaseException("Minimum database version (v$MINIMUM_DATABASE_VERSION) not met (found v$version)")
-
-        while (needsMigration()) {
-            val migration = getBestMigrationFor(version)
-                ?: throw MenagerieDatabaseException("No database migration path from v$version to v$REQUIRED_DATABASE_VERSION")
-
-            try {
-                log.info("Migrating database from v${migration.fromVersion} to v${migration.toVersion}")
-
-                migration.migrate(db) // TODO if any error occurs, revert to backup database and throw error
-
-                genericStatement.executeUpdate("INSERT INTO version(version) VALUES (${migration.toVersion});")
-                log.info("Finished migrating from v${migration.fromVersion} to v${migration.toVersion}")
-            } catch (e: Exception) {
-                throw MenagerieDatabaseException(
-                    "Exception during migration from v$version to v${migration.toVersion}",
-                    e
-                )
-            }
-
-            version = migration.toVersion
-            log.info("Successfully migrated database to v$version")
-        }
-    }
-
-    private fun getBestMigrationFor(version: Int): DatabaseMigration? {
-        var migration: DatabaseMigration? = null
-
-        for (i in migrations.indices) {
-            if (migrations[i].fromVersion != version) continue
-            if (migration == null || migrations[i].toVersion > migration.toVersion) {
-                migration = migrations[i]
-            }
-        }
-
-        return migration
     }
 
     private fun loadTags(menagerie: Menagerie, status: StatusFilter) {
