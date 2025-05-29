@@ -158,7 +158,6 @@ class MyApp : App(MainView::class, Styles::class) {
         }
 
         purgeUnusedTags(context.menagerie)
-        initImporterListeners(context)
 
 
         context.menagerie.tags.addListener(SetChangeListener { change ->
@@ -250,33 +249,6 @@ class MyApp : App(MainView::class, Styles::class) {
             parameters.named["db-pass"] ?: settings.database.pass.default
 
         if ("--api-only" in parameters.unnamed) exitProcess(0)
-    }
-
-    private fun initImporterListeners(context: MenagerieContext) {
-//        context.importer.onError.add { e ->
-//            log.error("Error occurred while importing", e)
-//            runOnUIThread { information("Import failed", e.message, owner = root.currentWindow, title = "Error") }
-//            // TODO show better error message to user
-//        }
-//        context.importer.onQueued.add { job ->
-//            runOnUIThread {
-//                root.imports.apply {
-//                    add(ImportNotification(job))
-//                    sortBy { it.isFinished }
-//                }
-//            }
-//        }
-//        context.importer.afterEach.add { job ->
-//            val item = job.item ?: return@add
-//            val similar = CPUDuplicateFinder.findDuplicates(
-//                listOf(item),
-//                context.menagerie.items,
-//                settings.duplicate.confidence.value,
-//                false
-//            )
-//
-//            similar.forEach { p -> context.menagerie.addSimilarity(p) }
-//        }
     }
 
     private fun checkVersionAndPatchNotes() {

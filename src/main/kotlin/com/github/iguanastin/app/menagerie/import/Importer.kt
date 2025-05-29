@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.import
 
+import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import javafx.collections.ListChangeListener
@@ -18,7 +19,6 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
     @Volatile
     private var running = false
 
-
     private val menagerieImportsListener = ListChangeListener<Import> { change ->
         while (change.next()) {
             change.addedSubList.forEach { i ->
@@ -26,6 +26,8 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
             }
         }
     }
+
+    val onImported = mutableListOf<(FileItem) -> Unit>()
 
     init {
         start()
@@ -47,6 +49,7 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
 
                 job.start(menagerie)
                 job.join()
+                job.item?.also { item -> onImported.forEach { it(item) } }
 
                 menagerie.removeImport(job)
             } catch (e: InterruptedException) {

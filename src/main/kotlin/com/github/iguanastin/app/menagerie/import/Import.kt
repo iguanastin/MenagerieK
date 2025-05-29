@@ -57,7 +57,7 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
     private var downloaded = false
     private var imported = false
-    private var item: FileItem? = null
+    var item: FileItem? = null
 
     @Volatile
     private var cancelled = false
@@ -80,7 +80,6 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
             updateStatus(Status.IMPORTING) { "Importing file: ${file.absolutePath}" }
             item = menagerie.createFileItem(file, skipAdding = true)
-            menagerie.findSimilarToSingle(item!!)
             imported = true
             if (checkCancel()) return
 
@@ -89,6 +88,7 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
             addTags?.forEach { tag -> item!!.addTag(tag) }
 
             menagerie.addItem(item!!)
+            menagerie.findSimilarToSingle(item!!)
 
             updateStatus(Status.SUCCESS) { "Successfully imported file: ${file.absolutePath}" }
             if (checkCancel()) return
