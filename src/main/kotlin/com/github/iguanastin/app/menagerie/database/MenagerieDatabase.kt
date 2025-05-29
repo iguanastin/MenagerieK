@@ -1,10 +1,9 @@
 package com.github.iguanastin.app.menagerie.database
 
-import com.github.iguanastin.app.menagerie.database.migration.DatabaseMigration
-import com.github.iguanastin.app.menagerie.database.migration.InitializeDatabaseV8
-import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase8To9
-import com.github.iguanastin.app.menagerie.database.migration.MigrateDatabase9To10
+import com.github.iguanastin.app.menagerie.database.migration.*
 import com.github.iguanastin.app.menagerie.database.updates.*
+import com.github.iguanastin.app.menagerie.import.Import
+import com.github.iguanastin.app.menagerie.import.ImportGroup
 import com.github.iguanastin.app.menagerie.model.*
 import javafx.collections.ListChangeListener
 import javafx.collections.SetChangeListener
@@ -29,7 +28,8 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         val migrations: List<DatabaseMigration> = listOf(
             InitializeDatabaseV8(),
             MigrateDatabase8To9(),
-            MigrateDatabase9To10()
+            MigrateDatabase9To10(),
+            MigrateDatabase10To11(),
         )
     }
 
@@ -93,6 +93,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         loadTagged(menagerie, status)
         loadNonDupes(menagerie, status)
         loadSimilar(menagerie, status)
+        loadImports(menagerie, status)
 
         attachTo(menagerie)
 
@@ -212,6 +213,13 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             while (change.next()) {
                 change.removed.forEach { p -> updateQueue.put(DatabaseDeleteSimilar(p)) }
                 change.addedSubList.forEach { p -> updateQueue.put(DatabaseCreateSimilar(p)) }
+            }
+        })
+
+        menagerie.imports.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                change.removed.forEach { p -> updateQueue.put(DatabaseDeleteImport(p)) }
+                change.addedSubList.forEach { p -> updateQueue.put(DatabaseCreateImport(p)) }
             }
         })
     }
@@ -461,6 +469,30 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             }
         }
         log.info("Finished loading $i similar pairs in ${status.sinceMarkStr()}")
+    }
+
+    private fun loadImports(menagerie: Menagerie, status: StatusFilter) {
+        log.info("Loading imports")
+        status.force("Fetching imports...", mark = true)
+        var i = 0
+        genericStatement.executeQuery("").use { rs ->
+            while (rs.next()) {
+                val id = rs.getInt("id")
+                val url = rs.getNString("url")
+                val file = File(rs.getNString("file"))
+                var groupId: Int? = rs.getInt("group_id")
+                if (rs.wasNull()) groupId = null
+                val group = if (groupId != null) ImportGroup(rs.getNString("group_title"), groupId) else null
+                val tags = rs.getNClob("tags").characterStream.use { t -> t.readText() }.split(',')
+                    .map { t -> menagerie.getOrMakeTag(t, temporaryIfNew = true) }
+                val job = Import(id, url, file, group, tags)
+                menagerie.imports.add(job)
+
+                i++
+                status.trySend { "Loaded $i imports..." }
+            }
+        }
+        log.info("Finished loading $i imports in ${status.sinceMarkStr()}")
     }
 
     private fun retrieveVersion(): Int {

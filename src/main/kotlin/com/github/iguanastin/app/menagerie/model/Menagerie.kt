@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.model
 
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
+import com.github.iguanastin.app.menagerie.import.Import
 import javafx.collections.*
 import tornadofx.*
 import java.io.File
@@ -24,6 +25,8 @@ class Menagerie {
 
     private val _similarPairs: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
     val similarPairs = _similarPairs.asUnmodifiable()
+
+    val imports: ObservableList<Import> = FXCollections.observableArrayList()
 
     var similarityConfidence: Double = 0.95
 

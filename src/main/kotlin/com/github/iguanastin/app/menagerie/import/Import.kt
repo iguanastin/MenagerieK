@@ -12,7 +12,7 @@ import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
 
-class Import private constructor(val id: Int, val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null): Thread() {
+class Import(val id: Int, val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null): Thread() {
 
     enum class Status {
         READY,

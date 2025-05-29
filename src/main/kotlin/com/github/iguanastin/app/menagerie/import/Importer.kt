@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import javafx.collections.ListChangeListener
 import mu.KotlinLogging
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -16,8 +17,17 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
     private var running = false
 
 
+    private val menagerieImportsListener = ListChangeListener<Import> { change ->
+        while (change.next()) {
+            change.addedSubList.forEach { i -> add(i) }
+        }
+    }
+
     init {
         start()
+
+        menagerie.imports.forEach { add(it) }
+        menagerie.imports.addListener(menagerieImportsListener)
     }
 
     override fun run() {
@@ -31,13 +41,15 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
 
                 job.start(menagerie)
                 job.join()
-                // TODO update menagerie to remove the import job
+
+                menagerie.imports.remove(job)
             } catch (e: InterruptedException) {
                 // Should only be interrupted by closing the importer
                 job?.cancel()
                 log.info { "Importer interrupted" }
             }
         }
+        menagerie.imports.removeListener(menagerieImportsListener)
     }
 
     fun add(job: Import) {
@@ -45,6 +57,7 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
     }
 
     fun close() {
+        menagerie.imports.removeListener(menagerieImportsListener)
         running = false
         interrupt()
     }
