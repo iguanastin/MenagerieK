@@ -121,7 +121,7 @@ class Menagerie {
     }
 
     fun removeTag(tag: Tag): Boolean {
-        // TODO invalidate tag?
+        // TODO invalidate tag? Would need to check tags for invalidation anywhere they're being stored instead of instantly used, which I should probably already be doing.
         return _tags.remove(tag)
     }
 
@@ -191,7 +191,6 @@ class Menagerie {
     }
 
     fun findSimilarToSingle(item: FileItem): List<SimilarPair<Item>> {
-        // TODO might not want it to be threaded
         val similar = CPUDuplicateFinder.findDuplicates(
             listOf(item),
             items,

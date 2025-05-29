@@ -140,7 +140,6 @@ class Styles : Stylesheet() {
         }
 
         button {
-//            padding = box(5.px, 10.px) // TODO: This seems unnecessary
             and(multiSelectButton) {
                 prefHeight = 100.px
                 padding = box(25.px)

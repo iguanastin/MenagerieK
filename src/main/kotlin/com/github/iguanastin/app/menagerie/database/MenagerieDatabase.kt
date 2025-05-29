@@ -346,7 +346,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             log.error { "Orphaned item: (id:$i, added:${items[i]!!.added})" }
         }
 
-        generatedItems.sortBy { it.id } // TODO this smells
+        generatedItems.sortBy { it.id }
         generatedItems.forEach { menagerie.addItem(it) }
 
         log.info("Finished generating ${generatedItems.size} loaded items in ${status.sinceMarkStr()}")

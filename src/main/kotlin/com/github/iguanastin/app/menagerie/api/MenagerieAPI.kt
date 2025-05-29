@@ -326,7 +326,6 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
             j.put("id", tag.id)
             j.put("name", tag.name)
             j.put("color", tag.color)
-            // TODO: j.put("notes", tag.notes)
             j.put("frequency", tag.frequency)
             json.append("tags", j)
         }
@@ -527,7 +526,6 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
                 j.put("id", tag.id)
                 j.put("name", tag.name)
                 j.put("color", tag.color)
-                // TODO: j.put("notes", tag.notes)
                 j.put("frequency", tag.frequency)
                 json.append("tags", j)
             } else {
