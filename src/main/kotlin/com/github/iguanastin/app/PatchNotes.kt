@@ -32,6 +32,9 @@ object PatchNotes {
         notes["1.2.2"] = "Bug Fixes:\n" +
                 "- Incorrect pan bounds on image previews (#9)\n" +
                 "- TEMP tag label changing to tag count in some circumstances (#4)"
+        notes["1.2.3"] = "Features:\n" +
+                "- Similar items are now kept through a restart\n" +
+                "- Text file previewing"
     }
 
     fun get(version: String): String {

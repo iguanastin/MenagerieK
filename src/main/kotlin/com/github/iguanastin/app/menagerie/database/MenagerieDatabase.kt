@@ -23,7 +23,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
 
     companion object {
         const val MINIMUM_DATABASE_VERSION = 8
-        const val REQUIRED_DATABASE_VERSION = 10
+        const val REQUIRED_DATABASE_VERSION = 11
 
         val migrations: List<DatabaseMigration> = listOf(
             InitializeDatabaseV8(),
@@ -475,7 +475,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Loading imports")
         status.force("Fetching imports...", mark = true)
         var i = 0
-        genericStatement.executeQuery("").use { rs ->
+        genericStatement.executeQuery("SELECT id,url,file,group_title,group_id,tags FROM imports;").use { rs ->
             while (rs.next()) {
                 val id = rs.getInt("id")
                 val url = rs.getNString("url")
