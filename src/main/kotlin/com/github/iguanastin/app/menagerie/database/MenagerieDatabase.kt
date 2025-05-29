@@ -4,6 +4,7 @@ import com.github.iguanastin.app.menagerie.database.updates.*
 import com.github.iguanastin.app.menagerie.import.Import
 import com.github.iguanastin.app.menagerie.import.ImportGroup
 import com.github.iguanastin.app.menagerie.model.*
+import com.github.iguanastin.app.utils.addIfUnique
 import javafx.collections.ListChangeListener
 import javafx.collections.SetChangeListener
 import mu.KotlinLogging
@@ -208,10 +209,17 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             }
         })
 
+        val importGroupIDListener = { _: ImportGroup, old: Int, new: Int ->
+            updateQueue.put(DatabaseSetImportGroupID(old, new))
+        }
+        menagerie.imports.forEach { it.group?.idChangeListeners?.add(importGroupIDListener) }
         menagerie.imports.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { p -> updateQueue.put(DatabaseDeleteImport(p)) }
-                change.addedSubList.forEach { p -> updateQueue.put(DatabaseCreateImport(p)) }
+                change.addedSubList.forEach { p ->
+                    p.group?.idChangeListeners?.addIfUnique(importGroupIDListener)
+                    updateQueue.put(DatabaseCreateImport(p))
+                }
             }
         })
     }
@@ -410,19 +418,26 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     private fun loadImports(menagerie: Menagerie, status: StatusFilter) {
         log.info("Loading imports")
         status.force("Fetching imports...", mark = true)
+
+        val gids = mutableMapOf<Int, ImportGroup>()
         var i = 0
         genericStatement.executeQuery("SELECT id,url,file,group_title,group_id,tags FROM imports;").use { rs ->
             while (rs.next()) {
                 val id = rs.getInt("id")
                 val url = rs.getNString("url")
                 val file = File(rs.getNString("file"))
-                var groupId: Int? = rs.getInt("group_id")
-                if (rs.wasNull()) groupId = null
-                val group = if (groupId != null) ImportGroup(rs.getNString("group_title"), groupId) else null
-                val tags = rs.getNClob("tags").characterStream.use { t -> t.readText() }.split(',')
-                    .map { t -> menagerie.getOrMakeTag(t, temporaryIfNew = true) }
+
+                val groupId: Int = rs.getInt("group_id")
+                var group: ImportGroup? = null
+                if (!rs.wasNull()) { // MUST be the next ResultSet call after getting group_id
+                    group = gids.getOrPut(groupId) { ImportGroup(rs.getNString("group_title"), groupId) }
+                }
+
+                val tags = rs.getNClob("tags")?.characterStream?.use { t -> t.readText() }?.split(',')
+                    ?.map { t -> menagerie.getOrMakeTag(t, temporaryIfNew = true) }
+
                 val job = Import(id, url, file, group, tags)
-                menagerie.imports.add(job)
+                menagerie.addImport(job)
 
                 i++
                 status.trySend { "Loaded $i imports..." }

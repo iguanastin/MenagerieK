@@ -7,10 +7,7 @@ import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabaseException
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
 import com.github.iguanastin.app.menagerie.duplicates.local.CUDADuplicateFinder
-import com.github.iguanastin.app.menagerie.import.ImportJob
-import com.github.iguanastin.app.menagerie.import.ImportJobIntoGroup
-import com.github.iguanastin.app.menagerie.import.MenagerieImporter
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
+import com.github.iguanastin.app.menagerie.import.Importer
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
@@ -143,13 +140,17 @@ class MyApp : App(MainView::class, Styles::class) {
             // TODO show better error to user
         }
 
-        context.importer.afterEach.add {
-            // If only the first item in search is selected when an item is imported, select the newly imported item
-            val singleSelected = root.itemGrid.selected.singleOrNull() ?: return@add
-            if (singleSelected == root.itemGrid.items.first()) {
-                runOnUIThread { root.itemGrid.select(root.itemGrid.items.first()) }
-            }
-        }
+        // TODO this is really buggy with the new importer. Might just skip this functionality entirely
+//        context.menagerie.imports.addListener(ListChangeListener { change ->
+//            while (change.next()) {
+//                if (change.addedSize != 1) return@ListChangeListener
+//                // If only the first item in search is selected when an item is imported, select the newly imported item
+//                val singleSelected = root.itemGrid.selected.singleOrNull() ?: return@ListChangeListener
+//                if (singleSelected == root.itemGrid.items.first()) {
+//                    runOnUIThread { root.itemGrid.select(root.itemGrid.items.first()) } // TODO this relies on timing of layouts
+//                }
+//            }
+//        })
 
         // Start the HTTP API server
         if (settings.api.enabled.value) {
@@ -252,30 +253,30 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private fun initImporterListeners(context: MenagerieContext) {
-        context.importer.onError.add { e ->
-            log.error("Error occurred while importing", e)
-            runOnUIThread { information("Import failed", e.message, owner = root.currentWindow, title = "Error") }
-            // TODO show better error message to user
-        }
-        context.importer.onQueued.add { job ->
-            runOnUIThread {
-                root.imports.apply {
-                    add(ImportNotification(job))
-                    sortBy { it.isFinished }
-                }
-            }
-        }
-        context.importer.afterEach.add { job ->
-            val item = job.item ?: return@add
-            val similar = CPUDuplicateFinder.findDuplicates(
-                listOf(item),
-                context.menagerie.items,
-                settings.duplicate.confidence.value,
-                false
-            )
-
-            similar.forEach { p -> context.menagerie.addSimilarity(p) }
-        }
+//        context.importer.onError.add { e ->
+//            log.error("Error occurred while importing", e)
+//            runOnUIThread { information("Import failed", e.message, owner = root.currentWindow, title = "Error") }
+//            // TODO show better error message to user
+//        }
+//        context.importer.onQueued.add { job ->
+//            runOnUIThread {
+//                root.imports.apply {
+//                    add(ImportNotification(job))
+//                    sortBy { it.isFinished }
+//                }
+//            }
+//        }
+//        context.importer.afterEach.add { job ->
+//            val item = job.item ?: return@add
+//            val similar = CPUDuplicateFinder.findDuplicates(
+//                listOf(item),
+//                context.menagerie.items,
+//                settings.duplicate.confidence.value,
+//                false
+//            )
+//
+//            similar.forEach { p -> context.menagerie.addSimilarity(p) }
+//        }
     }
 
     private fun checkVersionAndPatchNotes() {
@@ -632,7 +633,7 @@ class MyApp : App(MainView::class, Styles::class) {
 
         val download = { folder: File? ->
             if (folder != null && folder.exists() && folder.isDirectory) {
-                importer.enqueue(RemoteImportJob.intoDirectory(url, folder, tags))
+                importer.fromWeb(url, folder, tags)
             }
         }
 
@@ -718,37 +719,31 @@ class MyApp : App(MainView::class, Styles::class) {
             individually = {
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) importer.enqueue(ImportJob(it)) }
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) importer.fromLocal(it) }
                     } else {
-                        importer.enqueue(ImportJob(file))
+                        importer.fromLocal(file)
                     }
                 }
             }
             asGroup = {
-                val jobs = mutableListOf<ImportJob>()
+                val title = if (files.size == 1 && files.first().isDirectory) files.first().name else "Unnamed Group"
+                val group = importer.createGroup(title)
+
                 files.forEach { file ->
                     if (file.isDirectory) {
-                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) importer.fromLocal(it, group) }
                     } else {
-                        if (!menagerie.hasFile(file)) jobs.add(ImportJob(file))
+                        if (!menagerie.hasFile(file)) importer.fromLocal(file, group)
                     }
                 }
-
-                var title = "Unnamed Group"
-                if (files.size == 1 && files.first().isDirectory) {
-                    title = files.first().name
-                }
-
-                ImportJobIntoGroup.asGroup(jobs, title).forEach { importer.enqueue(it) }
             }
             dirsAsGroups = {
                 for (file in files) {
                     if (file.isDirectory) {
-                        val jobs = mutableListOf<ImportJob>()
-                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) jobs.add(ImportJob(it)) }
-                        ImportJobIntoGroup.asGroup(jobs, file.name).forEach { importer.enqueue(it) }
+                        val group = importer.createGroup(file.name)
+                        getFilesRecursively(file).forEach { if (!menagerie.hasFile(it)) importer.fromLocal(it, group) }
                     } else if (!menagerie.hasFile(file)) {
-                        importer.enqueue(ImportJob(file))
+                        importer.fromLocal(file)
                     }
                 }
             }
@@ -873,7 +868,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     thread(name = "Menagerie Loader", start = true) {
                         try {
                             val menagerie = database.loadMenagerie { msg -> runOnUIThread { progress.message = msg } }
-                            val importer = MenagerieImporter(menagerie)
+                            val importer = Importer(menagerie)
                             runOnUIThread { progress.close() }
 
                             after?.invoke(MenagerieContext(menagerie, importer, database, settings))

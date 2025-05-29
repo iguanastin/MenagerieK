@@ -26,7 +26,10 @@ class Menagerie {
     private val _similarPairs: ObservableList<SimilarPair<Item>> = FXCollections.observableArrayList()
     val similarPairs = _similarPairs.asUnmodifiable()
 
-    val imports: ObservableList<Import> = FXCollections.observableArrayList()
+    private val _imports: ObservableList<Import> = FXCollections.observableArrayList()
+    val imports = _imports.asUnmodifiable()
+    private val nextImportID = AtomicInteger(0)
+    private val nextImportTempGroupID = AtomicInteger(-1)
 
     var similarityConfidence: Double = 0.95
 
@@ -65,6 +68,14 @@ class Menagerie {
         return nextTagID.getAndIncrement()
     }
 
+    fun reserveImportID(): Int {
+        return nextImportID.getAndIncrement()
+    }
+
+    fun reserveImportTempGroupID(): Int {
+        return nextImportTempGroupID.getAndDecrement()
+    }
+
     fun getItem(id: Int): Item? {
         return itemIdMap[id]
     }
@@ -78,17 +89,12 @@ class Menagerie {
     }
 
     fun addItem(item: Item): Boolean {
-        return if (item.id !in itemIdMap.keys) {
-            if (item is FileItem && item.file in files) {
-                false
-            } else {
-                _items.add(item)
-                nextItemID.getAndUpdate { it.coerceAtLeast(item.id + 1) }
-                true
-            }
-        } else {
-            false
-        }
+        if (item.id in itemIdMap) return false
+        if (item is FileItem && item.file in files) return false
+
+        _items.add(item)
+        nextItemID.getAndUpdate { it.coerceAtLeast(item.id + 1) }
+        return true
     }
 
     fun removeItem(item: Item): Boolean {
@@ -157,15 +163,15 @@ class Menagerie {
 
     fun createGroup(title: String): GroupItem {
         val g = GroupItem(reserveItemID(), System.currentTimeMillis(), this, title)
-        addItem(g)
         g.addTag(getOrMakeTag("tagme"))
+        addItem(g)
         return g
     }
 
     /**
      LONG BLOCKING CALL
      */
-    fun createFileItem(file: File): FileItem {
+    fun createFileItem(file: File, skipAdding: Boolean): FileItem {
         if (hasFile(file)) throw IllegalArgumentException("File already present: ${file.path}")
 
         val id = reserveItemID()
@@ -185,7 +191,7 @@ class Menagerie {
         }
 
         item.addTag(getOrMakeTag("tagme"))
-        addItem(item)
+        if (!skipAdding) addItem(item)
 
         return item
     }
@@ -199,6 +205,19 @@ class Menagerie {
 
         similar.forEach { p -> addSimilarity(p) }
         return similar
+    }
+
+    fun addImport(job: Import): Boolean {
+        if (job in _imports) return false
+        _imports.add(job)
+        nextImportID.getAndUpdate { it.coerceAtLeast(job.id+1) }
+        nextImportTempGroupID.getAndUpdate { it.coerceAtMost((job.group?.id ?: 0) - 1) }
+
+        return true
+    }
+
+    fun removeImport(job: Import): Boolean {
+        return _imports.remove(job)
     }
 
 }

@@ -1,8 +1,10 @@
 package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import com.github.iguanastin.app.menagerie.model.Tag
 import javafx.collections.ListChangeListener
 import mu.KotlinLogging
+import java.io.File
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -19,15 +21,19 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
 
     private val menagerieImportsListener = ListChangeListener<Import> { change ->
         while (change.next()) {
-            change.addedSubList.forEach { i -> add(i) }
+            change.addedSubList.forEach { i ->
+                queue.add(i)
+            }
         }
     }
 
     init {
         start()
 
-        menagerie.imports.forEach { add(it) }
         menagerie.imports.addListener(menagerieImportsListener)
+        menagerie.imports.forEach {
+            queue.add(it)
+        }
     }
 
     override fun run() {
@@ -42,7 +48,7 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
                 job.start(menagerie)
                 job.join()
 
-                menagerie.imports.remove(job)
+                menagerie.removeImport(job)
             } catch (e: InterruptedException) {
                 // Should only be interrupted by closing the importer
                 job?.cancel()
@@ -52,8 +58,20 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
         menagerie.imports.removeListener(menagerieImportsListener)
     }
 
-    fun add(job: Import) {
-        queue.add(job)
+    fun fromWeb(url: String, directory: File, tags: List<Tag>? = null): Import {
+        return Import.fromWeb(menagerie.reserveImportID(), url, directory, tags).also {
+            menagerie.addImport(it)
+        }
+    }
+
+    fun fromLocal(file: File, group: ImportGroup? = null, tags: List<Tag>? = null): Import {
+        return Import.fromLocal(menagerie.reserveImportID(), file, group, tags).also {
+            menagerie.addImport(it)
+        }
+    }
+
+    fun createGroup(title: String): ImportGroup {
+        return ImportGroup(title, menagerie.reserveImportTempGroupID())
     }
 
     fun close() {

@@ -2,7 +2,7 @@ package com.github.iguanastin.app.context
 
 import com.github.iguanastin.app.menagerie.api.MenagerieAPI
 import com.github.iguanastin.app.menagerie.database.MenagerieDatabase
-import com.github.iguanastin.app.menagerie.import.MenagerieImporter
+import com.github.iguanastin.app.menagerie.import.Importer
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.Menagerie
@@ -11,7 +11,7 @@ import com.github.iguanastin.app.settings.AppSettings
 import java.util.*
 import kotlin.concurrent.thread
 
-class MenagerieContext(val menagerie: Menagerie, val importer: MenagerieImporter, val database: MenagerieDatabase, val prefs: AppSettings) {
+class MenagerieContext(val menagerie: Menagerie, val importer: Importer, val database: MenagerieDatabase, val prefs: AppSettings) {
 
     val edits: Stack<Edit> = Stack()
 

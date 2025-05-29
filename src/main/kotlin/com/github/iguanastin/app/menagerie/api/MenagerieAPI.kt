@@ -2,8 +2,6 @@ package com.github.iguanastin.app.menagerie.api
 
 import com.github.iguanastin.app.context.MenagerieContext
 import com.github.iguanastin.app.context.TagEdit
-import com.github.iguanastin.app.menagerie.import.ImportJob
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.search.FilterParseException
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
@@ -275,15 +273,15 @@ class MenagerieAPI(val context: MenagerieContext, var pageSize: Int) {
                     return
                 } else {
                     if (filename.isNullOrBlank()) {
-                        context.importer.enqueue(RemoteImportJob.intoDirectory(url, File(folder), incrementIfExists = true))
+                        context.importer.fromWeb(url, File(folder))
                     } else {
-                        context.importer.enqueue(RemoteImportJob.intoFile(url, File(folder, filename)))
+                        context.importer.fromWeb(url, File(folder, filename))
                     }
                 }
             } else {
                 val file = File(folder, filename)
                 exchange.requestBody.use { body -> FileOutputStream(file).use { fos -> IOUtils.copy(body, fos) } }
-                context.importer.enqueue(ImportJob(file))
+                context.importer.fromLocal(file)
             }
         }
 

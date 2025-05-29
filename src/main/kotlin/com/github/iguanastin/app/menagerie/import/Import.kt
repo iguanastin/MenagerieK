@@ -48,11 +48,6 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
         fun fromLocal(id: Int, file: File, intoGroup: ImportGroup? = null, tags: List<Tag>? = null): Import {
             return Import(id, file = file, group = intoGroup, addTags = tags)
         }
-
-        fun groupFromLocal(id: Int, files: List<File>, groupTitle: String, tempGroupId: Int, tags: List<Tag>? = null): List<Import> {
-            val group = ImportGroup(groupTitle, tempGroupId)
-            return files.map { file -> fromLocal(id, file, group, tags) }
-        }
     }
 
     private lateinit var menagerie: Menagerie
@@ -84,7 +79,7 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
             if (checkCancel()) return
 
             updateStatus(Status.IMPORTING) { "Importing file: ${file.absolutePath}" }
-            item = menagerie.createFileItem(file)
+            item = menagerie.createFileItem(file, skipAdding = true)
             menagerie.findSimilarToSingle(item!!)
             imported = true
             if (checkCancel()) return
@@ -92,6 +87,8 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
             group?.getRealGroup(menagerie)?.addItem(item!!)
 
             addTags?.forEach { tag -> item!!.addTag(tag) }
+
+            menagerie.addItem(item!!)
 
             updateStatus(Status.SUCCESS) { "Successfully imported file: ${file.absolutePath}" }
             if (checkCancel()) return
@@ -202,6 +199,10 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
         } else {
             file =  File("${file.parent}${File.separator}$name (1)$ext")
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is Import && other.id == id
     }
 
 }
