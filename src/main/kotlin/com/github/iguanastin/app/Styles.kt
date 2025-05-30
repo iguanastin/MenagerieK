@@ -33,6 +33,7 @@ class Styles : Stylesheet() {
         val importCellSource by cssclass()
         val importCellStatus by cssclass()
         val textDisplay by cssclass()
+        val redText by cssclass()
 
         val blueBase by csspseudoclass()
         val selected by csspseudoclass()
@@ -225,6 +226,10 @@ class Styles : Stylesheet() {
                     backgroundColor = multi(c("#222426"))
                 }
             }
+        }
+
+        redText {
+            textFill = c("red")
         }
     }
 }

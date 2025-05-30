@@ -1,9 +1,11 @@
 package com.github.iguanastin.app.menagerie.import
 
+import com.github.iguanastin.app.menagerie.database.StatusFilter
 import com.github.iguanastin.app.menagerie.model.FileItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
 import mu.KotlinLogging
+import tornadofx.*
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -41,6 +43,9 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
             Pair("video/x-matroska", listOf(".mkv")),
         )
 
+        val runningStates = listOf(Status.IMPORTING, Status.DOWNLOADING)
+        val finishedStates = listOf(Status.FAILED, Status.SUCCESS, Status.CANCELLED)
+
         fun fromWeb(id: Int, url: String, intoDirectory: File, tags: List<Tag>? = null): Import {
             return Import(id, url, intoDirectory, addTags = tags)
         }
@@ -52,8 +57,8 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
     private lateinit var menagerie: Menagerie
 
-    @Volatile
-    var status: Status = Status.READY
+    val status = objectProperty(Status.READY)
+    val progress = doubleProperty()
 
     private var downloaded = false
     private var imported = false
@@ -64,7 +69,7 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
 
     fun start(menagerie: Menagerie) {
-        if (status != Status.READY) return
+        if (status.value != Status.READY) return
         this.menagerie = menagerie
         start()
     }
@@ -79,6 +84,8 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
             if (checkCancel()) return
 
             updateStatus(Status.IMPORTING) { "Importing file: ${file.absolutePath}" }
+            progress.value = -1.0
+
             item = menagerie.createFileItem(file, skipAdding = true)
             imported = true
             if (checkCancel()) return
@@ -92,8 +99,9 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
             updateStatus(Status.SUCCESS) { "Successfully imported file: ${file.absolutePath}" }
             if (checkCancel()) return
+            progress.value = 1.0
         } catch (e: Exception) {
-            status = Status.FAILED
+            status.value = Status.FAILED
             undoImport()
             throw e
         }
@@ -103,19 +111,20 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
         if (cancelled) {
             undoImport()
             updateStatus(Status.CANCELLED) { "Cancelled import: ${file.absolutePath}" }
+            progress.value = 0.0
         }
         return cancelled
     }
 
     fun cancel() {
-        if (status in listOf(Status.SUCCESS, Status.CANCELLED, Status.FAILED)) return
+        if (status.value in finishedStates) return
 
         cancelled = true
-        status = Status.CANCELLED
+        status.value = Status.CANCELLED
     }
 
     private fun updateStatus(stat: Status, msg: () -> Any) {
-        status = stat
+        status.value = stat
         log.info(msg)
     }
 
@@ -134,12 +143,13 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
         imported = false
         downloaded = false
         item = null
-        status = Status.CANCELLED
+        status.value = Status.CANCELLED
         cancelled = true
     }
 
     private fun download() {
         require(url != null)
+        progress.value = 0.0
 
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
@@ -151,12 +161,17 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
                     val size: Long = conn.contentLengthLong
                     val chunkSize: Long = 4096
                     var i: Long = 0
+
+                    val filter = StatusFilter<Double>({ progress.value = it }, 50)
                     while (i < size) {
                         fos.channel.transferFrom(rbs, i, chunkSize)
                         i += chunkSize
+                        filter.trySend { i.toDouble()/size }
                     }
                 }
             }
+
+            progress.value = 1.0
         } finally {
             conn.disconnect()
         }
@@ -203,6 +218,22 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
     override fun equals(other: Any?): Boolean {
         return other is Import && other.id == id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
+    fun isReadyOrRunning(): Boolean {
+        return isReady() || isRunning()
+    }
+
+    fun isRunning(): Boolean {
+        return status.value in listOf(Status.DOWNLOADING, Status.IMPORTING)
+    }
+
+    fun isReady(): Boolean {
+        return status.value == Status.READY
     }
 
 }

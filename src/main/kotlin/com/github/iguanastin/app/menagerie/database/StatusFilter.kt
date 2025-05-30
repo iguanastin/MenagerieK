@@ -1,11 +1,11 @@
 package com.github.iguanastin.app.menagerie.database
 
-class StatusFilter(val callback: ((msg: String) -> Unit)? = null, val interval: Long = 100) {
+class StatusFilter<T>(val callback: ((T) -> Unit)? = null, val interval: Long = 100) {
 
     private var lastSend: Long = 0
     var markTime: Long = -1
 
-    fun trySend(msgGen: () -> String): Boolean {
+    fun trySend(msgGen: () -> T): Boolean {
         if (System.currentTimeMillis() - lastSend > interval) {
             force(msgGen())
             return true
@@ -13,7 +13,7 @@ class StatusFilter(val callback: ((msg: String) -> Unit)? = null, val interval: 
         return false
     }
 
-    fun force(msg: String, mark: Boolean = false) {
+    fun force(msg: T, mark: Boolean = false) {
         callback?.invoke(msg)
         lastSend = System.currentTimeMillis()
 

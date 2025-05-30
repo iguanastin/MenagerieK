@@ -4,7 +4,7 @@ import com.github.iguanastin.app.menagerie.database.updates.*
 import com.github.iguanastin.app.menagerie.import.Import
 import com.github.iguanastin.app.menagerie.import.ImportGroup
 import com.github.iguanastin.app.menagerie.model.*
-import com.github.iguanastin.app.utils.addIfUnique
+import javafx.beans.value.ChangeListener
 import javafx.collections.ListChangeListener
 import javafx.collections.SetChangeListener
 import mu.KotlinLogging
@@ -14,6 +14,17 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.isNullOrEmpty
+import kotlin.collections.map
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
+import kotlin.collections.sortBy
+import kotlin.collections.toMutableSet
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
@@ -209,22 +220,24 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
             }
         })
 
-        val importGroupIDListener = { _: ImportGroup, old: Int, new: Int ->
-            updateQueue.put(DatabaseSetImportGroupID(old, new))
+        val importGroupIDListener = ChangeListener<Number> { _, old, new -> updateQueue.put(DatabaseSetImportGroupID(old.toInt(), new.toInt())) }
+        menagerie.imports.map { it.group }.toMutableSet().apply { remove(null) }.forEach {
+            println(it)
+            it!!.id.addListener(importGroupIDListener)
         }
-        menagerie.imports.forEach { it.group?.idChangeListeners?.add(importGroupIDListener) }
         menagerie.imports.addListener(ListChangeListener { change ->
             while (change.next()) {
                 change.removed.forEach { p -> updateQueue.put(DatabaseDeleteImport(p)) }
-                change.addedSubList.forEach { p ->
-                    p.group?.idChangeListeners?.addIfUnique(importGroupIDListener)
-                    updateQueue.put(DatabaseCreateImport(p))
+                change.addedSubList.forEach {
+                    it.group?.id?.removeListener(importGroupIDListener) // Stupid shit because there is no "hasListener" method
+                    it.group?.id?.addListener(importGroupIDListener)
+                    updateQueue.put(DatabaseCreateImport(it))
                 }
             }
         })
     }
 
-    private fun loadTags(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadTags(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading tags from database")
         status.force("Fetching tag data...", mark = true)
         var i = 0
@@ -239,7 +252,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Successfully loaded $i tags from database in ${status.sinceMarkStr()}")
     }
 
-    private fun loadItems(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadItems(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading items from database")
         status.force("Fetching item data (this may take a while)...", mark = true)
         var count = 0
@@ -360,7 +373,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Finished generating ${generatedItems.size} loaded items in ${status.sinceMarkStr()}")
     }
 
-    private fun loadTagged(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadTagged(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading tag relationships from database")
         status.force("Fetching tag-relationship data...", mark = true)
         var i = 0
@@ -378,7 +391,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Finished loading $i tag relationships in ${status.sinceMarkStr()}")
     }
 
-    private fun loadNonDupes(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadNonDupes(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading non-dupes from database")
         status.force("Fetching non-dupe data...", mark = true)
         var i = 0
@@ -396,7 +409,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Finished loading $i non-dupes in ${status.sinceMarkStr()}")
     }
 
-    private fun loadSimilar(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadSimilar(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading similar pairs")
         status.force("Fetching similar pairs...", mark = true)
         var i = 0
@@ -415,7 +428,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
         log.info("Finished loading $i similar pairs in ${status.sinceMarkStr()}")
     }
 
-    private fun loadImports(menagerie: Menagerie, status: StatusFilter) {
+    private fun loadImports(menagerie: Menagerie, status: StatusFilter<String>) {
         log.info("Loading imports")
         status.force("Fetching imports...", mark = true)
 

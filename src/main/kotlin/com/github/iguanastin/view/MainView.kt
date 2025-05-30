@@ -4,6 +4,7 @@ import com.github.iguanastin.app.MyApp
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.bindVisibleShortcut
 import com.github.iguanastin.app.context.MenagerieContext
+import com.github.iguanastin.app.menagerie.import.Import
 import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.app.menagerie.search.FilterParseException
 import com.github.iguanastin.app.menagerie.search.MenagerieSearch
@@ -12,7 +13,6 @@ import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
 import com.github.iguanastin.app.utils.*
 import com.github.iguanastin.view.dialog.DuplicateResolverDialog
-import com.github.iguanastin.view.dialog.ImportNotification
 import com.github.iguanastin.view.dialog.ImportQueueDialog
 import com.github.iguanastin.view.dialog.TagSearchDialog
 import com.github.iguanastin.view.factories.ItemCellFactory
@@ -20,7 +20,6 @@ import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
-import javafx.beans.Observable
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
@@ -65,10 +64,9 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         get() = searchProperty.get()
 
     // Should probably be in MyApp
-    val imports: ObservableList<ImportNotification> = observableListOf()
-
-    // Should probably be in MyApp
     private val history: ObservableList<SearchHistory> = observableListOf()
+
+    private val imports: ObservableList<Import> = observableListOf()
 
     private val myApp = (app as MyApp)
 
@@ -76,26 +74,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         set(value) {
             field = value
 
-            if (value != null) initSimilarButton(value.menagerie)
-
-            // Bi-directionally bind main video mute and repeat to prefs
-            value?.apply {
-                itemDisplay.videoDisplay.isMuted = prefs.hidden.videoMute.value
-                itemDisplay.videoDisplay.muteProperty.addListener { _, _, new ->
-                    if (prefs.hidden.videoMute.value != new) prefs.hidden.videoMute.value = new
-                }
-                prefs.hidden.videoMute.changeListeners.add {
-                    if (itemDisplay.videoDisplay.isMuted != it) itemDisplay.videoDisplay.isMuted = it
-                }
-
-                itemDisplay.videoDisplay.isRepeat = prefs.hidden.videoRepeat.value
-                itemDisplay.videoDisplay.repeatProperty.addListener { _, _, new ->
-                    if (prefs.hidden.videoRepeat.value != new) prefs.hidden.videoRepeat.value = new
-                }
-                prefs.hidden.videoRepeat.changeListeners.add {
-                    if (itemDisplay.videoDisplay.isRepeat != it) itemDisplay.videoDisplay.isRepeat = it
-                }
-            }
+            if (value != null) onContextAdded(value)
         }
 
     override val root = topenabledstackpane {
@@ -254,7 +233,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         initSearchFieldAutoComplete()
         initEditTagsAutoComplete()
         initSelectedItemCounterListeners()
-        initImportsButton()
 
         Platform.runLater { itemGrid.requestFocus() }
     }
@@ -365,24 +343,44 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         }
     }
 
-    private fun initSimilarButton(menagerie: Menagerie) {
-        runOnUIThread { updateSimilarButtonState(menagerie.similarPairs.size) }
-        menagerie.similarPairs.addListener(ListChangeListener { change ->
+    private fun onContextAdded(context: MenagerieContext) {
+        initSimilarButton(context)
+        initImportsButton(context)
+
+        // Bi-directionally bind main video mute and repeat to prefs
+        val prefs = context.prefs
+        itemDisplay.videoDisplay.isMuted = prefs.hidden.videoMute.value
+        itemDisplay.videoDisplay.muteProperty.addListener { _, _, new ->
+            if (prefs.hidden.videoMute.value != new) prefs.hidden.videoMute.value = new
+        }
+        prefs.hidden.videoMute.changeListeners.add {
+            if (itemDisplay.videoDisplay.isMuted != it) itemDisplay.videoDisplay.isMuted = it
+        }
+
+        itemDisplay.videoDisplay.isRepeat = prefs.hidden.videoRepeat.value
+        itemDisplay.videoDisplay.repeatProperty.addListener { _, _, new ->
+            if (prefs.hidden.videoRepeat.value != new) prefs.hidden.videoRepeat.value = new
+        }
+        prefs.hidden.videoRepeat.changeListeners.add {
+            if (itemDisplay.videoDisplay.isRepeat != it) itemDisplay.videoDisplay.isRepeat = it
+        }
+    }
+
+    private fun initSimilarButton(context: MenagerieContext) {
+        runOnUIThread { updateSimilarButtonState() }
+        context.menagerie.similarPairs.addListener(ListChangeListener { change ->
             while (change.next()) {
-                runOnUIThread { updateSimilarButtonState(change.list.size) }
+                runOnUIThread { updateSimilarButtonState() }
             }
         })
 
         similarButton.onActionConsuming { openSimilarDialog() }
     }
 
-    private fun updateSimilarButtonState(count: Int) {
+    private fun updateSimilarButtonState() {
+        val count = context?.menagerie?.similarPairs?.size ?: 0
         similarButton.text = "Similar: $count"
-        if (count > 0) {
-            if (!similarButton.hasClass(Styles.blueBase)) similarButton.addClass(Styles.blueBase)
-        } else {
-            similarButton.removeClass(Styles.blueBase)
-        }
+        similarButton.toggleClass(Styles.blueBase, count > 0)
     }
 
     fun openSimilarDialog() {
@@ -394,32 +392,31 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         })
     }
 
-    private fun initImportsButton() {
-        importsButton.onActionConsuming { root.add(ImportQueueDialog(imports)) }
+    private fun initImportsButton(context: MenagerieContext) {
+        importsButton.onActionConsuming { root.add(ImportQueueDialog(imports, context)) }
 
-        val finishedListener: (observable: Observable) -> Unit = { _ ->
-            updateImportsButton()
-        }
+        context.menagerie.imports.addListener(ListChangeListener { change ->
+            while (change.next()) change.addedSubList.forEach { imports.add(it) }
+        })
+
+        imports.addAll(context.menagerie.imports)
+
+        val update = ChangeListener { _, _, new -> if (new in Import.finishedStates) updateImportsButton() }
+        imports.forEach { it.status.addListener(update) }
         imports.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { it.finishedProperty.removeListener(finishedListener) }
-                change.addedSubList.forEach { it.finishedProperty.addListener(finishedListener) }
-
+                change.addedSubList.forEach { it.status.addListener(update) }
                 updateImportsButton()
             }
         })
+        updateImportsButton()
     }
 
     private fun updateImportsButton() {
         runOnUIThread {
-            val count = imports.count { !it.isFinished }
+            val count = imports.count { it.isReadyOrRunning() }
             importsButton.text = "Imports: $count"
-            if (count > 0) {
-                if (!importsButton.hasClass(Styles.blueBase)) importsButton.addClass(Styles.blueBase)
-            } else {
-                importsButton.removeClass(Styles.blueBase)
-            }
-            importsButton.applyCss()
+            importsButton.toggleClass(Styles.blueBase, count > 0)
         }
     }
 

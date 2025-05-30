@@ -14,7 +14,7 @@ class DatabaseCreateImport(val import: Import): DatabaseUpdate() {
         ps.setNString(3, import.file.absolutePath)
         ps.setNString(4, import.group?.title)
         if (import.group != null) {
-            ps.setInt(5, import.group.id)
+            ps.setInt(5, import.group.id.value)
         } else {
             ps.setNull(5, Types.INTEGER)
         }

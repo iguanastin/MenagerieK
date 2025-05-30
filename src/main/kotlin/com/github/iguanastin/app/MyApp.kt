@@ -166,7 +166,7 @@ class MyApp : App(MainView::class, Styles::class) {
         })
 
         runOnUIThread {
-            root.context = context
+            root.context = context // TODO main view should be getting context from MyApp instead of holding its own context
 
             // Initial search
             root.navigateForward(

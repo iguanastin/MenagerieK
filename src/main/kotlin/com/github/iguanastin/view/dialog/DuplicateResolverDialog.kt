@@ -249,11 +249,15 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
     private fun markNoDuplicates(pair: SimilarPair<Item>, item: Item) {
         displayNextForRemovingItem(pair, item)
 
+        val toRemove = mutableListOf<SimilarPair<Item>>()
         pairs.forEach {
-            if (it.contains(item)) it.obj1.menagerie.addNonDupe(it)
+            if (it.contains(item)) {
+                it.obj1.menagerie.addNonDupe(it)
+                toRemove.add(it)
+            }
         }
 
-        pairs.removeIf { it.contains(item) }
+        toRemove.forEach { it.obj1.menagerie.removeSimilarity(it) }
     }
 
     private fun initListeners() {

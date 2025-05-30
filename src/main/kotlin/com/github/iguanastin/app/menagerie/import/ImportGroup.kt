@@ -2,18 +2,26 @@ package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.model.GroupItem
 import com.github.iguanastin.app.menagerie.model.Menagerie
+import tornadofx.*
 
-class ImportGroup(val title: String, var id: Int) {
+class ImportGroup(val title: String, id: Int) {
 
-    val idChangeListeners = mutableListOf<(group: ImportGroup, old: Int, new: Int) -> Unit>()
+    val id = intProperty(id)
 
     fun getRealGroup(menagerie: Menagerie): GroupItem {
         if (id < 0) {
             val g = menagerie.createGroup(title)
-            idChangeListeners.forEach { it(this, id, g.id) }
-            id = g.id
+            id.value = g.id
         }
-        return menagerie.getItem(id) as GroupItem
+
+        var item = menagerie.getItem(id.value)
+        if (item !is GroupItem) {
+            id.value = menagerie.reserveImportTempGroupID()
+            item = menagerie.createGroup(title)
+            id.value = item.id
+        }
+
+        return item
     }
 
 }

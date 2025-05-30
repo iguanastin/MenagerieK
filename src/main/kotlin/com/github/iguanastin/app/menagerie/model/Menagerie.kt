@@ -211,7 +211,7 @@ class Menagerie {
         if (job in _imports) return false
         _imports.add(job)
         nextImportID.getAndUpdate { it.coerceAtLeast(job.id+1) }
-        nextImportTempGroupID.getAndUpdate { it.coerceAtMost((job.group?.id ?: 0) - 1) }
+        nextImportTempGroupID.getAndUpdate { it.coerceAtMost((job.group?.id?.value ?: 0) - 1) }
 
         return true
     }

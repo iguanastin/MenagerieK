@@ -1,10 +1,11 @@
 package com.github.iguanastin.view.dialog
 
 import com.github.iguanastin.app.Styles
-import com.github.iguanastin.app.menagerie.import.RemoteImportJob
+import com.github.iguanastin.app.context.MenagerieContext
+import com.github.iguanastin.app.menagerie.import.Import
 import com.github.iguanastin.view.onActionConsuming
 import com.github.iguanastin.view.runOnUIThread
-import javafx.beans.InvalidationListener
+import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.scene.control.Button
@@ -15,70 +16,67 @@ import javafx.scene.layout.Priority
 import javafx.util.Callback
 import tornadofx.*
 
-class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observableListOf()) : StackDialog() {
+class ImportQueueDialog(val imports: ObservableList<Import>, val context: MenagerieContext) : StackDialog() {
 
-    private lateinit var list: ListView<ImportNotification>
+    private lateinit var list: ListView<Import>
 
-    private val notificationCellFactory = Callback<ListView<ImportNotification>, ListCell<ImportNotification>> {
-        object : ListCell<ImportNotification>() {
+    private val notificationCellFactory = Callback<ListView<Import>, ListCell<Import>> {
+        object : ListCell<Import>() {
             private lateinit var progressBar: ProgressBar
             private lateinit var cancelButton: Button
 
-            private val finishedListener = ChangeListener { _, _, newValue ->
-                runOnUIThread { updateFinished(newValue == true) }
-            }
-
             init {
+                toggleClass(Styles.importFinished, itemProperty().flatMap { it.status }.map { it in Import.finishedStates })
+
                 graphic = vbox(5.0) {
                     padding = insets(5.0)
 
                     // Status label
                     label {
                         addClass(Styles.importCellStatus)
-                        textProperty().bind(itemProperty().flatMap { it.statusProperty })
+                        val update = ChangeListener<Import.Status> { _, _, new -> Platform.runLater { // Note: Needs to be Platform.runLater instead of runOnUIThread
+                            text = new.toString()
+                            toggleClass(Styles.redText, new == Import.Status.FAILED)
+                        } }
+                        itemProperty().addListener { _, old, new ->
+                            old?.status?.removeListener(update)
+                            new?.status?.addListener(update)
+                            update.changed(null, null, new?.status?.value ?: return@addListener)
+                        }
                     }
 
                     // Source label
                     label {
                         addClass(Styles.importCellSource)
-                        textProperty().bind(itemProperty().map { if (it.job is RemoteImportJob) it.job.url else it?.job?.file?.path })
+                        itemProperty().addListener { _, _, new -> runOnUIThread { text = new?.url ?: new?.file?.path } }
                     }
 
-                    hbox(5.0) {
-                        progressBar = progressbar {
-                            hgrow = Priority.ALWAYS
-                            progressProperty().bind(itemProperty().flatMap { it.progressProperty })
+                    borderpane {
+                        left {
+                            progressBar = progressbar {
+                                hgrow = Priority.ALWAYS
+                                val update =
+                                    ChangeListener<Number> { _, _, new -> runOnUIThread { progress = new.toDouble() } }
+                                itemProperty().addListener { _, old, new ->
+                                    old?.progress?.removeListener(update)
+                                    new?.progress?.addListener(update)
+                                    update.changed(null, null, new?.progress?.value ?: -1.0)
+                                }
+                                visibleWhen(itemProperty().flatMap { it.status }.map { it != Import.Status.READY })
+                            }
                         }
-                        cancelButton = button("Cancel") {
-                            onActionConsuming {
-                                item?.job?.cancel()
-                                item?.isFinished = true
+                        right {
+                            cancelButton = button("Cancel") {
+                                onActionConsuming {
+                                    item?.cancel()
+                                }
+                                visibleWhen(itemProperty().flatMap { it.status }.map { it !in Import.finishedStates })
                             }
                         }
                     }
                 }
 
                 prefWidth = 0.0
-            }
-
-            override fun updateItem(item: ImportNotification?, empty: Boolean) {
-                getItem()?.finishedProperty?.removeListener(finishedListener)
-
-                super.updateItem(item, empty)
-
-                updateFinished(item?.isFinished == true)
-
-                item?.finishedProperty?.addListener(finishedListener)
-            }
-
-            private fun updateFinished(finished: Boolean) {
-                if (finished) {
-                    if (!hasClass(Styles.importFinished)) addClass(Styles.importFinished)
-                } else {
-                    removeClass(Styles.importFinished)
-                }
-                cancelButton.isVisible = item != null && !finished
-                progressBar.isVisible = item != null && !finished
             }
         }
     }
@@ -97,26 +95,29 @@ class ImportQueueDialog(val imports: ObservableList<ImportNotification> = observ
             }
             borderpane {
                 left {
-                    button("Cancel All")
-                }
-                center {
-                    button("Duplicates")
+                    button("Cancel All") {
+                        onActionConsuming { imports.toList().forEach { it.cancel() } }
+                    }
                 }
                 right {
-                    togglebutton("Pause", selectFirst = false)
+                    togglebutton("Pause", selectFirst = context.importer.paused) {
+                        onActionConsuming { context.importer.paused = !context.importer.paused }
+                        textProperty().bind(selectedProperty().map { if (it) "Resume" else "Pause" })
+                    }
                 }
             }
         }
 
-        val isFinishedListener = InvalidationListener { _ ->
-            runOnUIThread { imports.sortBy { it.isFinished } }
+        val statusListener = ChangeListener<Import.Status> { _, _, _ ->
+            runOnUIThread { imports.sortBy { !it.isReadyOrRunning() } }
         }
-        imports.forEach { it.finishedProperty.addListener(isFinishedListener) }
-        imports.sortBy { it.isFinished }
+        // TODO should REALLY be only sorting/displaying a copy of the import list
+        imports.forEach { it.status.addListener(statusListener) }
+        imports.sortBy { !it.isReadyOrRunning() }
         imports.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach { it.finishedProperty.removeListener(isFinishedListener) }
-                change.addedSubList.forEach { it.finishedProperty.addListener(isFinishedListener) }
+                change.removed.forEach { it.status.removeListener(statusListener) }
+                change.addedSubList.forEach { it.status.addListener(statusListener) }
             }
         })
 
