@@ -103,21 +103,6 @@ class TagColorizerSetting(
 
 }
 
-class TagColorRule(val regex: Regex, val color: String) {
-
-    override fun toString(): String {
-        return "${regex.pattern} $color"
-    }
-
-    companion object {
-        fun fromString(str: String): TagColorRule {
-            val split = str.split(" ")
-            return TagColorRule(Regex(split[0], RegexOption.IGNORE_CASE), split[1])
-        }
-    }
-
-}
-
 class StringSetting(
     key: String,
     label: String? = null,

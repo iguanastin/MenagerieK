@@ -21,6 +21,7 @@ class Importer(val menagerie: Menagerie) : Thread("File Importer") {
     @Volatile
     var paused = false
 
+    @Suppress("RemoveExplicitTypeArguments")
     private val menagerieImportsListener = ListChangeListener<Import> { change ->
         while (change.next()) {
             change.addedSubList.forEach { i ->

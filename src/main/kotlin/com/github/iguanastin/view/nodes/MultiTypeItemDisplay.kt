@@ -17,14 +17,11 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.StackPane
 import javafx.scene.text.TextAlignment
-import mu.KotlinLogging
 import tornadofx.*
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
-
-private val log = KotlinLogging.logger {}
 
 class MultiTypeItemDisplay : StackPane() {
 

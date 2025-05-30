@@ -920,7 +920,7 @@ class MyApp : App(MainView::class, Styles::class) {
                         error(
                             title = "Incompatible database",
                             header = "Database v${database.version} is not supported",
-                            content = "Maximum supported database version for Menagerie v${MyApp.VERSION} is database v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}",
+                            content = "Maximum supported database version for Menagerie v$VERSION is database v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}",
                             owner = stage
                         )
                     }

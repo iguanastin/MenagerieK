@@ -1,5 +1,6 @@
 package com.github.iguanastin.app.menagerie.search
 
+@Suppress("unused")
 class FilterParseException : Exception {
     constructor() : super()
     constructor(msg: String) : super(msg)

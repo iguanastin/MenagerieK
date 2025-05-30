@@ -1,6 +1,7 @@
 package com.github.iguanastin.app.menagerie.model
 
 
+@Suppress("unused")
 class HistogramReadException : Exception {
     constructor() : super()
     constructor(message: String) : super(message)

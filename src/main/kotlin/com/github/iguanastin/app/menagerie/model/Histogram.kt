@@ -116,19 +116,19 @@ class Histogram private constructor(
     }
 
 
-    fun alphaToInputStream(): ByteArrayInputStream? {
+    fun alphaToInputStream(): ByteArrayInputStream {
         return channelToInputStream(alpha)
     }
 
-    fun redToInputStream(): ByteArrayInputStream? {
+    fun redToInputStream(): ByteArrayInputStream {
         return channelToInputStream(red)
     }
 
-    fun greenToInputStream(): ByteArrayInputStream? {
+    fun greenToInputStream(): ByteArrayInputStream {
         return channelToInputStream(green)
     }
 
-    fun blueToInputStream(): ByteArrayInputStream? {
+    fun blueToInputStream(): ByteArrayInputStream {
         return channelToInputStream(blue)
     }
 
