@@ -42,12 +42,12 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
     }
 
     companion object {
-        fun fileHash(file: File): String {
-            return HexFormat.of().formatHex(MD5Hasher.hash(file))
+        fun fileMD5(file: File): String {
+            return HexFormat.of().formatHex(MD5Hasher.hash(file)).lowercase()
         }
 
-        fun bytesHash(bytes: ByteArray): String {
-            return HexFormat.of().formatHex(MD5Hasher.hash(bytes))
+        fun bytesMD5(bytes: ByteArray): String {
+            return HexFormat.of().formatHex(MD5Hasher.hash(bytes)).lowercase()
         }
     }
 

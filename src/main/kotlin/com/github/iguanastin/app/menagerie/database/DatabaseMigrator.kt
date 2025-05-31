@@ -158,6 +158,7 @@ class DatabaseMigrator(val db: MenagerieDatabase) {
         val s = db.genericStatement
 
         s.executeUpdate("CREATE TABLE imports(id INT NOT NULL, url NVARCHAR(1024), file NVARCHAR(1024), group_id INT, group_title NVARCHAR(1024), tags NCLOB);")
+        s.executeUpdate("UPDATE files SET md5=LOWER(md5);")
     }
 
 }

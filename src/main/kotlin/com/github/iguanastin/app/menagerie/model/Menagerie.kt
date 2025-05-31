@@ -161,7 +161,7 @@ class Menagerie {
 
         val id = reserveItemID()
         val bytes = Files.readAllBytes(file.toPath())
-        val md5 = FileItem.bytesHash(bytes)
+        val md5 = FileItem.bytesMD5(bytes)
         val added = System.currentTimeMillis()
 
         val item = when {
