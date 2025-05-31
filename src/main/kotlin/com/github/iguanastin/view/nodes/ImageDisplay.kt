@@ -2,12 +2,14 @@ package com.github.iguanastin.view.nodes
 
 import com.github.iguanastin.app.menagerie.model.ImageItem
 import com.github.iguanastin.app.menagerie.model.Item
+import com.github.iguanastin.view.afterLoaded
 import com.github.iguanastin.view.image
 import com.github.iguanastin.view.nodes.image.PanZoomImageView
 import com.github.iguanastin.view.nodes.image.panzoomimageview
 import javafx.event.EventTarget
 import javafx.scene.image.Image
 import tornadofx.*
+import java.lang.ref.SoftReference
 
 class ImageDisplay : ItemDisplay() {
 
@@ -24,7 +26,15 @@ class ImageDisplay : ItemDisplay() {
             }
         }
 
-        imageView.trueImageProperty.bind(itemProperty.map { if (it is ImageItem) image(it.file, true) else null })
+        imageView.trueImageProperty.bind(itemProperty.map {
+            if (it is ImageItem) {
+                it.cachedImage.get() ?: image(it.file, true).also { img ->
+                    img.afterLoaded {
+                        it.cachedImage = SoftReference(img)
+                    }
+                }
+            } else null
+        })
     }
 
     override fun canDisplay(item: Item?): Boolean {

@@ -30,16 +30,37 @@ class DatabaseMigrator(val db: MenagerieDatabase) {
 
     fun migrate() {
         log.info("Attempting to migrate database from v${db.version} to v${MenagerieDatabase.REQUIRED_DATABASE_VERSION}")
-        while (canMigrate()) {
-            val m = migrations[db.version]
-                ?: throw MenagerieDatabaseException("No valid migration starting from ${db.version}")
-            log.info("Migrating database from v${m.from} to v${m.to}")
-            m.run()
+        db.updaterLock.acquireUninterruptibly()
+//        db.db.autoCommit = false
 
-            db.version = m.to
-            db.genericStatement.executeUpdate("INSERT INTO version(version) VALUES (${db.version});")
-            log.info("Finished migrating from v${m.from} to v${m.to}")
+        try{
+            while (canMigrate()) {
+                val m = migrations[db.version]
+                    ?: throw MenagerieDatabaseException("No valid migration starting from ${db.version}")
+                log.info("Migrating database from v${m.from} to v${m.to}")
+
+                // TODO savepoints don't work. Upgrading H2 MIGHT fix it, idk.
+//                val save = db.db.setSavepoint()
+                try {
+                    m.run()
+//                    db.db.commit()
+                } catch (e: Exception) {
+                    log.error(e) { "Exception while migrating from v${m.from} to v${m.to}" }
+//                    db.db.rollback()
+                    throw e
+                } finally {
+//                    db.db.releaseSavepoint(save)
+                }
+
+                db.genericStatement.executeUpdate("INSERT INTO version(version) VALUES (${m.to});")
+                db.version = m.to
+                log.info("Finished migrating from v${m.from} to v${m.to}")
+            }
+        } finally {
+//            db.db.autoCommit = true
+            db.updaterLock.release()
         }
+
         log.info("Successfully migrated database to v${db.version}")
     }
 

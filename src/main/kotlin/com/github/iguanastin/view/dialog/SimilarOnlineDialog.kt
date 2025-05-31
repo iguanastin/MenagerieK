@@ -121,7 +121,7 @@ class SimilarOnlineDialog(
                     val tags = SourceTagParser.getTags(match.sourceUrl, matcher.client!!)
 
                     tags.forEach {
-                        val tag = set.item.menagerie.getOrMakeTag(it, true)
+                        val tag = set.item.menagerie.getOrMakeTag(it, temporaryIfNew = true)
                         set.item.addTag(tag)
                     }
 

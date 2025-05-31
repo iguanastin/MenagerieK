@@ -116,6 +116,17 @@ class Histogram private constructor(
     }
 
 
+    fun average(): List<Double> {
+        val r = mutableListOf(0.0, 0.0, 0.0, 0.0)
+
+        r[0] = (0 until BIN_SIZE).sumOf { (it + 0.5) * alpha[it] } / BIN_SIZE
+        r[1] = (0 until BIN_SIZE).sumOf { (it + 0.5) * red[it] } / BIN_SIZE
+        r[2] = (0 until BIN_SIZE).sumOf { (it + 0.5) * green[it] } / BIN_SIZE
+        r[3] = (0 until BIN_SIZE).sumOf { (it + 0.5) * blue[it] } / BIN_SIZE
+
+        return r
+    }
+
     fun alphaToInputStream(): ByteArrayInputStream {
         return channelToInputStream(alpha)
     }

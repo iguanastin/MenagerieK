@@ -3,8 +3,11 @@ package com.github.iguanastin.app.menagerie.model
 import com.github.iguanastin.app.menagerie.duplicates.local.CPUDuplicateFinder
 import com.github.iguanastin.app.menagerie.import.Import
 import javafx.collections.*
+import javafx.scene.image.Image
 import tornadofx.*
 import java.io.File
+import java.lang.ref.SoftReference
+import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
 class Menagerie {
@@ -37,20 +40,8 @@ class Menagerie {
     init {
         items.addListener(ListChangeListener { change ->
             while (change.next()) {
-                change.removed.forEach {
-                    itemIdMap.remove(it.id)
-                    if (it is FileItem) {
-                        files.remove(it.file)
-                        it.elementOf?.removeItem(it)
-                    }
-                    it.invalidate()
-
-                    _similarPairs.removeIf{ p -> p.contains(it) } // Remove similar pairs containing removed item
-                }
-                change.addedSubList.forEach {
-                    itemIdMap[it.id] = it
-                    if (it is FileItem) files.add(it.file)
-                }
+                change.removed.forEach { itemRemoved(it) }
+                change.addedSubList.forEach { itemAdded(it) }
             }
         })
         tags.addListener(SetChangeListener { change ->
@@ -59,34 +50,38 @@ class Menagerie {
         })
     }
 
-
-    fun reserveItemID(): Int {
-        return nextItemID.getAndIncrement()
+    private fun itemAdded(it: Item) {
+        itemIdMap[it.id] = it
+        if (it is FileItem) {
+            files.add(it.file)
+        }
     }
 
-    fun reserveTagID(): Int {
-        return nextTagID.getAndIncrement()
+    private fun itemRemoved(it: Item) {
+        itemIdMap.remove(it.id)
+        if (it is FileItem) {
+            files.remove(it.file)
+            it.elementOf?.removeItem(it)
+        }
+        it.invalidate()
+
+        _similarPairs.removeIf { p -> p.contains(it) } // Remove similar pairs containing removed item
     }
 
-    fun reserveImportID(): Int {
-        return nextImportID.getAndIncrement()
-    }
 
-    fun reserveImportTempGroupID(): Int {
-        return nextImportTempGroupID.getAndDecrement()
-    }
+    private fun reserveItemID(): Int = nextItemID.getAndIncrement()
 
-    fun getItem(id: Int): Item? {
-        return itemIdMap[id]
-    }
+    private fun reserveTagID(): Int = nextTagID.getAndIncrement()
 
-    fun hasItem(id: Int): Boolean {
-        return itemIdMap.containsKey(id)
-    }
+    fun reserveImportID(): Int = nextImportID.getAndIncrement()
 
-    fun hasFile(file: File): Boolean {
-        return file in files
-    }
+    fun reserveImportTempGroupID(): Int = nextImportTempGroupID.getAndDecrement()
+
+    fun getItem(id: Int): Item? = itemIdMap[id]
+
+    fun hasItem(id: Int): Boolean = itemIdMap.containsKey(id)
+
+    fun hasFile(file: File): Boolean = file in files
 
     fun addItem(item: Item): Boolean {
         if (item.id in itemIdMap) return false
@@ -97,13 +92,9 @@ class Menagerie {
         return true
     }
 
-    fun removeItem(item: Item): Boolean {
-        return _items.remove(item)
-    }
+    fun removeItem(item: Item): Boolean = _items.remove(item)
 
-    fun getTag(id: Int): Tag? {
-        return tagIdMap[id]
-    }
+    fun getTag(id: Int): Tag? = tagIdMap[id]
 
     fun getTag(name: String): Tag? {
         val lName = name.lowercase()
@@ -113,13 +104,15 @@ class Menagerie {
         return null
     }
 
-    fun getOrMakeTag(name: String, temporaryIfNew: Boolean = false): Tag {
-        return getTag(name) ?: Tag(reserveTagID(), name, this, temporary = temporaryIfNew).also { addTag(it) }
+    fun getOrMakeTag(name: String, color: String? = null, temporaryIfNew: Boolean = false): Tag {
+        return getTag(name) ?: createTag(name, color, temporaryIfNew)
     }
 
-    fun hasTag(id: Int): Boolean {
-        return tagIdMap.containsKey(id)
+    fun createTag(name: String, color: String? = null, temporary: Boolean = false): Tag {
+        return Tag(reserveTagID(), name, this, color = color, temporary = temporary).also { addTag(it) }
     }
+
+    fun hasTag(id: Int): Boolean = tagIdMap.containsKey(id)
 
     fun addTag(tag: Tag): Boolean {
         if (_tags.add(tag)) nextTagID.getAndUpdate { it.coerceAtLeast(tag.id + 1) }
@@ -131,9 +124,7 @@ class Menagerie {
         return _tags.remove(tag)
     }
 
-    fun hasNonDupe(dupe: SimilarPair<Item>): Boolean {
-        return dupe in _knownNonDupes
-    }
+    fun hasNonDupe(dupe: SimilarPair<Item>): Boolean = dupe in _knownNonDupes
 
     fun addNonDupe(dupe: SimilarPair<Item>): Boolean {
         return if (!hasNonDupe(dupe)) {
@@ -144,22 +135,16 @@ class Menagerie {
         }
     }
 
-    fun removeNonDupe(dupe: SimilarPair<Item>): Boolean {
-        return _knownNonDupes.remove(dupe)
-    }
+    fun removeNonDupe(dupe: SimilarPair<Item>): Boolean = _knownNonDupes.remove(dupe)
 
     fun addSimilarity(pair: SimilarPair<Item>): Boolean {
         if (pair in _similarPairs || pair in _knownNonDupes) return false
         return _similarPairs.add(pair)
     }
 
-    fun removeSimilarity(pair: SimilarPair<Item>): Boolean {
-        return _similarPairs.remove(pair)
-    }
+    fun removeSimilarity(pair: SimilarPair<Item>): Boolean = _similarPairs.remove(pair)
 
-    fun purgeSimilarNonDupes() {
-        _similarPairs.removeIf{ p -> hasNonDupe(p) }
-    }
+    fun purgeSimilarNonDupes() = _similarPairs.removeIf { p -> hasNonDupe(p) }
 
     fun createGroup(title: String): GroupItem {
         val g = GroupItem(reserveItemID(), System.currentTimeMillis(), this, title)
@@ -169,18 +154,23 @@ class Menagerie {
     }
 
     /**
-     LONG BLOCKING CALL
+    LONG BLOCKING CALL
      */
     fun createFileItem(file: File, skipAdding: Boolean): FileItem {
         if (hasFile(file)) throw IllegalArgumentException("File already present: ${file.path}")
 
         val id = reserveItemID()
-        val md5 = FileItem.fileHash(file)
+        val bytes = Files.readAllBytes(file.toPath())
+        val md5 = FileItem.bytesHash(bytes)
         val added = System.currentTimeMillis()
 
         val item = when {
             ImageItem.isImage(file) -> {
-                ImageItem(id, added, this, md5, file).apply { buildHistogram() }
+                ImageItem(id, added, this, md5, file).apply {
+                    val img = Image(bytes.inputStream())
+                    cachedImage = SoftReference(img)
+                    buildHistogram(img)
+                }
             }
             VideoItem.isVideo(file) -> {
                 VideoItem(id, added, this, md5, file)
@@ -210,14 +200,12 @@ class Menagerie {
     fun addImport(job: Import): Boolean {
         if (job in _imports) return false
         _imports.add(job)
-        nextImportID.getAndUpdate { it.coerceAtLeast(job.id+1) }
+        nextImportID.getAndUpdate { it.coerceAtLeast(job.id + 1) }
         nextImportTempGroupID.getAndUpdate { it.coerceAtMost((job.group?.id?.value ?: 0) - 1) }
 
         return true
     }
 
-    fun removeImport(job: Import): Boolean {
-        return _imports.remove(job)
-    }
+    fun removeImport(job: Import): Boolean = _imports.remove(job)
 
 }

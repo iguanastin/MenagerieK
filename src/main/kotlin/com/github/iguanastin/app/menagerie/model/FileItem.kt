@@ -33,6 +33,7 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
         fileProperty.addListener { _, old, new ->
             val change = FileItemChange(this, file = Change(old, new))
             changeListeners.forEach { listener -> listener(change) }
+            invalidateThumbnail()
         }
         elementOfProperty.addListener { _, old, new ->
             val change = FileItemChange(this, elementOf = Change(old, new))
@@ -43,6 +44,10 @@ open class FileItem(id: Int, added: Long, menagerie: Menagerie, md5: String, fil
     companion object {
         fun fileHash(file: File): String {
             return HexFormat.of().formatHex(MD5Hasher.hash(file))
+        }
+
+        fun bytesHash(bytes: ByteArray): String {
+            return HexFormat.of().formatHex(MD5Hasher.hash(bytes))
         }
     }
 

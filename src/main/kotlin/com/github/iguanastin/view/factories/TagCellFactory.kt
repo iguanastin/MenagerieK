@@ -108,7 +108,7 @@ open class TagCellFactory(var onTagClick: ((Tag) -> Unit)? = null) :
     private fun promoteTemporaryTag(tag: Tag) {
         tag.menagerie.removeTag(tag)
 
-        val newTag = Tag(tag.menagerie.reserveTagID(), tag.name, tag.menagerie, tag.color)
+        val newTag = tag.menagerie.createTag(tag.name, tag.color)
         tag.menagerie.addTag(newTag)
 
         tag.menagerie.items.forEach {

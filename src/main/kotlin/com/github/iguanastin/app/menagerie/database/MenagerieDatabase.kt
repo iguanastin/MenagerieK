@@ -14,17 +14,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
-import kotlin.collections.forEach
-import kotlin.collections.getOrPut
-import kotlin.collections.isNullOrEmpty
-import kotlin.collections.map
-import kotlin.collections.mutableListOf
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
-import kotlin.collections.sortBy
-import kotlin.collections.toMutableSet
 import kotlin.concurrent.thread
 
 private val log = KotlinLogging.logger {}
@@ -48,7 +38,7 @@ class MenagerieDatabase(private val url: String, private val user: String, priva
     var version: Int = retrieveVersion()
 
     private val updateQueue: BlockingQueue<DatabaseUpdate> = LinkedBlockingQueue()
-    private val updaterLock: Semaphore = Semaphore(1, true)
+    val updaterLock: Semaphore = Semaphore(1, true)
 
     @Volatile
     private var updateThreadRunning: Boolean = false

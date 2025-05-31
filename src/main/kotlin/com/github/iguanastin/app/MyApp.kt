@@ -166,7 +166,8 @@ class MyApp : App(MainView::class, Styles::class) {
         })
 
         runOnUIThread {
-            root.context = context // TODO main view should be getting context from MyApp instead of holding its own context
+            root.context =
+                context // TODO main view should be getting context from MyApp instead of holding its own context
 
             // Initial search
             root.navigateForward(
@@ -873,7 +874,7 @@ class MyApp : App(MainView::class, Styles::class) {
                             runOnUIThread { progress.close() }
 
                             load()
-                        } catch (e: MenagerieDatabaseException) {
+                        } catch (e: Exception) {
                             e.printStackTrace()
                             runOnUIThread {
                                 error(

@@ -59,7 +59,7 @@ class AutoTagger(
 
                     runOnUIThread {
                         tags.forEach { tag ->
-                            item.addTag(item.menagerie.getOrMakeTag(context.prefs.tags.tagAliases.apply(tag), true))
+                            item.addTag(item.menagerie.getOrMakeTag(context.prefs.tags.tagAliases.apply(tag), temporaryIfNew = true))
                         }
                     }
                 } catch (e: HttpResponseException) {

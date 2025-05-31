@@ -14,4 +14,8 @@ object MD5Hasher {
         return digest.digest(Files.readAllBytes(file.toPath()))
     }
 
+    fun hash(bytes: ByteArray): ByteArray {
+        return digest.digest(bytes)
+    }
+
 }
