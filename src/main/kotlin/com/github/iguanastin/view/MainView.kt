@@ -19,12 +19,11 @@ import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.*
 import javafx.application.Platform
 import javafx.beans.InvalidationListener
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
 import javafx.event.EventHandler
+import javafx.event.EventTarget
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
@@ -32,6 +31,7 @@ import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
+import javafx.scene.layout.VBox
 import mu.KotlinLogging
 import tornadofx.*
 
@@ -56,8 +56,8 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     private lateinit var importsButton: Button
     private lateinit var similarButton: Button
 
-    private val searchProperty: ObjectProperty<MenagerieSearch?> = SimpleObjectProperty(null)
-    private val currentSearch: MenagerieSearch?
+    private val searchProperty = objectProperty<MenagerieSearch>()
+    private val search: MenagerieSearch?
         get() = searchProperty.get()
 
     // Should probably be in MyApp
@@ -74,47 +74,25 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             if (value != null) onContextAdded(value)
         }
 
-    private val shuffleIcon = ImageView(MainView::class.java.getResource("/imgs/shuffle.png")?.toExternalForm())
-    private val groupsIcon = ImageView(MainView::class.java.getResource("/imgs/opengroups.png")?.toExternalForm())
-    private val descendingIcon = ImageView(MainView::class.java.getResource("/imgs/descending.png")?.toExternalForm())
+    private val shuffleIconURL = MainView::class.java.getResource("/imgs/shuffle.png")?.toExternalForm()
+    private val groupsIconURL = MainView::class.java.getResource("/imgs/opengroups.png")?.toExternalForm()
+    private val orderIconURL = MainView::class.java.getResource("/imgs/descending.png")?.toExternalForm()
 
     override val root = topenabledstackpane {
         focusingstackpane {
             borderpane {
                 top {
-                    // TODO: Do this for real
-//                    menubar {
-//                        menu("File") {
-//                            item("Import") {
-//                                onActionConsuming {
-//                                    val fc = FileChooser().apply {
-//                                        title = "Import files or directories"
-//                                        initialDirectory = File(context!!.prefs.general.downloadFolder.value)
-//                                    }
-//                                    myApp.importFilesDialog(fc.showOpenMultipleDialog(currentWindow) ?: return@onActionConsuming)
-//                                }
-//                            }
-//                        }
-//                    }
+                    initMenuBar()
                 }
                 center {
-                    itemDisplay = multitypeitemdisplay {
-                        paddingLeft = 5
-                        paddingTop = 5
-                        paddingBottom = 5
-                    }
+                    itemDisplay = multitypeitemdisplay { paddingLeft = 5; paddingTop = 5; paddingBottom = 5 }
                 }
                 left {
                     tagView = listview {
                         isFocusTraversable = false
                         cellFactory = TagCellFactory().apply {
                             onTagClick = {
-                                robotSearch(
-                                    text = it.name,
-                                    descending = true,
-                                    expandGroups = false,
-                                    shuffled = false
-                                )
+                                robotSearch(text = it.name, descending = true, expandGroups = false, shuffled = false)
                             }
                         }
                         maxWidth = 200.0
@@ -125,52 +103,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                     borderpane {
                         padding = insets(4)
                         top {
-                            vbox(5.0) {
-                                padding = insets(5.0)
-                                hbox(5.0) {
-                                    backButton = button("\uD83E\uDC44") {
-                                        disableWhen(history.sizeProperty.isEqualTo(0))
-                                        onActionConsuming { navigateBack() }
-                                    }
-                                    searchTextField = textfield {
-                                        hgrow = Priority.ALWAYS
-                                        promptText = "Search"
-                                    }
-                                }
-                                borderpane {
-                                    left {
-                                        searchModifiersHbox = hbox(5.0) {
-                                            alignment = Pos.CENTER_LEFT
-                                            descendingToggle = togglebutton(selectFirst = true) {
-                                                graphic = descendingIcon
-                                                tooltip("Toggle descending")
-                                            }
-                                            openGroupsToggle = togglebutton(selectFirst = false) {
-                                                graphic = groupsIcon
-                                                tooltip("Toggle show group elements")
-                                            }
-                                            shuffleToggle = togglebutton(selectFirst = false) {
-                                                graphic = shuffleIcon
-                                                tooltip("Toggle shuffle results")
-                                            }
-                                        }
-                                    }
-                                    right {
-                                        hbox(5.0) {
-                                            alignment = Pos.CENTER_LEFT
-                                            selectedCountLabel = label("0/0") {
-                                                Platform.runLater {
-                                                    textProperty().bind(
-                                                        itemGrid.selected.sizeProperty.asString().concat("/")
-                                                            .concat(itemGrid.items.sizeProperty.asString())
-                                                    )
-                                                }
-                                            }
-                                            searchButton = button("Search")
-                                        }
-                                    }
-                                }
-                            }
+                            initSearchPane()
                         }
                         center {
                             itemGrid = multiselectgridview {
@@ -220,6 +153,126 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         initRootKeyPressedListener()
         initSearchListener()
         initSearchFieldAutoComplete()
+        initVideoDisplaySettingsBindings()
+    }
+
+    private fun EventTarget.initSearchPane(op: VBox.() -> Unit = {}): VBox {
+        return vbox(5.0) {
+            padding = insets(5.0)
+            hbox(5.0) {
+                backButton = button("\uD83E\uDC44") {
+                    disableWhen(history.sizeProperty.isEqualTo(0))
+                    onActionConsuming { navigateBack() }
+                }
+                searchTextField = textfield {
+                    hgrow = Priority.ALWAYS
+                    promptText = "Search"
+                }
+            }
+            borderpane {
+                left {
+                    searchModifiersHbox = hbox(5.0) {
+                        alignment = Pos.CENTER_LEFT
+                        descendingToggle = togglebutton(selectFirst = true) {
+                            graphic = ImageView(orderIconURL)
+                            tooltip("Toggle descending")
+                        }
+                        openGroupsToggle = togglebutton(selectFirst = false) {
+                            graphic = ImageView(groupsIconURL)
+                            tooltip("Toggle show group elements")
+                        }
+                        shuffleToggle = togglebutton(selectFirst = false) {
+                            graphic = ImageView(shuffleIconURL)
+                            tooltip("Toggle shuffle results")
+                        }
+                    }
+                }
+                right {
+                    hbox(5.0) {
+                        alignment = Pos.CENTER_LEFT
+                        selectedCountLabel = label("0/0") {
+                            Platform.runLater {
+                                textProperty().bind(
+                                    itemGrid.selected.sizeProperty.asString().concat("/")
+                                        .concat(itemGrid.items.sizeProperty.asString())
+                                )
+                            }
+                        }
+                        searchButton = button("Search")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun EventTarget.initMenuBar(op: MenuBar.() -> Unit = {}): MenuBar {
+        return menubar {
+            Platform.runLater {
+                // The amount of stupid fixes and workarounds required to make the menubar work is infuriating
+                // TODO this may cause problems
+                scene.addEventHandler(KeyEvent.KEY_PRESSED, EventHandler { e ->
+                    if (e.isAltDown && isDisabled) e.consume()
+                })
+            }
+
+            val enabled = disabledProperty().not() // Items have to be individually disabled
+            menu("_File") {
+                item("Import File(s)", "CTRL+I") {
+                    onActionConsuming(enabled) { myApp.importFileShortcut() }
+                }
+                item("Import Folders(s)", "CTRL+SHIFT+I") {
+                    onActionConsuming(enabled) { myApp.importFolderShortcut() }
+                }
+                separator()
+                item("_Settings", "CTRL+S") {
+                    onActionConsuming(enabled) { root.add(SettingsDialog(myApp.settings)) }
+                }
+                separator()
+                item("Quit", "CTRL+Q") {
+                    onActionConsuming(enabled) { Platform.exit() }
+                }
+            }
+            menu("_Edit") {
+                item("_Tags", "CTRL+E") {
+                    onActionConsuming(enabled) { editTagsPane.apply { show(); requestFocus() } }
+                }
+                item("_Group", "CTRL+G") {
+                    onActionConsuming(enabled) { myApp.groupShortcut() }
+                }
+                item("_Ungroup", "CTRL+U") {
+                    onActionConsuming(enabled) { myApp.ungroupShortcut() }
+                }
+                separator()
+                item("_Undo", "CTRL+Z") {
+                    onActionConsuming(enabled) { myApp.undoLastEdit() }
+                }
+            }
+            menu("_Similar") {
+                item("In _Menagerie", "CTRL+ALT+D") {
+                    onActionConsuming(enabled) { myApp.duplicatesShortcut(false) }
+                }
+                item("In _Selected", "CTRL+D") {
+                    onActionConsuming(enabled) { myApp.duplicatesShortcut(true) }
+                }
+                item("_Online", "CTRL+SHIFT+F") {
+                    onActionConsuming(enabled) { myApp.findOnlineShortcut() }
+                }
+            }
+            menu("_View") {
+                item("_Help", "CTRL+H") {
+                    onActionConsuming(enabled) { openHelpDialog() }
+                }
+                item("_Tags", "CTRL+T") {
+                    onActionConsuming(enabled) { displayTagsDialog() }
+                }
+                item("_Similar", "CTRL+SHIFT+D") {
+                    onActionConsuming(enabled) { openSimilarDialog() }
+                }
+                item("_Imports") {
+                    onActionConsuming(enabled) { openImportsDialog(context ?: return@onActionConsuming) }
+                }
+            }
+        }
     }
 
     fun startTour() {
@@ -332,22 +385,24 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
         editTagsPane.context =
             context // TODO make context an observable property so that I don't have to remember to pass it here?
+    }
 
-        // Bi-directionally bind main video mute and repeat to prefs
-        val prefs = context.prefs
-        itemDisplay.videoDisplay.isMuted = prefs.hidden.videoMute.value
+    private fun initVideoDisplaySettingsBindings() {
+        // Bi-directionally bind main video mute and repeat to settings
+        val settings = myApp.settings
+        itemDisplay.videoDisplay.isMuted = settings.hidden.videoMute.value
         itemDisplay.videoDisplay.muteProperty.addListener { _, _, new ->
-            if (prefs.hidden.videoMute.value != new) prefs.hidden.videoMute.value = new
+            if (settings.hidden.videoMute.value != new) settings.hidden.videoMute.value = new
         }
-        prefs.hidden.videoMute.changeListeners.add {
+        settings.hidden.videoMute.changeListeners.add {
             if (itemDisplay.videoDisplay.isMuted != it) itemDisplay.videoDisplay.isMuted = it
         }
 
-        itemDisplay.videoDisplay.isRepeat = prefs.hidden.videoRepeat.value
+        itemDisplay.videoDisplay.isRepeat = settings.hidden.videoRepeat.value
         itemDisplay.videoDisplay.repeatProperty.addListener { _, _, new ->
-            if (prefs.hidden.videoRepeat.value != new) prefs.hidden.videoRepeat.value = new
+            if (settings.hidden.videoRepeat.value != new) settings.hidden.videoRepeat.value = new
         }
-        prefs.hidden.videoRepeat.changeListeners.add {
+        settings.hidden.videoRepeat.changeListeners.add {
             if (itemDisplay.videoDisplay.isRepeat != it) itemDisplay.videoDisplay.isRepeat = it
         }
     }
@@ -385,7 +440,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     }
 
     private fun initImportsButton(context: MenagerieContext) {
-        importsButton.onActionConsuming { root.add(ImportQueueDialog(imports, context)) }
+        importsButton.onActionConsuming { openImportsDialog(context) }
 
         context.menagerie.imports.addListener(ListChangeListener { change ->
             while (change.next()) change.addedSubList.forEach { imports.add(it) }
@@ -402,6 +457,10 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             }
         })
         updateImportsButton()
+    }
+
+    private fun openImportsDialog(context: MenagerieContext) {
+        root.add(ImportQueueDialog(imports, context))
     }
 
     private fun updateImportsButton() {
@@ -421,7 +480,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
             val result = mutableListOf<String>()
 
-            val search = currentSearch
+            val search = search
             if (search != null) {
                 result.addAll(search.menagerie.tags.sortedByDescending { it.frequency }
                     .filter { tag -> tag.name.startsWith(word) }
@@ -449,7 +508,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     }
 
     private fun applySearch() {
-        val view = currentSearch ?: return
+        val view = search ?: return
         val text = searchTextField.text.trim()
         val filters = try {
             FilterFactory.parseFilters(text, view.menagerie, !openGroupsToggle.isSelected)
@@ -717,7 +776,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
     fun displayTagsDialog() {
         var dialog: TagSearchDialog? = null
-        dialog = TagSearchDialog(currentSearch?.menagerie ?: return) {
+        dialog = TagSearchDialog(search?.menagerie ?: return) {
             dialog?.close()
             robotSearch(it.name)
         }

@@ -1,6 +1,7 @@
 package com.github.iguanastin.view
 
 import javafx.application.Platform
+import javafx.beans.binding.BooleanBinding
 import javafx.beans.value.ChangeListener
 import javafx.event.ActionEvent
 import javafx.event.Event
@@ -56,7 +57,12 @@ fun Image.afterLoaded(op: Image.() -> Unit) {
 }
 
 fun <T : Event> eventHandlerConsuming(op: (T) -> Unit): EventHandler<T> {
+    return eventHandlerConsuming(null, op)
+}
+
+fun <T : Event> eventHandlerConsuming(enabled: BooleanBinding? = null, op: (T) -> Unit): EventHandler<T> {
     return EventHandler { event ->
+        if (enabled?.value == false) return@EventHandler
         event.consume()
         op(event)
     }
@@ -69,7 +75,10 @@ fun TextField.onActionConsuming(op: (ActionEvent) -> Unit) {
     onAction = eventHandlerConsuming(op)
 }
 fun MenuItem.onActionConsuming(op: (ActionEvent) -> Unit) {
-    onAction = eventHandlerConsuming(op)
+    onActionConsuming(null, op)
+}
+fun MenuItem.onActionConsuming(enabled: BooleanBinding? = null, op: (ActionEvent) -> Unit) {
+    onAction = eventHandlerConsuming(enabled, op)
 }
 
 fun runOnUIThread(op: () -> Unit) {

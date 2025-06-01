@@ -72,7 +72,7 @@ class MyApp : App(MainView::class, Styles::class) {
     }
 
     private val uiPrefs: WindowSettings = WindowSettings()
-    private val settings: AppSettings = AppSettings()
+    val settings: AppSettings = AppSettings()
 
     var context: MenagerieContext? = null
 
@@ -428,7 +428,7 @@ class MyApp : App(MainView::class, Styles::class) {
         root.root.add(FindOnlineChooseMatcherDialog(context ?: return, expandGroups(root.itemGrid.selected)))
     }
 
-    private fun undoLastEdit() {
+    fun undoLastEdit() {
         if (context?.edits?.isEmpty() == true) return
         val peek = context?.edits?.peek() ?: return // Return if there are no edits in the stack
 
@@ -618,7 +618,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun importFileShortcut() {
+    fun importFileShortcut() {
         runOnUIThread {
             val fc = FileChooser()
             val dir = settings.general.downloadFolder.value
@@ -632,7 +632,7 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun importFolderShortcut() {
+    fun importFolderShortcut() {
         runOnUIThread {
             val dc = DirectoryChooser()
             val dir = settings.general.downloadFolder.value

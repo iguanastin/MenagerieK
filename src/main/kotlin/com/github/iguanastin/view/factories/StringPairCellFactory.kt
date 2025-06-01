@@ -13,15 +13,16 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
 
     override fun call(listView: ListView<Pair<String, String>>?): ListCell<Pair<String, String>> {
         return object : ListCell<Pair<String, String>>() {
-            private val firstField: TextField
-            private val secondField: TextField
-            private val editApplyButton: Button
+            private val firstField: TextField = TextField()
+            private val secondField: TextField = TextField()
+            private val editApplyButton: Button = Button()
 
             init {
                 editableProperty().bind(itemProperty().isNotNull)
                 graphic = HBox(5.0).apply {
                     hgrow = Priority.ALWAYS
-                    firstField = textfield {
+                    add(firstField)
+                    firstField.apply {
                         hgrow = Priority.ALWAYS
                         textFormatter = TextFormatter<String> { change ->
                             if (change.text == " ") change.text = ""
@@ -32,7 +33,8 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                         editableWhen(editingProperty())
                         visibleWhen(itemProperty().isNotNull)
                     }
-                    secondField = textfield {
+                    add(secondField)
+                    secondField.apply {
                         hgrow = Priority.ALWAYS
                         textFormatter = TextFormatter<String> { change ->
                             if (change.text == " ") change.text = ""
@@ -43,7 +45,8 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
                         editableWhen(editingProperty())
                         visibleWhen(itemProperty().isNotNull)
                     }
-                    editApplyButton = button {
+                    add(editApplyButton)
+                    editApplyButton.apply {
                         textProperty().bind(editingProperty().map { editing -> if (editing) "Apply" else "Edit" })
                         visibleWhen(itemProperty().isNotNull)
                         editingProperty().addListener { _, _, new ->
