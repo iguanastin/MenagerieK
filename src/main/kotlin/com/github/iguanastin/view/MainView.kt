@@ -81,9 +81,9 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     override val root = topenabledstackpane {
         focusingstackpane {
             borderpane {
-                top {
-                    initMenuBar()
-                }
+//                top {
+//                    initMenuBar() // Steals focus when alt tabbing, still
+//                }
                 center {
                     itemDisplay = multitypeitemdisplay { paddingLeft = 5; paddingTop = 5; paddingBottom = 5 }
                 }
