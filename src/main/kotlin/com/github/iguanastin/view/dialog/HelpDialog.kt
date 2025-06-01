@@ -11,7 +11,10 @@ import tornadofx.*
 import java.awt.Desktop
 import java.net.URI
 
-class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose) {
+class HelpDialog(onClose: () -> Unit = {}) : StackDialog(onClose) {
+
+    var onRequestPatchNotes = {}
+    var onRequestTour = {}
 
     init {
         root.graphic = tabpane {
@@ -82,7 +85,9 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                     }
                 }
                 hyperlink("Patch Notes") {
-                    onActionConsuming { app.showPatchNotesDialog() }
+                    onActionConsuming {
+                        onRequestPatchNotes()
+                    }
                 }
             }
         }
@@ -98,7 +103,7 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
                     button("Take a tour") {
                         onActionConsuming {
                             this@HelpDialog.close()
-                            app.root.startTour()
+                            onRequestTour()
                         }
                     }
 
@@ -170,7 +175,6 @@ class HelpDialog(onClose: () -> Unit = {}, val app: MyApp) : StackDialog(onClose
 
 fun TopEnabledStackPane.helpDialog(
     onClose: () -> Unit = {},
-    app: MyApp,
     op: HelpDialog.() -> Unit = {}
 ) =
-    HelpDialog(onClose, app).attachTo(this, op)
+    HelpDialog(onClose).attachTo(this, op)

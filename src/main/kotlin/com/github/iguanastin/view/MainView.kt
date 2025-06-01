@@ -1,6 +1,7 @@
 package com.github.iguanastin.view
 
 import com.github.iguanastin.app.MyApp
+import com.github.iguanastin.app.PatchNotes
 import com.github.iguanastin.app.Styles
 import com.github.iguanastin.app.bindVisibleShortcut
 import com.github.iguanastin.app.context.MenagerieContext
@@ -12,9 +13,7 @@ import com.github.iguanastin.app.menagerie.search.SearchHistory
 import com.github.iguanastin.app.menagerie.search.filters.ElementOfFilter
 import com.github.iguanastin.app.menagerie.search.filters.FilterFactory
 import com.github.iguanastin.app.utils.*
-import com.github.iguanastin.view.dialog.DuplicateResolverDialog
-import com.github.iguanastin.view.dialog.ImportQueueDialog
-import com.github.iguanastin.view.dialog.TagSearchDialog
+import com.github.iguanastin.view.dialog.*
 import com.github.iguanastin.view.factories.ItemCellFactory
 import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.*
@@ -40,15 +39,13 @@ private val myLog = KotlinLogging.logger {}
 
 class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
-    lateinit var itemDisplay: MultiTypeItemDisplay
     lateinit var itemGrid: MultiSelectGridView<Item>
-    lateinit var tagView: ListView<Tag>
     lateinit var dragOverlay: BorderPane
-    lateinit var applyTagEdit: Button
-    lateinit var editTags: TextField
-    lateinit var editTagsPane: BorderPane
-    lateinit var searchModifiersHbox: HBox
 
+    private lateinit var itemDisplay: MultiTypeItemDisplay
+    private lateinit var tagView: ListView<Tag>
+    private lateinit var editTagsPane: TagEditPane
+    private lateinit var searchModifiersHbox: HBox
     private lateinit var searchTextField: TextField
     private lateinit var backButton: Button
     private lateinit var descendingToggle: ToggleButton
@@ -77,9 +74,29 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             if (value != null) onContextAdded(value)
         }
 
+    private val shuffleIcon = ImageView(MainView::class.java.getResource("/imgs/shuffle.png")?.toExternalForm())
+    private val groupsIcon = ImageView(MainView::class.java.getResource("/imgs/opengroups.png")?.toExternalForm())
+    private val descendingIcon = ImageView(MainView::class.java.getResource("/imgs/descending.png")?.toExternalForm())
+
     override val root = topenabledstackpane {
         focusingstackpane {
             borderpane {
+                top {
+                    // TODO: Do this for real
+//                    menubar {
+//                        menu("File") {
+//                            item("Import") {
+//                                onActionConsuming {
+//                                    val fc = FileChooser().apply {
+//                                        title = "Import files or directories"
+//                                        initialDirectory = File(context!!.prefs.general.downloadFolder.value)
+//                                    }
+//                                    myApp.importFilesDialog(fc.showOpenMultipleDialog(currentWindow) ?: return@onActionConsuming)
+//                                }
+//                            }
+//                        }
+//                    }
+                }
                 center {
                     itemDisplay = multitypeitemdisplay {
                         paddingLeft = 5
@@ -88,24 +105,20 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                     }
                 }
                 left {
-                    borderpane {
-                        center {
-                            tagView = listview {
-                                isFocusTraversable = false
-                                cellFactory = TagCellFactory().apply {
-                                    onTagClick = {
-                                        robotSearch(
-                                            text = it.name,
-                                            descending = true,
-                                            expandGroups = false,
-                                            shuffled = false
-                                        )
-                                    }
-                                }
-                                maxWidth = 200.0
-                                minWidth = 200.0
+                    tagView = listview {
+                        isFocusTraversable = false
+                        cellFactory = TagCellFactory().apply {
+                            onTagClick = {
+                                robotSearch(
+                                    text = it.name,
+                                    descending = true,
+                                    expandGroups = false,
+                                    shuffled = false
+                                )
                             }
                         }
+                        maxWidth = 200.0
+                        minWidth = 200.0
                     }
                 }
                 right {
@@ -116,7 +129,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                                 padding = insets(5.0)
                                 hbox(5.0) {
                                     backButton = button("\uD83E\uDC44") {
-                                        isDisable = true
+                                        disableWhen(history.sizeProperty.isEqualTo(0))
                                         onActionConsuming { navigateBack() }
                                     }
                                     searchTextField = textfield {
@@ -129,24 +142,15 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                                         searchModifiersHbox = hbox(5.0) {
                                             alignment = Pos.CENTER_LEFT
                                             descendingToggle = togglebutton(selectFirst = true) {
-                                                graphic = ImageView(
-                                                    MainView::class.java.getResource("/imgs/descending.png")
-                                                        ?.toExternalForm()
-                                                )
+                                                graphic = descendingIcon
                                                 tooltip("Toggle descending")
                                             }
                                             openGroupsToggle = togglebutton(selectFirst = false) {
-                                                graphic = ImageView(
-                                                    MainView::class.java.getResource("/imgs/opengroups.png")
-                                                        ?.toExternalForm()
-                                                )
+                                                graphic = groupsIcon
                                                 tooltip("Toggle show group elements")
                                             }
                                             shuffleToggle = togglebutton(selectFirst = false) {
-                                                graphic = ImageView(
-                                                    MainView::class.java.getResource("/imgs/shuffle.png")
-                                                        ?.toExternalForm()
-                                                )
+                                                graphic = shuffleIcon
                                                 tooltip("Toggle shuffle results")
                                             }
                                         }
@@ -154,7 +158,14 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                                     right {
                                         hbox(5.0) {
                                             alignment = Pos.CENTER_LEFT
-                                            selectedCountLabel = label("0/0")
+                                            selectedCountLabel = label("0/0") {
+                                                Platform.runLater {
+                                                    textProperty().bind(
+                                                        itemGrid.selected.sizeProperty.asString().concat("/")
+                                                            .concat(itemGrid.items.sizeProperty.asString())
+                                                    )
+                                                }
+                                            }
                                             searchButton = button("Search")
                                         }
                                     }
@@ -164,17 +175,12 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                         center {
                             itemGrid = multiselectgridview {
                                 addClass(Styles.mainItemGridView)
-                                addClass(Styles.itemGrid)
                             }
                         }
                         bottom {
                             borderpane {
-                                left {
-                                    importsButton = button("Imports: 0")
-                                }
-                                right {
-                                    similarButton = button("Similar: 0")
-                                }
+                                left { importsButton = button("Imports: 0") }
+                                right { similarButton = button("Similar: 0") }
                             }
                         }
                     }
@@ -183,30 +189,14 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
             focuses = itemGrid
 
-            editTagsPane = borderpane {
-                isPickOnBounds = false
-                padding = insets(50)
-
+            editTagsPane = tageditpane {
                 addEventFilter(KeyEvent.KEY_PRESSED) { event ->
                     if (event.code == KeyCode.ESCAPE) hide()
                 }
 
-                bottom {
-                    hbox(10) {
-                        addClass(Styles.dialogPane)
-                        isPickOnBounds = false
-                        padding = insets(10)
-                        editTags = textfield {
-                            hboxConstraints {
-                                hGrow = Priority.ALWAYS
-                            }
-                            promptText = "Edit tags..."
-                        }
-                        applyTagEdit = button("Ok")
-                    }
-                }
-
                 hide()
+
+                Platform.runLater { selectedItems = itemGrid.selected }
             }
 
             dragOverlay = borderpane {
@@ -228,13 +218,8 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         initEditTagsDialog()
         initTagsListener()
         initRootKeyPressedListener()
-        initHistoryListener()
         initSearchListener()
         initSearchFieldAutoComplete()
-        initEditTagsAutoComplete()
-        initSelectedItemCounterListeners()
-
-        Platform.runLater { itemGrid.requestFocus() }
     }
 
     fun startTour() {
@@ -335,9 +320,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                 )
             )
 
-            onEnd = {
-                myApp.openHelpDialog()
-            }
+            onEnd = { openHelpDialog() }
 
             start()
         }
@@ -346,6 +329,9 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
     private fun onContextAdded(context: MenagerieContext) {
         initSimilarButton(context)
         initImportsButton(context)
+
+        editTagsPane.context =
+            context // TODO make context an observable property so that I don't have to remember to pass it here?
 
         // Bi-directionally bind main video mute and repeat to prefs
         val prefs = context.prefs
@@ -363,6 +349,14 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         }
         prefs.hidden.videoRepeat.changeListeners.add {
             if (itemDisplay.videoDisplay.isRepeat != it) itemDisplay.videoDisplay.isRepeat = it
+        }
+    }
+
+    fun openHelpDialog() {
+        root.helpDialog().apply {
+            onRequestPatchNotes =
+                { root.add(InfoStackDialog("Patch Notes v${MyApp.VERSION}", PatchNotes.get(MyApp.VERSION))) }
+            onRequestTour = { startTour() }
         }
     }
 
@@ -385,10 +379,8 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
     fun openSimilarDialog() {
         val pairs = context?.menagerie?.similarPairs ?: return
-        this.add(DuplicateResolverDialog(pairs, myApp.context).apply {
-            onClose = {
-                context!!.menagerie.purgeSimilarNonDupes()
-            }
+        add(DuplicateResolverDialog(pairs, context).apply {
+            onClose = { context!!.menagerie.purgeSimilarNonDupes() }
         })
     }
 
@@ -417,32 +409,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             val count = imports.count { it.isReadyOrRunning() }
             importsButton.text = "Imports: $count"
             importsButton.toggleClass(Styles.blueBase, count > 0)
-        }
-    }
-
-    private fun initSelectedItemCounterListeners() {
-        val listener = InvalidationListener {
-            selectedCountLabel.text = "${itemGrid.selected.size}/${itemGrid.items.size}"
-        }
-        itemGrid.items.addListener(listener)
-        itemGrid.selected.addListener(listener)
-    }
-
-    private fun initEditTagsAutoComplete() {
-        editTags.bindAutoComplete { predict ->
-            var word = predict.lowercase()
-            val exclude = word.startsWith('-')
-            if (exclude) word = word.substring(1)
-            val maxResults = 8
-
-            val result: List<Tag> = if (exclude) {
-                itemGrid.selected.flatMap { item -> item.tags }.toSet()
-            } else {
-                currentSearch?.menagerie?.tags ?: emptySet()
-            }.filter { tag -> tag.name.startsWith(word) }.sortedByDescending { it.frequency }
-
-            return@bindAutoComplete result.subList(0, maxResults.coerceAtMost(result.size))
-                .map { if (exclude) "-${it.name}" else it.name }
         }
     }
 
@@ -524,14 +490,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             }
             bindVisibleShortcut(KeyCode.S, ctrl = true, desc = "Toggle shuffle results", context = "Search Field") {
                 shuffleToggle.isSelected = !shuffleToggle.isSelected
-            }
-        }
-    }
-
-    private fun initHistoryListener() {
-        history.onChange { change ->
-            while (change.next()) {
-                backButton.isDisable = change.list.isEmpty()
             }
         }
     }
@@ -631,7 +589,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                     onActionConsuming { itemGrid.selected.firstOrNull()?.copyTagsToClipboard() }
                 }
                 item("Paste Tags") {
-                    onActionConsuming { itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard(myApp.context) }
+                    onActionConsuming { itemGrid.selected.firstOrNull()?.pasteTagsFromClipboard(context) }
                 }
                 separator()
                 val open = item("Open") {
@@ -749,8 +707,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
         editTagsPane.visibleProperty().addListener(ChangeListener { _, _, newValue ->
             if (!newValue) itemGrid.requestFocus()
         })
-        editTags.bindShortcut(KeyCode.ENTER) { applyTagEdit.fire() }
-        editTags.bindShortcut(KeyCode.ENTER, ctrl = true) { applyTagEdit.fire() }
     }
 
     private fun initRootKeyPressedListener() {
@@ -775,7 +731,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
     fun showEditTagsPane() {
         editTagsPane.show()
-        editTags.requestFocus()
+        editTagsPane.requestFocus()
     }
 
     private fun initTagsListener() {

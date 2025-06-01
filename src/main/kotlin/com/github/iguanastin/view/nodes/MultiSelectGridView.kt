@@ -35,6 +35,8 @@ class MultiSelectGridView<T> : GridView<T>() {
     val selected: ObservableList<T> = observableListOf()
 
     init {
+        addClass(Styles.itemGrid)
+
         items.addListener(ListChangeListener { change ->
             while (change.next()) {
                 selected.removeAll(change.removed.toSet())

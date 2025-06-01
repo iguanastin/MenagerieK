@@ -16,8 +16,11 @@ import com.github.iguanastin.app.settings.WindowSettings
 import com.github.iguanastin.app.utils.Versioning
 import com.github.iguanastin.app.utils.WindowsExplorerComparator
 import com.github.iguanastin.app.utils.expandGroups
-import com.github.iguanastin.view.*
+import com.github.iguanastin.view.MainView
+import com.github.iguanastin.view.Shortcut
+import com.github.iguanastin.view.bindShortcut
 import com.github.iguanastin.view.dialog.*
+import com.github.iguanastin.view.runOnUIThread
 import com.sun.jna.platform.FileUtils
 import javafx.application.Platform
 import javafx.collections.SetChangeListener
@@ -261,13 +264,9 @@ class MyApp : App(MainView::class, Styles::class) {
         // Check if version was updated since last launch
         val v = settings.hidden.lastLaunchVersion.value
         if (v.isNotBlank() && Versioning.compare(v, VERSION) < 0) {
-            showPatchNotesDialog()
+            runOnUIThread { root.root.add(InfoStackDialog("Patch Notes v$VERSION", PatchNotes.get(VERSION))) }
         }
         settings.hidden.lastLaunchVersion.value = VERSION
-    }
-
-    fun showPatchNotesDialog() {
-        runOnUIThread { root.root.add(InfoStackDialog("Patch Notes v$VERSION", PatchNotes.get(VERSION))) }
     }
 
     private fun checkGithubForNewRelease() {
@@ -328,49 +327,16 @@ class MyApp : App(MainView::class, Styles::class) {
     private fun initViewControls() {
         initExternalDragDrop()
         initItemGridKeyHandler()
-        initEditTagsControl()
 
         root.root.bindVisibleShortcut(KeyCode.Q, ctrl = true, desc = "Exit Menagerie", context = "Global") {
             Platform.exit()
         }
     }
 
-    private fun initEditTagsControl() {
-        root.applyTagEdit.onActionConsuming {
-            val items = root.itemGrid.selected
-            if (items.isEmpty()) return@onActionConsuming // Do nothing if there are no items selected
-
-            val tagsToAdd = mutableListOf<Tag>()
-            val tagsToRemove = mutableListOf<Tag>()
-
-            val context = context ?: return@onActionConsuming // Do nothing if there is no context
-
-            for (name in root.editTags.text.trim().split(Regex("\\s+"))) {
-                if (name.isBlank()) continue // Ignore empty and blank additions
-
-                if (name.startsWith('-')) {
-                    if (name.length == 1) continue // Ignore a '-' by itself
-                    val tag: Tag = context.menagerie.getTag(name.substring(1))
-                        ?: continue // Ignore tags that don't exist
-                    tagsToRemove.add(tag)
-                } else {
-                    tagsToAdd.add(context.menagerie.getOrMakeTag(name))
-                }
-            }
-
-            if (tagsToAdd.isEmpty() && tagsToRemove.isEmpty()) return@onActionConsuming // Do nothing if there are no viable tag edits
-
-            // Apply tag edits
-            this.context?.tagEdit(items, tagsToAdd, tagsToRemove)
-
-            root.editTagsPane.hide()
-        }
-    }
-
     private fun initItemGridKeyHandler() {
         root.itemGrid.apply {
             bindVisibleShortcut(KeyCode.H, ctrl = true, desc = "Open help", context = "Main Screen") {
-                openHelpDialog()
+                root.openHelpDialog()
             }
             bindVisibleShortcut(KeyCode.I, ctrl = true, desc = "Import file(s)", context = "Main Screen") {
                 importFileShortcut()
@@ -455,10 +421,6 @@ class MyApp : App(MainView::class, Styles::class) {
                 root.openSimilarDialog()
             }
         }
-    }
-
-    fun openHelpDialog() {
-        root.root.helpDialog(app = this@MyApp)
     }
 
     fun findOnlineShortcut() {
@@ -659,12 +621,11 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             val fc = FileChooser()
             val dir = settings.general.downloadFolder.value
-            fc.initialDirectory = File(dir)
+            fc.initialDirectory = if (dir.isNotEmpty()) File(dir) else null
             if (!fc.initialDirectory.exists() || !fc.initialDirectory.isDirectory) fc.initialDirectory = null
             fc.title = "Import files"
             val files = fc.showOpenMultipleDialog(root.currentWindow)
             if (!files.isNullOrEmpty()) {
-                settings.general.downloadFolder.value = files.first().parent
                 importFilesDialog(files)
             }
         }
@@ -674,11 +635,10 @@ class MyApp : App(MainView::class, Styles::class) {
         runOnUIThread {
             val dc = DirectoryChooser()
             val dir = settings.general.downloadFolder.value
-            dc.initialDirectory = File(dir)
+            dc.initialDirectory = if (dir.isNotEmpty()) File(dir) else null
             dc.title = "Import directory"
             val folder = dc.showDialog(root.currentWindow)
             if (folder != null) {
-                settings.general.downloadFolder.value = folder.parent
                 importFilesDialog(listOf(folder))
             }
         }
