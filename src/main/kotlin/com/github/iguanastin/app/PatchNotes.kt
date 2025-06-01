@@ -33,8 +33,16 @@ object PatchNotes {
                 "- Incorrect pan bounds on image previews (#9)\n" +
                 "- TEMP tag label changing to tag count in some circumstances (#4)"
         notes["1.2.3"] = "Features:\n" +
-                "- Similar items are now kept through a restart\n" +
-                "- Text file previewing"
+                "- Similar items are now kept through a restart (#8)\n" +
+                "- Imports are now kept through a restart (#14)\n" +
+                "- Text file previewing (#16)\n" +
+                "- Faster image imports\n" +
+                "- File extensions are automatically fixed for web imports where possible\n" +
+                "- Cached image previews for slightly snappier experience\n" +
+                "- Added a menu bar at the top (#22)\n" +
+                "Bug fixes:\n" +
+                "- Old file hashes did not match new file hashes (#20)\n" +
+                "- Fixed grid rows breaking and showing the wrong items (#12)"
     }
 
     fun get(version: String): String {

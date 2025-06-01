@@ -720,7 +720,7 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
                     removeFromGroup.isVisible = goToGroup.isVisible
                     ungroup.isVisible = onlyOne && first is GroupItem
                     group.isVisible = !onlyOne
-                    dupesGroup.isVisible = itemGrid.selected.size > 0
+                    dupesGroup.isVisible = itemGrid.selected.isNotEmpty()
                     open.isVisible = onlyOne
                 }
                 itemGrid.selected.addListener(InvalidationListener {
@@ -795,7 +795,6 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
 
     private fun initTagsListener() {
         // Listener is attached to currently displayed/previewed item
-        @Suppress("RemoveExplicitTypeArguments")
         val displayTagChangeListener = SetChangeListener<Tag> { change ->
             runOnUIThread {
                 if (change.wasRemoved()) tagView.items.remove(change.elementRemoved)

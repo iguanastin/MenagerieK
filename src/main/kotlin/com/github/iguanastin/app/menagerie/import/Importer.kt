@@ -11,15 +11,12 @@ import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
-class Importer(val menagerie: Menagerie) : Thread("File Importer") {
+class Importer(val menagerie: Menagerie, @Volatile var paused: Boolean = false) : Thread("File Importer") {
 
     private val queue: BlockingQueue<Import> = LinkedBlockingQueue()
 
     @Volatile
     private var running = false
-
-    @Volatile
-    var paused = false
 
     @Suppress("RemoveExplicitTypeArguments")
     private val menagerieImportsListener = ListChangeListener<Import> { change ->
