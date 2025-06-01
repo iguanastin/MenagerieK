@@ -70,6 +70,7 @@ class ConfirmStackDialog(
 
 }
 
+@Suppress("unused")
 fun TopEnabledStackPane.confirm(
     header: String,
     message: String,

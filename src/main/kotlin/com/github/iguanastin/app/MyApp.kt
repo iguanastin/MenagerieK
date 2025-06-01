@@ -275,6 +275,7 @@ class MyApp : App(MainView::class, Styles::class) {
                 client.execute(HttpGet(githubAPIReleaseURL)).use { response ->
                     if (response.statusLine.statusCode != 200) {
                         log.error("Failed to get github API release, HTTP code: ${response.statusLine.statusCode} - ${response.statusLine.reasonPhrase}")
+                        @Suppress("UseExpressionBody")
                         return@use
                     }
 

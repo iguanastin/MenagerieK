@@ -14,8 +14,8 @@ class StringPairCellFactory(private val firstPrompt: String?, private val second
     override fun call(listView: ListView<Pair<String, String>>?): ListCell<Pair<String, String>> {
         return object : ListCell<Pair<String, String>>() {
             private val firstField: TextField
-            private lateinit var secondField: TextField
-            private lateinit var editApplyButton: Button
+            private val secondField: TextField
+            private val editApplyButton: Button
 
             init {
                 editableProperty().bind(itemProperty().isNotNull)
