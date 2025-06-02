@@ -49,7 +49,15 @@ class VideoDisplay : ItemDisplay() {
     private lateinit var videoSurface: ImageView
 
     private val mediaPlayer: EmbeddedMediaPlayer? =
-        if (NativeDiscovery().discover()) MediaPlayerFactory("--no-metadata-network-access").let {
+        if (NativeDiscovery().discover()) MediaPlayerFactory(
+            "--no-metadata-network-access",
+            "--no-mkv-preload-local-dir",
+            "--no-video-title-show",
+            "--no-stats",
+            "--no-sub-autodetect-file",
+            "--no-osd",
+            "--no-spu"
+        ).let {
             val player = it.mediaPlayers().newEmbeddedMediaPlayer()
             it.release()
             return@let player
@@ -145,7 +153,9 @@ class VideoDisplay : ItemDisplay() {
                         })
                         // Seek video
                         valueProperty().addListener { _, _, new ->
-                            if (isValueChanging) mediaPlayer?.submit { mediaPlayer.controls().setPosition(new.toFloat()) }
+                            if (isValueChanging) mediaPlayer?.submit {
+                                mediaPlayer.controls().setPosition(new.toFloat())
+                            }
                         }
                         valueChangingProperty().addListener { _, _, new -> isPaused = new }
 
@@ -189,13 +199,13 @@ class VideoDisplay : ItemDisplay() {
                     }
 
                     // TODO fullscreen behavior?
-    //                    button {
-    //                        tooltip("Fullscreen")
-    //                        graphic = imageview(fullscreenImage)
-    //                        onActionConsuming {
-    //                            // fullscreen it here
-    //                        }
-    //                    }
+                    //                    button {
+                    //                        tooltip("Fullscreen")
+                    //                        graphic = imageview(fullscreenImage)
+                    //                        onActionConsuming {
+                    //                            // fullscreen it here
+                    //                        }
+                    //                    }
                 }
             }
         }
