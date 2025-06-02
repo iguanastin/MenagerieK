@@ -299,8 +299,10 @@ class VideoDisplay : ItemDisplay() {
     }
 
     fun release() {
-        mediaPlayer?.controls()?.stop()
-        mediaPlayer?.release()
+        mediaPlayer?.apply {
+            controls().stop()
+            release()
+        }
     }
 
 }

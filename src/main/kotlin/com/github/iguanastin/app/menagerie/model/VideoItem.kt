@@ -42,7 +42,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         }
 
         fun releaseThumbnailer() {
-            thumbnailerMediaPlayer?.submit { thumbnailerMediaPlayer.release() }
+            thumbnailerMediaPlayer?.release()
         }
 
     }
@@ -52,6 +52,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         val snapshotLatch = CountDownLatch(1)
         var tempFile: File? = null
         var result: Image? = null
+        val player = thumbnailerMediaPlayer ?: return super.loadThumbnail()
 
         val eventListener = object : MediaPlayerEventAdapter() {
             override fun positionChanged(mediaPlayer: MediaPlayer, newPosition: Float) {
@@ -67,22 +68,23 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
                 snapshotLatch.countDown()
             }
         }
-        thumbnailerMediaPlayer?.events()?.addMediaPlayerEventListener(eventListener)
+        player.events().addMediaPlayerEventListener(eventListener)
 
         try {
-            if (thumbnailerMediaPlayer?.media()?.start(file.absolutePath) == true) {
+            if (player.media().start(file.absolutePath)) {
                 if (!inPositionLatch.await(2, TimeUnit.SECONDS)) return super.loadThumbnail()
 
-                if (thumbnailerMediaPlayer.video().videoDimension() != null) {
-                    val vidWidth = thumbnailerMediaPlayer.video().videoDimension().getWidth()
-                    val vidHeight = thumbnailerMediaPlayer.video().videoDimension().getHeight()
+                val dimension = thumbnailerMediaPlayer.video().videoDimension()
+                if (dimension != null) {
+                    val vidWidth = dimension.getWidth()
+                    val vidHeight = dimension.getHeight()
                     var scale = thumbnailSize / vidWidth
                     if (scale * vidHeight > thumbnailSize) scale = thumbnailSize / vidHeight
                     val width = (scale * vidWidth).toInt()
                     val height = (scale * vidHeight).toInt()
 
                     try {
-                        thumbnailerMediaPlayer.snapshots().save(width, height)
+                        player.snapshots().save(width, height)
                         if (!snapshotLatch.await(2, TimeUnit.SECONDS)) return super.loadThumbnail()
 
                         result = Image(tempFile!!.toURI().toString())
@@ -96,8 +98,8 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         } catch (t: Throwable) {
             log.warn("Error while trying to create video thumbnail: $file", t)
         } finally {
-            thumbnailerMediaPlayer?.controls()?.stop()
-            thumbnailerMediaPlayer?.events()?.removeMediaPlayerEventListener(eventListener)
+            player.controls()?.stop()
+            player.events()?.removeMediaPlayerEventListener(eventListener)
         }
 
         return result ?: super.loadThumbnail()
