@@ -4,15 +4,14 @@ import com.github.iguanastin.app.menagerie.model.Item
 import com.github.iguanastin.app.menagerie.model.ItemChangeBase
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.search.filters.SearchFilter
+import com.github.iguanastin.app.utils.addSorted
 import com.github.iguanastin.app.utils.clearAndAddAll
 import com.github.iguanastin.view.runOnUIThread
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
-import tornadofx.*
-import kotlin.collections.sortBy
 import kotlin.random.Random
 
-class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<SearchFilter>, val sortBy: (Item) -> Int? = { it.id }) {
+class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", val descending: Boolean = true, val shuffle: Boolean = false, val filters: Iterable<SearchFilter>, val sortBy: (Item) -> Int = { it.id }) {
 
     var items: ObservableList<Item>? = null
         private set
@@ -20,14 +19,19 @@ class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", v
     private val shuffleRand = Random
     private val shuffleMap: MutableMap<Item, Int> = mutableMapOf()
 
+    private val sortWith = { i1: Item, i2: Item ->
+        if (shuffle) shuffleMap[i1]!!.compareTo(shuffleMap[i2]!!)
+        else if (descending) sortBy(i2).compareTo(sortBy(i1))
+        else sortBy(i1).compareTo(sortBy(i2))
+    }
+
     private val itemChangeListener: (ItemChangeBase) -> Unit = { change ->
         val items = items
         if (items != null) {
             if (accepts(change.item)) {
                 if (change.item !in items) runOnUIThread {
-                    items.add(change.item)
                     if (shuffle) shuffleMap.computeIfAbsent(change.item) { shuffleRand.nextInt() }
-                    sortItems()
+                    items.addSorted(change.item, sortWith)
                 }
             } else {
                 runOnUIThread { items.remove(change.item) }
@@ -47,12 +51,10 @@ class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", v
 
                     if (accepts(item)) temp.add(item)
                 }
-                items?.addAll(temp)
-                sortItems()
+                temp.forEach { items?.addSorted(it, sortWith) }
             }
         }
     }
-
 
     fun bindTo(list: ObservableList<Item>) {
         close()
@@ -66,20 +68,8 @@ class MenagerieSearch(val menagerie: Menagerie, val searchString: String = "", v
             if (shuffle) shuffleMap.computeIfAbsent(it) { shuffleRand.nextInt() }
         }
 
+        temp.sortWith(Comparator(sortWith))
         items = list.apply { clearAndAddAll(temp) }
-        sortItems()
-    }
-
-    private fun sortItems() {
-        if (shuffle) {
-            items?.sortBy { shuffleMap[it] }
-        } else {
-            if (descending) {
-                items?.sortByDescending(sortBy)
-            } else {
-                items?.sortBy(sortBy)
-            }
-        }
     }
 
     fun accepts(item: Item): Boolean {

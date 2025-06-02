@@ -143,18 +143,6 @@ class MyApp : App(MainView::class, Styles::class) {
             // TODO show better error to user
         }
 
-        // TODO this is really buggy with the new importer. Might just skip this functionality entirely
-//        context.menagerie.imports.addListener(ListChangeListener { change ->
-//            while (change.next()) {
-//                if (change.addedSize != 1) return@ListChangeListener
-//                // If only the first item in search is selected when an item is imported, select the newly imported item
-//                val singleSelected = root.itemGrid.selected.singleOrNull() ?: return@ListChangeListener
-//                if (singleSelected == root.itemGrid.items.first()) {
-//                    runOnUIThread { root.itemGrid.select(root.itemGrid.items.first()) } // TODO this relies on timing of layouts
-//                }
-//            }
-//        })
-
         // Start the HTTP API server
         if (settings.api.enabled.value) {
             context.api.start(settings.api.port.value)
@@ -759,9 +747,9 @@ class MyApp : App(MainView::class, Styles::class) {
                 descending = false,
                 shuffle = false,
                 filters = listOf(filter),
-                sortBy = {
+                sortBy = { // TODO the sortBy is lost if you search again or manually search group contents
                     if (it is FileItem) {
-                        it.elementOf?.items?.indexOf(it)
+                        it.elementOf?.items?.indexOf(it) ?: it.id
                     } else {
                         it.id
                     }

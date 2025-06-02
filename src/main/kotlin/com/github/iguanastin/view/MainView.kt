@@ -602,6 +602,17 @@ class MainView : View("Menagerie - v${MyApp.VERSION}") {
             }
         }
 
+        itemGrid.items.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                if (change.addedSize == 1 && itemGrid.items[0] == change.addedSubList[0] && itemGrid.selected.size == 1 && itemGrid.items.indexOf(
+                        itemGrid.selected[0]
+                    ) == 1
+                ) {
+                    itemGrid.select(itemGrid.items.first())
+                }
+            }
+        })
+
         itemGrid.cellFactory = ItemCellFactory.factory {
             addEventHandler(MouseEvent.MOUSE_CLICKED) { event ->
                 if (event.button == MouseButton.PRIMARY && event.clickCount == 2) {
