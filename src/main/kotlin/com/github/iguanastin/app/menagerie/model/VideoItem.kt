@@ -42,7 +42,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         }
 
         fun releaseThumbnailer() {
-            thumbnailerMediaPlayer?.release()
+            thumbnailerMediaPlayer?.submit { thumbnailerMediaPlayer.release() }
         }
 
     }
@@ -86,6 +86,7 @@ class VideoItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
                         if (!snapshotLatch.await(2, TimeUnit.SECONDS)) return super.loadThumbnail()
 
                         result = Image(tempFile!!.toURI().toString())
+                        @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
                         if (!tempFile!!.delete()) log.warn("Failed to delete tempfile: $tempFile")
                     } catch (e: RuntimeException) {
                         log.warn("Failed to get video snapshot of file: $file", e)

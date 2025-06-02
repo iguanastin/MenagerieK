@@ -145,7 +145,7 @@ class VideoDisplay : ItemDisplay() {
                         })
                         // Seek video
                         valueProperty().addListener { _, _, new ->
-                            if (isValueChanging) mediaPlayer?.controls()?.setPosition(new.toFloat())
+                            if (isValueChanging) mediaPlayer?.submit { mediaPlayer.controls().setPosition(new.toFloat()) }
                         }
                         valueChangingProperty().addListener { _, _, new -> isPaused = new }
 
@@ -244,7 +244,7 @@ class VideoDisplay : ItemDisplay() {
             }
 
             override fun finished(mediaPlayer: MediaPlayer) {
-                mediaPlayer.submit { if (!isRepeat) isPaused = true }
+                if (!isRepeat) isPaused = true
             }
 
             override fun mediaPlayerReady(mediaPlayer: MediaPlayer) {
@@ -253,23 +253,27 @@ class VideoDisplay : ItemDisplay() {
         })
 
         // Init simple controls
-        repeatProperty.addListener { _, _, new -> mediaPlayer?.controls()?.repeat = new }
+        repeatProperty.addListener { _, _, new -> mediaPlayer?.submit { mediaPlayer.controls()?.repeat = new } }
         pausedProperty.addListener { _, _, new ->
-            if (!new && !isRepeat && mediaPlayer?.status()?.position() == -1f) {
-                // Restart if paused at end of media
-                mediaPlayer.controls().setPosition(0f)
-                mediaPlayer.controls().play()
-            } else {
-                mediaPlayer?.controls()?.setPause(new)
+            mediaPlayer?.submit {
+                if (!new && !isRepeat && mediaPlayer.status()?.position() == -1f) {
+                    // Restart if paused at end of media
+                    mediaPlayer.controls().setPosition(0f)
+                    mediaPlayer.controls().play()
+                } else {
+                    mediaPlayer.controls()?.setPause(new)
+                }
+                if (!new) mediaPlayer.audio()?.isMute = isMuted
             }
-            if (!new) mediaPlayer?.audio()?.isMute = isMuted
         }
-        mediaPlayer?.controls()?.apply {
-            repeat = isRepeat
-            setPause(isPaused)
+        muteProperty.addListener { _, _, new -> mediaPlayer?.submit { mediaPlayer.audio().isMute = new } }
+        mediaPlayer?.submit {
+            mediaPlayer.controls().apply {
+                repeat = isRepeat
+                setPause(isPaused)
+            }
+            mediaPlayer.audio().isMute = isMuted
         }
-        muteProperty.addListener { _, _, new -> mediaPlayer?.audio()?.isMute = new }
-        mediaPlayer?.audio()?.isMute = isMuted
 
         disabledProperty().addListener { _, _, new -> if (new) isPaused = true }
     }
