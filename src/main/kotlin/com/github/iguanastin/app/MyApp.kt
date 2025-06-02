@@ -790,7 +790,7 @@ class MyApp : App(MainView::class, Styles::class) {
                     thread(name = "Menagerie Loader", start = true) {
                         try {
                             val menagerie = database.loadMenagerie { msg -> runOnUIThread { progress.message = msg } }
-                            val importer = Importer(menagerie)
+                            val importer = Importer(menagerie, settings)
                             runOnUIThread { progress.close() }
 
                             after?.invoke(MenagerieContext(menagerie, importer, database, settings))

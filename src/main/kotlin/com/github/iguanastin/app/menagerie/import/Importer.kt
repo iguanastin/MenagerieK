@@ -2,6 +2,7 @@ package com.github.iguanastin.app.menagerie.import
 
 import com.github.iguanastin.app.menagerie.model.Menagerie
 import com.github.iguanastin.app.menagerie.model.Tag
+import com.github.iguanastin.app.settings.AppSettings
 import javafx.collections.ListChangeListener
 import mu.KotlinLogging
 import java.io.File
@@ -11,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
-class Importer(val menagerie: Menagerie, @Volatile var paused: Boolean = false) : Thread("File Importer") {
+class Importer(val menagerie: Menagerie, val settings: AppSettings) : Thread("File Importer") {
 
     private val queue: BlockingQueue<Import> = LinkedBlockingQueue()
 
@@ -26,6 +27,10 @@ class Importer(val menagerie: Menagerie, @Volatile var paused: Boolean = false) 
             }
         }
     }
+
+    @Volatile
+    var paused: Boolean = settings.hidden.importsPaused.value
+        private set
 
     init {
         start()
@@ -77,6 +82,11 @@ class Importer(val menagerie: Menagerie, @Volatile var paused: Boolean = false) 
 
     fun createGroup(title: String): ImportGroup {
         return ImportGroup(title, menagerie.reserveImportTempGroupID())
+    }
+
+    fun togglePause() {
+        paused = !paused
+        settings.hidden.importsPaused.value = paused
     }
 
     fun close() {

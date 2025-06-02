@@ -21,6 +21,7 @@ class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = tr
     val dontRemindUpdate: StringSetting
     val videoRepeat: BoolSetting
     val videoMute: BoolSetting
+    val importsPaused: BoolSetting
 
     init {
         settings = mutableListOf()
@@ -30,6 +31,7 @@ class HiddenSettingGroup(prefs: Preferences): SettingGroup("Hidden", hidden = tr
         dontRemindUpdate = StringSetting("dont-remind-update", "Don't remind me of updates for this version", default = "", prefs = prefs).also { settings.add(it) }
         videoRepeat = BoolSetting("video-repeat", "Repeat video playback", default = true, prefs).also { settings.add(it) }
         videoMute = BoolSetting("video-mute", "Mute video playback", default = true, prefs).also { settings.add(it) }
+        importsPaused  = BoolSetting("imports-paused", "Pause imports", default = false, prefs).also { settings.add(it) }
     }
 
 }

@@ -101,7 +101,7 @@ class ImportQueueDialog(val imports: ObservableList<Import>, val context: Menage
                 }
                 right {
                     togglebutton("Pause", selectFirst = context.importer.paused) {
-                        onActionConsuming { context.importer.paused = !context.importer.paused }
+                        onActionConsuming { context.importer.togglePause() }
                         textProperty().bind(selectedProperty().map { if (it) "Resume" else "Pause" })
                     }
                 }
