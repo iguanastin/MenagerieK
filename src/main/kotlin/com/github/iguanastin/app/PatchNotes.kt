@@ -39,10 +39,11 @@ object PatchNotes {
                 "- Faster image imports\n" +
                 "- File extensions are automatically fixed for web imports where possible\n" +
                 "- Cached image previews for slightly snappier experience\n" +
-                "- Added a menu bar at the top (#22)\n" +
                 "Bug fixes:\n" +
                 "- Old file hashes did not match new file hashes (#20)\n" +
-                "- Fixed grid rows breaking and showing the wrong items (#12)"
+                "- Fixed grid rows breaking and showing the wrong items (#12)\n" +
+                "- Fixed long waits for videos to preview when in large directories\n" +
+                "- Fixed app freezing on launch when first item is a video"
     }
 
     fun get(version: String): String {

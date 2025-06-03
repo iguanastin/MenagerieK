@@ -12,6 +12,7 @@ import com.github.iguanastin.app.utils.pasteTagsFromClipboard
 import com.github.iguanastin.view.factories.TagCellFactory
 import com.github.iguanastin.view.nodes.multitypeitemdisplay
 import com.github.iguanastin.view.onActionConsuming
+import javafx.application.Platform
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.ObservableList
@@ -199,7 +200,7 @@ class DuplicateResolverDialog(val pairs: ObservableList<SimilarPair<Item>>, val 
 
         initListeners()
 
-        if (pairs.isNotEmpty()) displaying = pairs.first()
+        Platform.runLater { if (pairs.isNotEmpty()) displaying = pairs.first() }
     }
 
     private fun replace(pair: SimilarPair<Item>, replaceLeftWithRight: Boolean) {

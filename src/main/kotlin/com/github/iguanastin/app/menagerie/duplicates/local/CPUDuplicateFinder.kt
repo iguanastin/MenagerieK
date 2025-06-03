@@ -50,7 +50,7 @@ object CPUDuplicateFinder {
 
                 val similarity = i1.similarityTo(i2)
                 if (similarity > confidence) {
-                    results.add(SimilarPair(i1, i2, similarity))
+                    results.add(SimilarPair(i2, i1, similarity))
                 }
             }
         }
