@@ -5,6 +5,7 @@ import com.github.iguanastin.app.menagerie.model.*
 import com.github.iguanastin.view.nodes.MultiSelectGridView
 import com.github.iguanastin.view.runOnUIThread
 import javafx.beans.value.ChangeListener
+import javafx.collections.ListChangeListener
 import javafx.geometry.Pos
 import javafx.scene.control.Label
 import javafx.scene.effect.DropShadow
@@ -32,8 +33,13 @@ object ItemCellFactory {
                 private lateinit var textView: Label
                 private lateinit var bottomRightLabel: Label
 
+                val groupSizeListener = ListChangeListener<FileItem> { c ->
+                    runOnUIThread {
+                        when (val item = item) { is GroupItem -> bottomRightLabel.text = "${item.items.size}" }
+                    }
+                }
                 private val groupTitleListener: ChangeListener<String> = ChangeListener { _, _, newValue ->
-                    textView.text = newValue
+                    runOnUIThread { textView.text = newValue }
                 }
 
                 init {
@@ -117,6 +123,7 @@ object ItemCellFactory {
                                 text = item.items.size.toString()
                             }
                             item.titleProperty.addListener(groupTitleListener)
+                            item.items.addListener(groupSizeListener)
                         }
                         is ImageItem -> {
 
@@ -140,6 +147,7 @@ object ItemCellFactory {
                     when (val item = item) {
                         is GroupItem -> {
                             item.titleProperty.removeListener(groupTitleListener)
+                            item.items.removeListener(groupSizeListener)
                         }
                     }
                     item?.getThumbnail()?.unWant(this)
