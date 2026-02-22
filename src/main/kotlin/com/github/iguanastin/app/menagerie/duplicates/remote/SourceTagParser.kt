@@ -15,7 +15,7 @@ private val log = KotlinLogging.logger {}
 object SourceTagParser {
 
     private const val userAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
 
     private val gelRegex = Regex("^https://gelbooru\\.com/.+page=post.+")
     private val danRegex = Regex("^https://danbooru\\.donmai\\.us/posts?/.+")

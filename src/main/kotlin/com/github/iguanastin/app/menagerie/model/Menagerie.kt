@@ -6,7 +6,6 @@ import javafx.collections.*
 import javafx.scene.image.Image
 import tornadofx.*
 import java.io.File
-import java.lang.ref.SoftReference
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -168,7 +167,6 @@ class Menagerie {
             ImageItem.isImage(file) -> {
                 ImageItem(id, added, this, md5, file).apply {
                     val img = Image(bytes.inputStream())
-                    cachedImage = SoftReference(img)
                     buildHistogram(img)
                 }
             }

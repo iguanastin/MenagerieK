@@ -44,6 +44,8 @@ object PatchNotes {
                 "- Fixed grid rows breaking and showing the wrong items (#12)\n" +
                 "- Fixed long waits for videos to preview when in large directories\n" +
                 "- Fixed app freezing on launch when first item is a video"
+        notes["1.2.5"] = "Feature:\n" +
+                "- Allow URI launch imports to specify headers"
     }
 
     fun get(version: String): String {

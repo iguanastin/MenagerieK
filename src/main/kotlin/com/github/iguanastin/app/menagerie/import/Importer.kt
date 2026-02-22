@@ -68,8 +68,8 @@ class Importer(val menagerie: Menagerie, val settings: AppSettings) : Thread("Fi
         menagerie.imports.removeListener(menagerieImportsListener)
     }
 
-    fun fromWeb(url: String, directory: File, tags: List<Tag>? = null): Import {
-        return Import.fromWeb(menagerie.reserveImportID(), url, directory, tags).also {
+    fun fromWeb(url: String, directory: File, tags: List<Tag>? = null, requestHeaders: Map<String, String>? = null): Import {
+        return Import.fromWeb(menagerie.reserveImportID(), url, directory, tags, requestHeaders).also {
             menagerie.addImport(it)
         }
     }

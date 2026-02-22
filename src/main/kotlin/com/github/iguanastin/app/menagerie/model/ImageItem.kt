@@ -1,13 +1,11 @@
 package com.github.iguanastin.app.menagerie.model
 
-import javafx.beans.InvalidationListener
 import javafx.beans.property.BooleanProperty
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.scene.image.Image
 import java.io.File
-import java.lang.ref.SoftReference
 
 class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: File, noSimilar: Boolean = false, histogram: Histogram? = null): FileItem(id, added, menagerie, md5, file) {
 
@@ -21,8 +19,6 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
         get() = histogramProperty.get()
         set(value) = histogramProperty.set(value)
 
-    var cachedImage = SoftReference<Image>(null)
-
     init {
         noSimilarProperty.addListener { _, old, new ->
             val change = ImageItemChange(this, noSimilar = Change(old, new))
@@ -32,8 +28,6 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
             val change = ImageItemChange(this, histogram = Change(old, new))
             changeListeners.forEach { listener -> listener(change) }
         }
-
-        fileProperty.addListener(InvalidationListener { cachedImage.clear() })
     }
 
     companion object {
@@ -47,7 +41,6 @@ class ImageItem(id: Int, added: Long, menagerie: Menagerie, md5: String, file: F
 
     override fun invalidate() {
         super.invalidate()
-        cachedImage.clear()
     }
 
     override fun loadThumbnail(): Image {

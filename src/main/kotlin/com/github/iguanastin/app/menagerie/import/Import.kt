@@ -14,7 +14,7 @@ import java.nio.channels.Channels
 
 private val log = KotlinLogging.logger {}
 
-class Import(val id: Int, val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null): Thread() {
+class Import(val id: Int, val url: String? = null, var file: File, val group: ImportGroup? = null, val addTags: List<Tag>? = null, val requestHeaders: Map<String, String>? = null): Thread() {
 
     enum class Status {
         READY,
@@ -46,8 +46,8 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
         val runningStates = listOf(Status.IMPORTING, Status.DOWNLOADING)
         val finishedStates = listOf(Status.FAILED, Status.SUCCESS, Status.CANCELLED)
 
-        fun fromWeb(id: Int, url: String, intoDirectory: File, tags: List<Tag>? = null): Import {
-            return Import(id, url, intoDirectory, addTags = tags)
+        fun fromWeb(id: Int, url: String, intoDirectory: File, tags: List<Tag>? = null, requestHeaders: Map<String, String>? = null): Import {
+            return Import(id, url, intoDirectory, addTags = tags, requestHeaders = requestHeaders)
         }
 
         fun fromLocal(id: Int, file: File, intoGroup: ImportGroup? = null, tags: List<Tag>? = null): Import {
@@ -153,7 +153,8 @@ class Import(val id: Int, val url: String? = null, var file: File, val group: Im
 
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
-            conn.addRequestProperty("User-Agent", "Mozilla/4.0")
+            requestHeaders?.forEach { conn.addRequestProperty(it.key, it.value) }
+            conn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36")
             patchFileName(conn.contentType)
 
             Channels.newChannel(conn.inputStream).use { rbs ->

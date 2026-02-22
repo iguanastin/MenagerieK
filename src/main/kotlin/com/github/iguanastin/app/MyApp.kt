@@ -38,12 +38,14 @@ import javafx.stage.Stage
 import mu.KotlinLogging
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClientBuilder
+import org.json.JSONObject
 import tornadofx.*
 import java.awt.Desktop
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
+import java.net.URLDecoder
 import java.util.stream.Collectors
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
@@ -53,7 +55,7 @@ private val log = KotlinLogging.logger {}
 class MyApp : App(MainView::class, Styles::class) {
 
     companion object {
-        const val VERSION = "1.2.4" // When updating version, update it in pom.xml as well
+        const val VERSION = "1.2.5" // When updating version, update it in pom.xml as well
         private const val githubRoot = "/iguanastin/menageriek"
         const val githubURL = "https://github.com$githubRoot"
         const val githubReleasesURL = "$githubURL/releases/latest"
@@ -194,22 +196,37 @@ class MyApp : App(MainView::class, Styles::class) {
                 rmi.communicator.importUrl(url)
             }
             exitProcess(0)
-        }, onImportURL = { url ->
+        }, onImportURL = { urlDirty ->
+            val url = URLDecoder.decode(urlDirty.replace("+", "%2B"), "UTF-8").replace("%2B", "+")
             if (context != null) {
-                val splitString = url.split(",")
+                if (url.startsWith("http")) {
+                    val splitString = url.split(",")
 
-                val sanitizedUrl = splitString[0]
+                    val sanitizedUrl = splitString[0]
 
-                val tags: List<Tag> =
-                    splitString.subList(1, splitString.size)
-                        .map {
-                            context!!.menagerie.getOrMakeTag(
-                                settings.tags.tagAliases.apply(it),
-                                temporaryIfNew = true
-                            )
-                        }
+                    val tags: List<Tag> =
+                        splitString.subList(1, splitString.size)
+                            .map {
+                                context!!.menagerie.getOrMakeTag(
+                                    settings.tags.tagAliases.apply(it),
+                                    temporaryIfNew = true
+                                )
+                            }
 
-                runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
+                    runOnUIThread { downloadFileFromWeb(sanitizedUrl, tags) }
+                } else {
+                    val j = JSONObject(url)
+                    val tags = j.getJSONArray("tags").map {
+                        context!!.menagerie.getOrMakeTag(
+                            settings.tags.tagAliases.apply(it as String),
+                            temporaryIfNew = true
+                        )
+                    }
+
+                    runOnUIThread { downloadFileFromWeb(j.getString("url"), tags,
+                        j.getJSONObject("headers")?.toMap() as Map<String, String>?
+                    ) }
+                }
             } else {
                 preLoadImportQueue.add(url)
             }
@@ -552,12 +569,12 @@ class MyApp : App(MainView::class, Styles::class) {
         }
     }
 
-    private fun downloadFileFromWeb(url: String, tags: List<Tag>? = null) {
+    private fun downloadFileFromWeb(url: String, tags: List<Tag>? = null, headers: Map<String, String>? = null) {
         val importer = context?.importer ?: return
 
         val download = { folder: File? ->
             if (folder != null && folder.exists() && folder.isDirectory) {
-                importer.fromWeb(url, folder, tags)
+                importer.fromWeb(url, folder, tags, headers)
             }
         }
 
